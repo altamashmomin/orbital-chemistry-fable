@@ -14,7 +14,7 @@ export function frame(t) {
   const pBr = sched(t, [[0, 1], [0.3, 0]]);
   const pO = sched(t, [[0.42, 0], [0.66, 1]]);
   const qC = sched(t, [[0.05, 0.3], [0.3, 1], [0.45, 1], [0.66, 0]]);
-  const qBr = sched(t, [[0.05, 0], [0.3, -1]]);
+  const qBr = sched(t, [[0.05, -0.3], [0.3, -1]]);            // δ− of the C–Br dipole, then the full charge
   const qO1 = sched(t, [[0.45, 0], [0.66, 1], [0.8, 1], [1, 0]]);
   const qO2 = sched(t, [[0.8, 0], [1, 1]]);
   const cation = t > 0.28 && t < 0.62;

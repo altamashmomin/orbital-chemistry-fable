@@ -12,7 +12,7 @@ export function frame(t) {
   const theta = sched(t, [[0, 70.53], [0.4, 90]]) * DEG;                // methyl angle from +x
   const pBr = sched(t, [[0, 1], [0.35, 0]]);
   const qC = sched(t, [[0.05, 0.3], [0.35, 1], [0.55, 1], [0.85, 0]]);
-  const qBr = sched(t, [[0.05, 0], [0.35, -1]]);
+  const qBr = sched(t, [[0.05, -0.3], [0.35, -1]]);           // δ− of the C–Br dipole, then the full charge
   const dCC1 = sched(t, [[0.55, 1.54], [0.9, 1.34]]);                  // C–Me1 shortens to C=C
   const dCH = sched(t, [[0.55, 1.09], [0.75, 1.35], [1, 2.2]]);        // Me1.C···H(up)
   const dHO = sched(t, [[0.4, 3.4], [0.55, 2.6], [0.75, 1.45], [1, 0.96]]);
@@ -20,7 +20,7 @@ export function frame(t) {
   const pOH = sched(t, [[0.6, 0], [0.75, 0.5], [1, 1]]);
   const pPi = sched(t, [[0.6, 0], [0.75, 0.5], [1, 1]]);
   const flat = sched(t, [[0.55, 0], [1, 1]]);                           // CH2 flattening
-  const qO = sched(t, [[0.75, 0], [1, 1]]);
+  const qO = sched(t, [[0.55, 0], [0.85, 1]]);                           // mirrors qC so the +1 charge moves from C to O without a gap
   const cation = t > 0.32 && t < 0.8;
 
   s.atom({ id: 'C', el: 'C', charge: qC, hyb: cation ? 'sp2' : undefined, pOrbital: cation ? 'empty' : undefined });

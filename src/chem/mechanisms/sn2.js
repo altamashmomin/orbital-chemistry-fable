@@ -13,8 +13,8 @@ export function frame(t) {
   const pNu = sched(t, [[0.05, 0], [0.5, 0.5], [1, 1]]);
   const pBr = sched(t, [[0, 1], [0.5, 0.5], [0.95, 0]]);
   const qO = sched(t, [[0, -1], [0.5, -0.5], [1, 0]]);
-  const qBr = sched(t, [[0, 0], [0.5, -0.5], [1, -1]]);
-  const qC = sched(t, [[0, 0.3], [0.5, 0], [1, 0]]);
+  const qC = sched(t, [[0, 0.3], [0.5, 0], [1, 0]]);          // δ+ of the C–Br dipole, gone at the TS
+  const qBr = sched(t, [[0, -0.3], [0.5, -0.5], [1, -1]]);     // balances the δ+ on carbon, then takes the full charge
 
   s.atom({ id: 'C', el: 'C', charge: qC, label: t < 0.5 ? '(R)' : t > 0.5 ? '(S)' : '‡' });
   s.pin('C', [0, 0, 0]);

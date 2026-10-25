@@ -393,9 +393,15 @@ export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, 
     // zero-penalty default below keeps conjugated systems coplanar otherwise.
     const sb = sideOf(bd.a, bd.b), sa = sideOf(bd.b, bd.a);
     if (!sb || !sa) continue;
-    rotatable.push(sb.size <= sa.size ? { pivot: bd.a, moving: bd.b, set: sb } : { pivot: bd.b, moving: bd.a, set: sa });
+    const planarKinds = ['trigonal', 'linear', 'squarePlanar'];
+    const conjugated = planarKinds.includes(frames.get(bd.a)?.kind) && planarKinds.includes(frames.get(bd.b)?.kind);
+    rotatable.push(sb.size <= sa.size ? { pivot: bd.a, moving: bd.b, set: sb, conjugated } : { pivot: bd.b, moving: bd.a, set: sa, conjugated });
   }
-  const penalty = (movers, others, pivot, moving) => {
+  // Soft thresholds express the staggered preference of sp3 bonds; hard thresholds are true clashes.
+  // Conjugated (planar–planar) bonds such as ester C–O or amide C–N stay planar unless a HARD clash
+  // exists, because syn O···H contacts of 2.3–2.5 Å in Z-esters and syn acids are normal.
+  const RMIN = { soft: [2.2, 2.6, 3.0], hard: [1.8, 2.0, 2.5] };
+  const penalty = (movers, others, pivot, moving, mode = 'soft') => {
     const nbrPivot = new Set(adj.get(pivot).map((n) => n.id)), nbrMoving = new Set(adj.get(moving).map((n) => n.id));
     let pen = 0;
     for (const i of movers) {
@@ -404,7 +410,8 @@ export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, 
         if (j === pivot && (i === moving || nbrMoving.has(i))) continue;
         if (i === moving && nbrPivot.has(j)) continue;
         const hj = atoms.get(j).el === 'H';
-        const rmin = hi && hj ? 2.2 : hi || hj ? 2.6 : 3.0;
+        const [hh, hx, xx] = RMIN[mode];
+        const rmin = hi && hj ? hh : hi || hj ? hx : xx;
         const d = v.dist(pi, positions.get(j));
         if (d < rmin) pen += (rmin - d) * (rmin - d);
       }
@@ -413,16 +420,17 @@ export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, 
   };
   const rotateSide = (movers, origin, R, original) => { for (const id of movers) positions.set(id, v.add(origin, m3.apply(R, v.sub(original.get(id), origin)))); };
   for (let pass = 0; pass < passes; pass++) {
-    for (const { pivot, moving, set } of rotatable) {
+    for (const { pivot, moving, set, conjugated } of rotatable) {
+      const mode = conjugated ? 'hard' : 'soft';
       const movers = [...set], others = ids.filter((id) => !set.has(id));
       const origin = positions.get(pivot);
       const axis = v.norm(v.sub(positions.get(moving), origin));
       const original = new Map(movers.map((id) => [id, positions.get(id)]));
-      let best = 0, bestPen = penalty(movers, others, pivot, moving);
+      let best = 0, bestPen = penalty(movers, others, pivot, moving, mode);
       if (bestPen < 1e-9) continue;
       for (let k = 1; k < steps; k++) {
         rotateSide(movers, origin, m3.axisAngle(axis, (2 * Math.PI * k) / steps), original);
-        const pen = penalty(movers, others, pivot, moving);
+        const pen = penalty(movers, others, pivot, moving, mode);
         if (pen < bestPen - 1e-9) { bestPen = pen; best = k; }
       }
       const R = m3.axisAngle(axis, (2 * Math.PI * best) / steps);

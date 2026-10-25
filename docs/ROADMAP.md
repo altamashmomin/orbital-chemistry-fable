@@ -115,3 +115,6 @@ only share the two-line registration in `src/topics/index.js`.
 6. **Depth from day one.** Tag content Refresher/Learn as it is written; add a `references.md`
    and glossary terms with the branch, not after.
 7. **Green CI to merge.** Squash-merge, delete the branch, rebase the next one on `main`.
+8. **Sweep after every addition.** Run `npm run sweep`, complete the manual chemistry checklist,
+   log findings in `docs/reviews/`, and start no new branch while a report says *hold*
+   (`docs/REVIEW_PROTOCOL.md`).

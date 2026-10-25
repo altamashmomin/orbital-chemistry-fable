@@ -91,7 +91,11 @@ worked reasoning and hints are `learn`.
 * Changes to the shared core (`src/chem/geometry.js`, `src/render/*`, `src/ui/*`,
   `src/topics/registry.js`) go in their own small commits or PRs merged to `main` first, so
   every topic branch can use them.
-* CI (`.github/workflows/ci.yml`) runs `npm test` and `npm run build` on every PR; keep it green.
+* CI (`.github/workflows/ci.yml`) runs `npm test`, the conformance report and `npm run build` on
+  every PR; keep it green.
+* Before opening the PR run `npm run sweep`, fill in the manual checklist in the generated
+  `docs/reviews/` report and commit it with the branch (`docs/REVIEW_PROTOCOL.md`). Put every
+  number you quote in `src/chem/references/textbook.js` or the topic's `references.md`.
 
 ## 6. Shared primitives
 

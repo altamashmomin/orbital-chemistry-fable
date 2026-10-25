@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "sweep": "node --test && node scripts/sweep.mjs --write",
+    "sweep:report": "node scripts/sweep.mjs"
   },
   "license": "MIT",
   "dependencies": {

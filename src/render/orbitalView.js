@@ -16,9 +16,11 @@ export function lobeGeometry(mesh) {
   if (!mesh || !mesh.triangleCount) return null;
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(mesh.positions, 3));
+  // Index first: computeVertexNormals() follows the index when present, so fallback normals
+  // (meshes extracted with { normals: false }) use the real faces, not consecutive position triples.
+  g.setIndex(new THREE.BufferAttribute(mesh.indices, 1));
   if (mesh.normals) g.setAttribute('normal', new THREE.BufferAttribute(mesh.normals, 3));
   else g.computeVertexNormals();
-  g.setIndex(new THREE.BufferAttribute(mesh.indices, 1));
   g.computeBoundingBox();
   g.computeBoundingSphere();
   return g;

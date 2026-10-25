@@ -5,7 +5,7 @@ import { template } from '../src/topics/_template/index.js';
 import { GLOSSARY } from '../src/nexus/glossary.js';
 import { buildIndex, search, allTerms, normalise } from '../src/nexus/search.js';
 import { FUNCTIONAL_GROUPS } from '../src/chem/functionalGroups.js';
-import { MECHANISMS } from '../src/chem/mechanisms/index.js';
+import { MECHANISMS, FAMILIES } from '../src/chem/mechanisms/index.js';
 
 const termIds = new Set([...GLOSSARY, ...(template.glossary || [])].map((t) => t.id));
 
@@ -15,7 +15,7 @@ function resolves(href) {
   const [head, a, b] = raw.split('/');
   if (head === 'glossary') return !a || termIds.has(a);
   if (head === 'functional-groups') return (!a || !!FUNCTIONAL_GROUPS[a]) && (!b || FUNCTIONAL_GROUPS[a].invariants.some((x) => x.id === b));
-  if (head === 'mechanisms') return (!a || !!MECHANISMS[a]) && (!b || MECHANISMS[a].steps.some((s) => s.id === b));
+  if (head === 'mechanisms') return (!a || !!MECHANISMS[a] || (!!FAMILIES[a] && !b)) && (!b || !!MECHANISMS[a]?.steps.some((s) => s.id === b));
   return !!topicById(head) || head === template.id;
 }
 

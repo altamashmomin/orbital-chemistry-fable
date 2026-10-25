@@ -1,7 +1,7 @@
-// Mechanism viewer panel: SN2 / SN1 / E2 / E1 with stepper, scrubber, energy diagram,
-// environment predictor and pluggable animators.
+// Mechanism viewer panel: family tabs (Substitution & elimination, …) over mechanism tabs, with
+// stepper, scrubber, energy diagram, the active family's environment predictor and pluggable animators.
 import { h, clear, fill, select, toggle, section, aud } from '../../ui/dom.js';
-import { MECHANISMS, MECHANISM_ORDER, stepIndexAt, predict, SUBSTRATES, REAGENTS, SOLVENTS, TEMPERATURES, LEAVING_GROUPS } from '../../chem/mechanisms/index.js';
+import { MECHANISMS, FAMILIES, FAMILY_ORDER, familyOf, defaultEnv, familyColor, stepIndexAt } from '../../chem/mechanisms/index.js';
 import { listAnimators, createAnimator, onAnimatorsChanged } from '../../anim/index.js';
 import { EnergyDiagram } from '../../ui/energyDiagram.js';
 import { audienceOf, textOf, listAudience } from '../../chem/audience.js';
@@ -11,11 +11,12 @@ const DWELL_MS = 1100;
 export class MechanismPanel {
   constructor({ view, viewport, level = 'learn', navigate = null }) {
     this.view = view; this.viewport = viewport; this.level = level; this.nav = navigate;
-    this.mechId = 'sn2';
+    this.familyId = FAMILY_ORDER[0];
+    this.mechId = this.family.mechanisms[0];
     this.t = 0; this.stepIdx = -1; this.playing = false; this.speed = 1;
     this.animatorId = 'cinematic';
     this.opts = { arrows: true, lonePairs: true, labels: true, hydrogens: true, orbitals: true };
-    this.env = { substrate: 'secondary', reagent: 'strongNuStrongBase', solvent: 'polarProtic', temperature: 'low', leavingGroup: 'good', allylicBenzylic: false };
+    this.env = defaultEnv(this.family.predictor);
     this.el = h('div', { class: 'panel-inner mechanism' });
     this.inspector = h('div', { class: 'panel-inner study-guide' });
     this.ctx = {
@@ -29,6 +30,7 @@ export class MechanismPanel {
   }
 
   get mech() { return MECHANISMS[this.mechId]; }
+  get family() { return FAMILIES[this.familyId]; }
 
   activate() {
     this.view.setOptions({ ...this.opts, highlights: true });
@@ -48,7 +50,7 @@ export class MechanismPanel {
     this.refs = {};
     const ref = (name, node) => { this.refs[name] = node; return node; };
     this.el.append(
-      h('div', { class: 'mech-tabs' }, MECHANISM_ORDER.map((id) => h('button', { class: `mtab ${id === this.mechId ? 'active' : ''}`, dataset: { id }, onClick: () => { this.setMechanism(id); this.nav?.(`mechanisms/${id}`); } }, h('b', {}, MECHANISMS[id].name), h('small', {}, MECHANISMS[id].fullName)))),
+      ref('nav', h('div', { class: 'mech-nav' })),
       ref('header', h('div', { class: 'card mech-header' })),
       section('Play the mechanism',
         h('div', { class: 'transport' },
@@ -65,16 +67,7 @@ export class MechanismPanel {
       ),
       ref('narration', h('div', { class: 'card narration' })),
       section('Energy profile', ref('energyWrap', h('div', { class: 'energy-wrap' }, h('canvas', { class: 'energy' })))),
-      section('Which mechanism will my reaction follow?',
-        aud(h('div', { class: 'hint' }, 'Set the conditions from your homework problem. The predictor applies the standard decision table and explains each factor.'), 'learn'),
-        this.envRow('Substrate', SUBSTRATES, 'substrate'),
-        this.envRow('Nucleophile / base', REAGENTS, 'reagent'),
-        this.envRow('Solvent', SOLVENTS, 'solvent'),
-        this.envRow('Temperature', TEMPERATURES, 'temperature'),
-        this.envRow('Leaving group', LEAVING_GROUPS, 'leavingGroup'),
-        toggle('Allylic or benzylic carbon', this.env.allylicBenzylic, (v) => { this.env.allylicBenzylic = v; this.renderPrediction(); }),
-        ref('prediction', h('div', { class: 'prediction' })),
-      ),
+      ref('predictorSec', section('')),
       ref('ideas', h('div', {})),
       section('View',
         h('div', { class: 'toggles' },
@@ -93,14 +86,44 @@ export class MechanismPanel {
     this.energy = new EnergyDiagram(this.refs.energyWrap.querySelector('canvas'));
     this.energy.set(this.mech);
     this.renderAnimatorSelect();
+    this.renderTabs();
     this.renderHeader();
     this.renderSteps();
-    this.renderPrediction();
+    this.renderPredictorSection();
     this.renderIdeas();
   }
 
-  envRow(label, options, key) {
-    return h('div', { class: 'row' }, h('label', {}, label), select(options.map((o) => ({ id: o.id, label: o.examples ? `${o.label} — ${o.examples}` : o.label })), this.env[key], (v) => { this.env[key] = v; this.renderPrediction(); }));
+  /** Family tabs (one row) above the mechanism tabs of the active family. */
+  renderTabs() {
+    const fam = this.family;
+    fill(this.refs.nav,
+      h('div', { class: 'family-tabs', role: 'tablist', 'aria-label': 'Reaction family' }, FAMILY_ORDER.map((id) => h('button', {
+        class: `ftab ${id === this.familyId ? 'active' : ''}`, dataset: { family: id }, 'aria-pressed': String(id === this.familyId), title: FAMILIES[id].summary || '',
+        onClick: () => { this.setFamily(id); this.nav?.(`mechanisms/${this.mechId}`); },
+      }, FAMILIES[id].title))),
+      h('div', { class: 'mech-tabs' }, fam.mechanisms.map((id) => h('button', { class: `mtab ${id === this.mechId ? 'active' : ''}`, dataset: { id }, onClick: () => { this.setMechanism(id); this.nav?.(`mechanisms/${id}`); } }, h('b', {}, MECHANISMS[id].name), h('small', {}, MECHANISMS[id].fullName)))),
+    );
+  }
+
+  /** The active family's predictor: option rows plus the prediction; hidden for families without one. */
+  renderPredictorSection() {
+    const sec = this.refs.predictorSec;
+    const pred = this.family.predictor;
+    sec.hidden = !pred;
+    if (!pred) { clear(sec); this.refs.prediction = null; return; }
+    fill(sec,
+      h('h3', { class: 'sec-title' }, pred.title || 'Which mechanism will my reaction follow?'),
+      pred.hint ? aud(h('div', { class: 'hint' }, pred.hint), 'learn') : null,
+      pred.options.map((o) => this.envRow(o)),
+      (this.refs.prediction = h('div', { class: 'prediction' })),
+    );
+    this.renderPrediction();
+  }
+
+  envRow(option) {
+    const { key, label, choices, kind } = option;
+    if (kind === 'toggle') return toggle(label, !!this.env[key], (v) => { this.env[key] = v; this.renderPrediction(); });
+    return h('div', { class: 'row' }, h('label', {}, label), select(choices.map((o) => ({ id: o.id, label: o.examples ? `${o.label} — ${o.examples}` : o.label })), this.env[key], (v) => { this.env[key] = v; this.renderPrediction(); }));
   }
 
   renderAnimatorSelect() {
@@ -156,15 +179,18 @@ export class MechanismPanel {
   }
 
   renderPrediction() {
-    const p = predict(this.env);
-    const bar = (id, label, pct, color) => h('div', { class: 'bar-row' }, h('span', { class: 'bar-label' }, label), h('div', { class: 'bar' }, h('i', { style: { width: `${pct}%`, background: color } })), h('span', { class: 'bar-pct' }, `${pct}%`));
+    const fam = this.family, pred = fam.predictor;
+    if (!pred || !this.refs.prediction) return;
+    const p = pred.predict(this.env);
+    const bar = (id, label, pct, color) => h('div', { class: 'bar-row', dataset: { id } }, h('span', { class: 'bar-label' }, label), h('div', { class: 'bar' }, h('i', { style: { width: `${pct}%`, background: color } })), h('span', { class: 'bar-pct' }, `${pct}%`));
+    const watch = p.dominant !== 'none' && MECHANISMS[p.dominant] ? MECHANISMS[p.dominant] : null;
     fill(this.refs.prediction,
       h('div', { class: 'pred-summary' }, p.summary),
-      bar('sn2', 'SN2', p.pct.sn2, '#38bdf8'), bar('sn1', 'SN1', p.pct.sn1, '#a78bfa'), bar('e2', 'E2', p.pct.e2, '#34d399'), bar('e1', 'E1', p.pct.e1, '#fbbf24'),
-      p.pct.none ? bar('none', 'no rxn', p.pct.none, '#64748b') : null,
-      p.dominant !== 'none' ? h('button', { class: 'btn primary', onClick: () => { this.setMechanism(p.dominant); this.play(); } }, `Watch ${p.dominant.toUpperCase()}`) : null,
-      p.warnings.length ? h('div', { class: 'warn' }, p.warnings.map((w) => h('div', {}, '⚠ ', w))) : null,
-      aud(h('details', { open: true }, h('summary', {}, 'Why?'), h('ul', { class: 'reasons' }, p.reasons.map((r) => h('li', {}, r)))), 'learn'),
+      fam.mechanisms.map((id) => bar(id, MECHANISMS[id].name, p.pct?.[id] ?? 0, familyColor(fam, id))),
+      p.pct?.none ? bar('none', 'no rxn', p.pct.none, '#64748b') : null,
+      watch ? h('button', { class: 'btn primary', onClick: () => { this.setMechanism(watch.id); this.nav?.(`mechanisms/${watch.id}`); this.play(); } }, `Watch ${watch.name}`) : null,
+      p.warnings?.length ? h('div', { class: 'warn' }, p.warnings.map((w) => h('div', {}, '⚠ ', w))) : null,
+      p.reasons?.length ? aud(h('details', { open: true }, h('summary', {}, 'Why?'), h('ul', { class: 'reasons' }, p.reasons.map((r) => h('li', {}, r)))), 'learn') : null,
       aud(h('div', { class: 'hint' }, 'Percentages are a teaching heuristic, not measured yields: they rank tendencies the way a textbook decision table does.'), 'learn'),
     );
   }
@@ -187,16 +213,37 @@ export class MechanismPanel {
     this.energy.draw(t);
   }
 
-  /** Deep link: 'sn2' or 'sn2/ts' (mechanism id, optional step id). */
+  /** Deep link: 'sn2' or 'sn2/ts' (mechanism id, optional step id), or a family id ('substitution-elimination'). */
   navigate(sub = '') {
-    const [mechId, stepId] = String(sub).split('/');
-    if (mechId && MECHANISMS[mechId] && mechId !== this.mechId) this.setMechanism(mechId);
+    const [head, stepId] = String(sub).split('/');
+    if (head && FAMILIES[head]) { this.setFamily(head); return; }
+    if (head && MECHANISMS[head] && head !== this.mechId) this.setMechanism(head);
     const step = stepId && this.mech.steps.find((s) => s.id === stepId);
     if (step) this.jump(step.t);
   }
 
+  /** Switch family tab: shows its first mechanism and its own predictor (with that predictor's defaults). */
+  setFamily(id) {
+    const fam = FAMILIES[id];
+    if (!fam) return;
+    if (id !== this.familyId) {
+      this.familyId = id;
+      this.env = defaultEnv(fam.predictor);
+      this.renderTabs();
+      this.renderPredictorSection();
+    }
+    if (!fam.mechanisms.includes(this.mechId)) this.setMechanism(fam.mechanisms[0]);
+  }
+
   setMechanism(id) {
     if (!MECHANISMS[id]) return;
+    const fam = familyOf(id);
+    if (fam && fam.id !== this.familyId) {
+      this.familyId = fam.id;
+      this.env = defaultEnv(fam.predictor);
+      this.renderTabs();
+      this.renderPredictorSection();
+    }
     this.pause();
     this.mechId = id;
     this.stepIdx = -1;

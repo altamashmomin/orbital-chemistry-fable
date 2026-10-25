@@ -182,6 +182,45 @@ ctx.view.setHighlights([{ type: 'angle', center: 'Co', a: 'N1', b: 'N3', text: '
 M–L lengths default to covalent-radius sums (Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Pd, Pt are in
 `elements.js`); pass `bondLength` or a per-ligand `length` for a specific compound.
 
+### Reaction families: `src/chem/mechanisms/families.js`
+
+The Reaction lab is a registry of **families** (Substitution & elimination today; Addition,
+Carbonyl, Aromatic … next). A family is a tab row above the mechanism tabs; it brings its own
+mechanisms and, optionally, its own "which mechanism?" predictor. A reaction branch adds one
+module and two lines in `src/chem/mechanisms/index.js`; the Reaction lab, the header search and
+the deep links (`#mechanisms/<mechanism-id>/<step-id>`, `#mechanisms/<family-id>`) follow.
+
+```js
+// src/chem/mechanisms/addition.js
+import { hbr } from './addition/hbr.js';          // a mechanism: { id, name, fullName, frame(t), steps, energyAt, keyIdeas, conditions, related, … }
+import { br2 } from './addition/br2.js';
+
+export const additionMechanisms = { hbr, br2 };
+export const addition = {
+  id: 'addition', title: 'Addition', summary: 'Electrophilic addition to alkenes.',
+  mechanisms: ['hbr', 'br2'],                     // tab order; ids must match the mechanism objects
+  predictor: {                                    // optional
+    title: 'Which product forms?', hint: 'Learn-level sentence under the title.',
+    options: [
+      { key: 'alkene', label: 'Alkene', choices: [{ id: 'terminal', label: 'Terminal (RCH=CH₂)' }, { id: 'internal', label: 'Internal' }], default: 'terminal' },
+      { key: 'peroxide', label: 'Peroxides present', kind: 'toggle', default: false },
+    ],
+    predict: (env) => ({ pct: { hbr: 80, br2: 0, none: 20 }, ranked: [{ id: 'hbr', pct: 80 }, { id: 'br2', pct: 0 }], dominant: 'hbr', summary: 'Markovnikov HBr addition.', reasons: ['…'], warnings: [] }),
+    colors: { hbr: '#38bdf8' },                   // bar colours; a palette fills in when absent
+  },
+};
+
+// src/chem/mechanisms/index.js  (the only shared file a reaction branch touches)
+registerFamily(addition, additionMechanisms);
+```
+
+`validateFamily(family, mechanisms)` lists what is wrong with a definition (unknown mechanism ids,
+missing title, a predictor without `predict`); `defaultEnv(predictor)` gives the option defaults the
+panel starts from; `familyOf(mechanismId)` and `listFamilies()` read the registry. The flat
+`MECHANISMS` / `MECHANISM_ORDER` stay available and are built from the families in order. Test a new
+family the way `tests/families.test.js` and `tests/mechanisms.test.js` do: frames sane across `t`,
+no clashes, predictor table reproduced, every `related` link resolving.
+
 ### Energy-level diagrams: `src/ui/levelDiagram.js`
 
 A canvas diagram of horizontal levels grouped in columns, with ↑↓ electron arrows, dashed

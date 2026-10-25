@@ -65,6 +65,8 @@ src/
                              3D visual specs, what varies with R, spectroscopy / tests
     builder.js               FG + R choices → molecular graph → embedded render frame
     mechanisms/
+      families.js            family registry: tabs of mechanisms, each with its own predictor
+      substitutionElimination.js   the first family (SN2 / SN1 / E2 / E1 + the textbook predictor)
       frameUtils.js          System builder, schedules, energy profiles, fragments
       sn2.js sn1.js e2.js e1.js   parametric frame(t), steps, arrows, narration, energy
       predictor.js           environment → mechanism tendencies with reasons

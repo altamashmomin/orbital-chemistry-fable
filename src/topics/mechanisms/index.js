@@ -1,5 +1,5 @@
 import { MechanismPanel } from './panel.js';
-import { MECHANISMS, MECHANISM_ORDER, SUBSTRATES, REAGENTS, SOLVENTS } from '../../chem/mechanisms/index.js';
+import { MECHANISMS, FAMILIES, FAMILY_ORDER } from '../../chem/mechanisms/index.js';
 import { audienceOf, textOf } from '../../chem/audience.js';
 
 export const mechanisms = {
@@ -18,17 +18,25 @@ export const mechanisms = {
     noteSub: 'Build your chemical intuition.',
   },
   create: (ctx) => new MechanismPanel(ctx),
-  /** Search entries: each mechanism, its steps and key ideas, and the predictor's vocabulary. */
+  /** Search entries: every family, each of its mechanisms with steps and key ideas, and each family predictor's vocabulary. */
   index() {
     const out = [];
-    for (const id of MECHANISM_ORDER) {
-      const m = MECHANISMS[id];
-      out.push({ kind: 'mechanism', title: `${m.name} · ${m.fullName}`, snippet: `${m.substrate} + ${m.reagent} → ${m.products}`, href: `#mechanisms/${id}`, keywords: [id, m.rateLaw, m.stereochemistry, m.equation] });
-      for (const s of m.steps) out.push({ kind: 'step', title: `${m.name}: ${s.title}`, snippet: s.narration, href: `#mechanisms/${id}/${s.id}`, keywords: [s.cue] });
-      for (const k of m.keyIdeas) out.push({ kind: 'item', title: `${m.name} key idea`, snippet: textOf(k), href: `#mechanisms/${id}`, audience: audienceOf(k, 'keyIdeas') });
+    for (const fid of FAMILY_ORDER) {
+      const fam = FAMILIES[fid];
+      const names = fam.mechanisms.map((id) => MECHANISMS[id].name);
+      out.push({ kind: 'group', title: fam.title, snippet: fam.summary || names.join(', '), href: `#mechanisms/${fid}`, keywords: [fid, 'family', ...names] });
+      for (const id of fam.mechanisms) {
+        const m = MECHANISMS[id];
+        out.push({ kind: 'mechanism', title: `${m.name} · ${m.fullName}`, snippet: `${m.substrate} + ${m.reagent} → ${m.products}`, href: `#mechanisms/${id}`, keywords: [id, m.rateLaw, m.stereochemistry, m.equation] });
+        for (const s of m.steps) out.push({ kind: 'step', title: `${m.name}: ${s.title}`, snippet: s.narration, href: `#mechanisms/${id}/${s.id}`, keywords: [s.cue] });
+        for (const k of m.keyIdeas || []) out.push({ kind: 'item', title: `${m.name} key idea`, snippet: textOf(k), href: `#mechanisms/${id}`, audience: audienceOf(k, 'keyIdeas') });
+      }
+      const pred = fam.predictor;
+      if (pred) {
+        const vocab = pred.options.flatMap((o) => (o.choices || []).map((c) => `${c.label}${c.examples ? ` (${c.examples})` : ''}`));
+        out.push({ kind: 'item', title: pred.title || `Which ${fam.title.toLowerCase()} mechanism will my reaction follow?`, snippet: vocab.join(' · '), href: `#mechanisms/${fid}`, keywords: ['predictor', 'conditions', ...pred.options.map((o) => o.label.toLowerCase()), ...names] });
+      }
     }
-    const vocab = [...SUBSTRATES, ...REAGENTS, ...SOLVENTS].map((o) => `${o.label}${o.examples ? ` (${o.examples})` : ''}`);
-    out.push({ kind: 'item', title: 'Which mechanism will my reaction follow?', snippet: vocab.join(' · '), href: '#mechanisms', keywords: ['predictor', 'conditions', 'solvent', 'base', 'nucleophile', 'temperature', 'leaving group'] });
     return out;
   },
 };

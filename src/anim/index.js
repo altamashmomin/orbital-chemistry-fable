@@ -1,6 +1,7 @@
 // Animator registry. Add new animators here or at runtime via window.OrbitalChemistry.registerAnimator().
 import { Animator } from './Animator.js';
 import { DefaultAnimator } from './DefaultAnimator.js';
+import { CinematicAnimator } from './CinematicAnimator.js';
 
 const registry = new Map();
 const listeners = new Set();
@@ -16,5 +17,6 @@ export function createAnimator(id, ctx) { const Cls = registry.get(id) || Defaul
 export function onAnimatorsChanged(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
 registerAnimator(DefaultAnimator);
+registerAnimator(CinematicAnimator);
 
-export { Animator, DefaultAnimator };
+export { Animator, DefaultAnimator, CinematicAnimator };

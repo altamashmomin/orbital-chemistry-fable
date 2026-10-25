@@ -12,7 +12,7 @@ export class MechanismPanel {
     this.view = view; this.viewport = viewport;
     this.mechId = 'sn2';
     this.t = 0; this.stepIdx = -1; this.playing = false; this.speed = 1;
-    this.animatorId = 'default';
+    this.animatorId = 'cinematic';
     this.opts = { arrows: true, lonePairs: true, labels: true, hydrogens: true, orbitals: true };
     this.env = { substrate: 'secondary', reagent: 'strongNuStrongBase', solvent: 'polarProtic', temperature: 'low', leavingGroup: 'good', allylicBenzylic: false };
     this.el = h('div', { class: 'panel-inner mechanism' });

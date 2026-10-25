@@ -16,6 +16,7 @@ export class MechanismPanel {
     this.opts = { arrows: true, lonePairs: true, labels: true, hydrogens: true, orbitals: true };
     this.env = { substrate: 'secondary', reagent: 'strongNuStrongBase', solvent: 'polarProtic', temperature: 'low', leavingGroup: 'good', allylicBenzylic: false };
     this.el = h('div', { class: 'panel-inner mechanism' });
+    this.inspector = h('div', { class: 'panel-inner study-guide' });
     this.ctx = {
       viewport, view,
       getMechanism: () => this.mech, getT: () => this.t, setT: (t) => this.setT(t), getSpeed: () => this.speed,
@@ -32,6 +33,7 @@ export class MechanismPanel {
     this.view.setOptions({ ...this.opts, highlights: true });
     this.viewport.setAutoRotate(false);
     this.energy.set(this.mech);
+    this.renderHeader();
     this.setT(this.t, true);
     this.animator.onMechanismChange?.(this.mech);
   }
@@ -40,6 +42,7 @@ export class MechanismPanel {
   // ---------------------------------------------------------------- rendering
   render() {
     clear(this.el);
+    clear(this.inspector);
     this.refs = {};
     const ref = (name, node) => { this.refs[name] = node; return node; };
     this.el.append(
@@ -52,9 +55,9 @@ export class MechanismPanel {
           ref('play', h('button', { class: 'btn icon primary', title: 'Play', onClick: () => (this.playing ? this.pause() : this.play()) }, '▶')),
           h('button', { class: 'btn icon', title: 'Next step', onClick: () => this.step(1) }, '▶|'),
           h('button', { class: 'btn icon', title: 'End', onClick: () => this.jump(1) }, '⏭'),
-          select([{ id: '0.5', label: '0.5×' }, { id: '1', label: '1×' }, { id: '2', label: '2×' }], String(this.speed), (v) => { this.speed = Number(v); }, { class: 'select small' }),
+          select([{ id: '0.5', label: '0.5×' }, { id: '1', label: '1×' }, { id: '2', label: '2×' }], String(this.speed), (v) => { this.speed = Number(v); }, { class: 'select small', 'aria-label': 'Animation speed' }),
         ),
-        ref('scrub', h('input', { type: 'range', min: 0, max: 1000, value: 0, class: 'scrubber', onInput: (e) => { this.pause(); this.setT(Number(e.target.value) / 1000); this.animator.scrub?.(this.t); } })),
+        ref('scrub', h('input', { type: 'range', 'aria-label': 'Reaction progress', min: 0, max: 1000, value: 0, class: 'scrubber', onInput: (e) => { this.pause(); this.setT(Number(e.target.value) / 1000); this.animator.scrub?.(this.t); } })),
         ref('steps', h('ol', { class: 'steps' })),
         h('div', { class: 'row' }, h('label', {}, 'Animator'), ref('animSel', h('span', {}))),
       ),
@@ -83,6 +86,8 @@ export class MechanismPanel {
         h('button', { class: 'btn', onClick: () => this.viewport.fitTo(this.view.bounds()) }, 'Fit to molecules'),
       ),
     );
+    const sections = [...this.el.children];
+    this.inspector.append(sections[3], sections[1], sections[4], sections[6], sections[7]);
     this.energy = new EnergyDiagram(this.refs.energyWrap.querySelector('canvas'));
     this.energy.set(this.mech);
     this.renderAnimatorSelect();
@@ -99,11 +104,12 @@ export class MechanismPanel {
   renderAnimatorSelect() {
     if (!this.refs?.animSel) return;
     const list = listAnimators();
-    fill(this.refs.animSel, select(list.map((a) => ({ id: a.id, label: a.label })), this.animatorId, (id) => this.setAnimator(id), { class: 'select', title: list.find((a) => a.id === this.animatorId)?.description || '' }));
+    fill(this.refs.animSel, select(list.map((a) => ({ id: a.id, label: a.label })), this.animatorId, (id) => this.setAnimator(id), { class: 'select', 'aria-label': 'Animator', title: list.find((a) => a.id === this.animatorId)?.description || '' }));
   }
 
   renderHeader() {
     const m = this.mech;
+    document.getElementById('workspace-name').textContent = `${m.name} · ${m.fullName}`;
     fill(this.refs.header,
       h('div', { class: 'mech-title' }, h('b', {}, m.name), ' · ', m.fullName),
       h('div', { class: 'equation' }, m.equation),

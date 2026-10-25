@@ -13,6 +13,7 @@ export class ExplorerPanel {
     this.selected = null;          // selected invariant id
     this.opts = { lonePairs: true, hydrogens: true, labels: true, autoRotate: false, orbitals: true };
     this.el = h('div', { class: 'panel-inner explorer' });
+    this.inspector = h('div', { class: 'panel-inner study-guide' });
     this.render();
   }
 
@@ -36,11 +37,12 @@ export class ExplorerPanel {
   render() {
     const fg = this.fg;
     clear(this.el);
+    clear(this.inspector);
     this.el.append(
-      section('Functional group',
+      section('The collection',
         h('div', { class: 'chips' }, FUNCTIONAL_GROUP_ORDER.map((id) => {
           const g = FUNCTIONAL_GROUPS[id];
-          return h('button', { class: `chip ${id === this.fgId ? 'active' : ''}`, style: { '--fg': g.color }, onClick: () => this.setGroup(id) },
+          return h('button', { class: `chip ${id === this.fgId ? 'active' : ''}`, 'aria-pressed': String(id === this.fgId), style: { '--fg': g.color }, onClick: () => this.setGroup(id) },
             h('span', { class: 'chip-pattern' }, g.pattern), h('span', { class: 'chip-name' }, g.name));
         })),
       ),
@@ -75,6 +77,9 @@ export class ExplorerPanel {
     );
     this.refs = {};
     this.el.querySelectorAll('[ref]').forEach((n) => { this.refs[n.getAttribute('ref')] = n; });
+    const sections = [...this.el.children];
+    this.inspector.append(...sections.slice(2, -1));
+    this.el.append(sections.at(-1));
   }
 
   update(refit = false) {
@@ -83,13 +88,15 @@ export class ExplorerPanel {
     this.view.setFrame(frame);
     this.view.setArrows([]);
     this.applyHighlights();
-    if (refit) this.viewport.fitTo(this.view.bounds());
-    else this.viewport.fitTo(this.view.bounds(), 1.35, true);
+    if (refit) this.viewport.fitTo(this.view.bounds(), 1.05);
+    else this.viewport.fitTo(this.view.bounds(), 1.05, true);
 
     const m = mol.meta;
+    document.getElementById('workspace-name').textContent = m.name;
     fill(this.refs.mol,
-      h('div', { class: 'mol-name' }, m.name),
-      h('div', { class: 'mol-meta' }, h('span', { class: 'formula' }, m.formula), h('span', { class: 'pattern', style: { color: this.fg.color } }, this.fg.pattern)),
+      h('div', { class: 'mol-pattern' }, this.fg.pattern),
+      h('div', { class: 'mol-name' }, this.fg.name),
+      h('div', { class: 'mol-meta' }, h('span', { class: 'formula' }, m.formula), h('span', { class: 'pattern' }, m.name)),
       m.classification ? h('div', { class: 'mol-class' }, m.classification) : null,
     );
 

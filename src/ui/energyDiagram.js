@@ -18,18 +18,18 @@ export class EnergyDiagram {
     const X = (u) => padL + u * (W - padL - padR);
     const Y = (E) => padT + (1 - (E - minE) / (maxE - minE)) * (H - padT - padB);
 
-    ctx.strokeStyle = 'rgba(148,163,184,0.35)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(87,109,91,0.25)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.stroke();
-    ctx.fillStyle = 'rgba(148,163,184,0.8)'; ctx.font = '11px system-ui, sans-serif';
+    ctx.fillStyle = '#687366'; ctx.font = '11px system-ui, sans-serif';
     ctx.fillText('reaction coordinate →', W / 2 - 50, H - 10);
     ctx.save(); ctx.translate(11, H / 2 + 20); ctx.rotate(-Math.PI / 2); ctx.fillText('energy →', 0, 0); ctx.restore();
 
     // curve
     ctx.beginPath();
     for (let i = 0; i <= 240; i++) { const u = i / 240; const y = Y(this.mech.energyAt(u)); if (i === 0) ctx.moveTo(X(u), y); else ctx.lineTo(X(u), y); }
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = '#517760'; ctx.lineWidth = 2; ctx.stroke();
     ctx.lineTo(X(1), H - padB); ctx.lineTo(X(0), H - padB); ctx.closePath();
-    ctx.fillStyle = 'rgba(56,189,248,0.08)'; ctx.fill();
+    ctx.fillStyle = 'rgba(81,119,96,0.08)'; ctx.fill();
 
     // control-point labels
     ctx.font = '10px system-ui, sans-serif';
@@ -37,7 +37,7 @@ export class EnergyDiagram {
       if (!p.label) return;
       const isMax = (i > 0 && i < pts.length - 1 && p.E > pts[i - 1].E && p.E > pts[i + 1].E);
       const x = X(p.t), y = Y(p.E);
-      ctx.fillStyle = isMax ? '#fbbf24' : '#cbd5e1';
+      ctx.fillStyle = isMax ? '#9c743e' : '#687366';
       ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
       const w = ctx.measureText(p.label).width;
       ctx.fillText(p.label, Math.min(W - padR - w, Math.max(padL, x - w / 2)), isMax ? y - 7 : y + 14);
@@ -45,11 +45,11 @@ export class EnergyDiagram {
 
     // marker
     const mx = X(t), my = Y(this.mech.energyAt(t));
-    ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(251,191,36,0.5)';
+    ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(156,116,62,0.4)';
     ctx.beginPath(); ctx.moveTo(mx, padT); ctx.lineTo(mx, H - padB); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#0b1020'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = '#fde68a'; ctx.font = '11px system-ui, sans-serif';
+    ctx.fillStyle = '#9c743e'; ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fffefa'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#7f653f'; ctx.font = '11px system-ui, sans-serif';
     ctx.fillText(`${this.mech.energyAt(t).toFixed(0)} ${this.mech.energy.unit.split(' ')[0]}`, Math.min(W - 70, mx + 8), Math.max(padT + 10, my - 8));
   }
   dispose() { this.ro.disconnect(); }

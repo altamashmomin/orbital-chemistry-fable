@@ -76,9 +76,12 @@ export function createViewport(container) {
   }
 
   let camAnim = null;
+  const toVec = (p) => (Array.isArray(p) ? new THREE.Vector3(p[0], p[1], p[2]) : new THREE.Vector3().copy(p));
+  /** Fly the camera to `position` looking at `target` (arrays or Vector3s). */
   function moveCamera(position, target, durationMs = 600) {
     const p0 = camera.position.clone(), t0 = controls.target.clone();
-    const p1 = new THREE.Vector3().copy(position), t1 = new THREE.Vector3().copy(target);
+    const p1 = toVec(position), t1 = toVec(target || [0, 0, 0]);
+    if (![p1, t1].every((q) => Number.isFinite(q.x) && Number.isFinite(q.y) && Number.isFinite(q.z))) return Promise.resolve();
     if (durationMs <= 0) { camera.position.copy(p1); controls.target.copy(t1); return Promise.resolve(); }
     if (camAnim) tickers.delete(camAnim);
     return new Promise((resolve) => {

@@ -140,8 +140,8 @@ function prepare(canvas, fallbackW = 280, fallbackH = 220) {
 export function drawNewman(canvas, frame, frontId, backId, opts = {}) {
   const P = newmanProjection(frame, frontId, backId, opts);
   const { ctx, W, H, T, font } = prepare(canvas);
-  const cx = W / 2, cy = H / 2 - (opts.title === false ? 0 : 8);
-  const R = Math.min(W, H) * 0.24;
+  const cx = W / 2, cy = H / 2 - (opts.title === false ? 0 : 10);
+  const R = Math.min(W, H) * (opts.title === false ? 0.24 : 0.21);
   const reach = R * 1.75, labelAt = R * 2.05;
   const lab = (id, exclude) => groupLabel(frame, id, { exclude, labels: opts.labels || {} });
   // back carbon = the circle; back bonds start at its rim
@@ -166,7 +166,7 @@ export function drawNewman(canvas, frame, frontId, backId, opts = {}) {
   ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 2 * Math.PI); ctx.fillStyle = T.text; ctx.fill();
   if (opts.title !== false) {
     const title = opts.title ?? (P.conformation ? `${P.conformation}${P.minDihedral != null ? ` · ${Math.round(P.minDihedral)}°` : ''}` : '');
-    if (title) { ctx.fillStyle = T.muted; ctx.font = font(11); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(`${lab(frontId, backId).replace(/R.*$/, '')}–${lab(backId, frontId).replace(/R.*$/, '')} bond, front to back · ${title}`, cx, H - 8); }
+    if (title) { ctx.fillStyle = T.muted; ctx.font = font(11); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(`${lab(frontId, backId).replace(/R.*$/, '')}–${lab(backId, frontId).replace(/R.*$/, '')} bond, front to back · ${title}`, cx, H - 6); }
   }
   return P;
 }

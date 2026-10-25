@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orbital Chemistry · 3D functional groups & reaction mechanisms</title>
+    <meta name="description" content="Interactive 3D organic chemistry tutor: functional groups with swappable R groups, and step-by-step SN1, SN2, E1 and E2 mechanisms." />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="logo">⬡</span> Orbital Chemistry</div>
+      <nav class="tabs" id="tabs">
+        <button class="tab" data-mode="explorer">Functional groups</button>
+        <button class="tab" data-mode="mechanisms">Mechanisms</button>
+      </nav>
+      <a class="repo-link" id="repoLink" href="#" target="_blank" rel="noopener">GitHub</a>
+    </header>
+    <div class="app">
+      <aside id="panel" class="panel"></aside>
+      <main id="viewport" class="viewport">
+        <div class="viewport-hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -4,6 +4,9 @@ Orbital is a nexus: every chemistry topic (functional groups, mechanisms, transi
 atomic orbitals, HOMO/LUMO, redox, the uncertainty principle, …) is a self-contained module
 that plugs into one registry. A topic branch should only ever add a folder and two lines.
 
+Pick the next branch from [ROADMAP.md](ROADMAP.md); it says which core pieces each topic
+reuses and what must land on `main` first.
+
 ## 1. Copy the template
 
 ```

@@ -115,17 +115,15 @@ docs/                        adding a topic, animation API, ChatGPT handoff prom
 * The predictor's percentages are a **teaching heuristic** that reproduces the standard
   substrate × reagent decision table with solvent, temperature and leaving-group modifiers.
 
+## Roadmap
+
+The ordered branch pipeline, grouped by how much of the existing engine each topic reuses,
+is in [docs/ROADMAP.md](docs/ROADMAP.md).
+
 ## Adding a topic
 
 Copy `src/topics/_template/`, rename it, fill in the contract, add two lines to
 `src/topics/index.js`. Full guide: [docs/ADDING_A_TOPIC.md](docs/ADDING_A_TOPIC.md).
-
-## Roadmap
-
-* More mechanisms: electrophilic addition to alkenes, nucleophilic acyl substitution,
-  electrophilic aromatic substitution, carbocation rearrangements.
-* Newman-projection overlay for E2; stereodescriptor (R/S) computation from 3D.
-* Quiz mode: "which mechanism?" with the predictor as the answer key.
 
 ## License
 

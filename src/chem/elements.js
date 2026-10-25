@@ -14,6 +14,19 @@ export const ELEMENTS = {
   Br: { name: 'Bromine',    color: '#b45309', radius: 0.41, covalent: 1.20, en: 2.96, valence: 1 },
   I:  { name: 'Iodine',     color: '#a855f7', radius: 0.45, covalent: 1.39, en: 2.66, valence: 1 },
   P:  { name: 'Phosphorus', color: '#fb923c', radius: 0.38, covalent: 1.07, en: 2.19, valence: 3 },
+  // Transition metals for coordination complexes (Jmol/CPK colours, Cordero covalent radii, Pauling EN).
+  // M–L bond lengths fall back to covalent radii sums, e.g. Fe–N ≈ 2.03 Å, Pt–Cl ≈ 2.38 Å.
+  Ti: { name: 'Titanium',   color: '#9ca3af', radius: 0.46, covalent: 1.60, en: 1.54, valence: 4 },
+  V:  { name: 'Vanadium',   color: '#8b8f9a', radius: 0.45, covalent: 1.53, en: 1.63, valence: 5 },
+  Cr: { name: 'Chromium',   color: '#8a99c7', radius: 0.44, covalent: 1.39, en: 1.66, valence: 3 },
+  Mn: { name: 'Manganese',  color: '#9c7ac7', radius: 0.44, covalent: 1.39, en: 1.55, valence: 2 },
+  Fe: { name: 'Iron',       color: '#e06633', radius: 0.44, covalent: 1.32, en: 1.83, valence: 3 },
+  Co: { name: 'Cobalt',     color: '#f090a0', radius: 0.43, covalent: 1.26, en: 1.88, valence: 3 },
+  Ni: { name: 'Nickel',     color: '#50d050', radius: 0.43, covalent: 1.24, en: 1.91, valence: 2 },
+  Cu: { name: 'Copper',     color: '#c88033', radius: 0.43, covalent: 1.32, en: 1.90, valence: 2 },
+  Zn: { name: 'Zinc',       color: '#7d80b0', radius: 0.43, covalent: 1.22, en: 1.65, valence: 2 },
+  Pd: { name: 'Palladium',  color: '#4b8a9b', radius: 0.46, covalent: 1.39, en: 2.20, valence: 2 },
+  Pt: { name: 'Platinum',   color: '#b8bcd0', radius: 0.47, covalent: 1.36, en: 2.28, valence: 2 },
 };
 
 // Typical bond lengths in Å. Key: "A-B" single, "A=B" double, "A#B" triple, "A:B" aromatic.

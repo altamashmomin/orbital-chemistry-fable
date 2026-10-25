@@ -49,9 +49,13 @@ Requires Node 18+ and a browser with WebGL2.
 src/
   chem/                      pure JavaScript, no Three.js, runs in Node for tests
     elements.js              CPK colours, radii, electronegativity, bond-length table
-    geometry.js              vector math + VSEPR embedder (tetrahedral / trigonal / linear
-                             slots, staggered & planar torsions, rigid ring templates,
-                             pinned atoms for reaction frames, torsion relaxation)
+    geometry.js              vector math + VSEPR embedder (tetrahedral / trigonal / linear /
+                             octahedral / square-planar slots, staggered & planar torsions, rigid
+                             ring templates, pinned atoms for reaction frames, torsion relaxation,
+                             complexFrame() for MLₙ complexes)
+    orbitals.js              hydrogen-like orbitals (n ≤ 3) with phase, σ/π combinations, grid sampling
+    marchingCubes.js         watertight isosurface extraction (marching tetrahedra), mesh checks
+    references.md            sources for the chemistry encoded in the shared core
     rGroups.js               R-group fragments (benzene template included)
     functionalGroups.js      the 15 groups: core graph, attachment points, invariants with
                              3D visual specs, what varies with R, spectroscopy / tests
@@ -64,6 +68,7 @@ src/
     scene.js                 Three.js viewport, lights, OrbitControls, CSS2D labels
     moleculeView.js          ball-and-stick renderer: partial bonds, lone pairs, p orbitals,
                              charge labels, electron arrows, teaching highlights
+    orbitalView.js           phase-coloured |ψ| isosurfaces (orbitals, σ/π MOs) next to a frame
   anim/
     Animator.js              the animator contract (documented)
     DefaultAnimator.js       plain eased tween (baseline)
@@ -80,8 +85,10 @@ src/
     dom.js                   DOM helpers incl. aud() audience tagging
     level.js                 Refresher/Learn state
     energyDiagram.js         reaction-coordinate canvas
+    levelDiagram.js          energy-level diagram: columns, ↑↓ electrons, correlation lines, highlight
   main.js, style.css, index.html
-tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing, topics)
+tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing,
+                             topics, orbitals, marching cubes, coordination, level-diagram layout)
 docs/                        adding a topic, animation API, ChatGPT handoff prompt
 .github/workflows/ci.yml     npm test + npm run build on every push to main and every PR
 ```

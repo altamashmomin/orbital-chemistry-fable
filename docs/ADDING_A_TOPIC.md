@@ -182,6 +182,47 @@ ctx.view.setHighlights([{ type: 'angle', center: 'Co', a: 'N1', b: 'N3', text: '
 M–L lengths default to covalent-radius sums (Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Pd, Pt are in
 `elements.js`); pass `bondLength` or a per-ligand `length` for a specific compound.
 
+### Collection explorers: `src/ui/collectionExplorer.js`
+
+The functional-group panel is a `CollectionExplorer`: a left column of **chips → build controls →
+(footer)** and an inspector of **entity card → invariant cards → field guide**, with selection,
+deep links (`#<id>/<item>/<invariant>`) and the standard 3D wiring handled for you. Shapes,
+ligands, orbitals and complexes want the same panel, so describe the collection and let the
+explorer render it:
+
+```js
+import { CollectionExplorer } from '../../ui/collectionExplorer.js';
+import { h, select, section, aud } from '../../ui/dom.js';
+
+const shapes = {
+  id: 'shapes',                                             // hash head: #shapes/<item>/<invariant>
+  items: SHAPE_ORDER.map((id) => SHAPES[id]),               // chip order; each item has an id and a name
+  chips: (s) => ({ pattern: s.formula, name: s.name, color: s.color }),
+  initialState: (s) => ({ lonePairs: s.defaultLonePairs }),  // mutable per-item state (reset when the item changes)
+  build: (s, state) => ({ frame: shapeFrame(s, state), title: s.name }),   // `frame` → ctx.view, `title` → workspace heading
+  controls: (s, state, api) => [                            // the "Build" section; call api.update() after a change
+    h('div', { class: 'row' }, h('label', {}, 'Lone pairs'), select(s.lonePairOptions, state.lonePairs, (v) => { state.lonePairs = Number(v); api.update(); })),
+    aud(h('div', { class: 'hint' }, 'Learn-level hint.'), 'learn'),
+  ],
+  card: (s, state, built) => [h('div', { class: 'mol-pattern' }, s.formula), h('div', { class: 'mol-name' }, s.name)],
+  invariants: (s) => s.invariants,                          // [{ id, title, detail, links?, visuals?, audience? }]: cards with highlights, cross-links, audience tags
+  guide: (s, api) => [                                      // field-guide sections; api.live(fn) re-renders a block on every update
+    section('Angles', api.live((state, built) => h('p', {}, `${built.angle}°`))),
+  ],
+  titles: { build: 'Choose the electron domains', invariants: (s) => `Always true for ${s.name}` },
+};
+
+create: (ctx) => new CollectionExplorer(shapes, { view: ctx.view, viewport: ctx.viewport, navigate: ctx.navigate, level: ctx.level, footer: () => viewSection });
+```
+
+The explorer object is a complete panel (`el`, `inspector`, `activate`, `deactivate`, `setLevel`,
+`navigate`); wrap it in a class when you need your own `activate()` (view options, auto-rotate) as
+`src/topics/functional-groups/panel.js` does. Selecting an invariant applies its `visuals` through
+`view.setHighlights()` (override with `highlights(invariant, item, state, built)`), and `onChange(ctx)`
+fires after every update for anything else. `validateCollection()` lists definition mistakes;
+`tests/collectionExplorer.test.js` shows how to exercise a panel under `node --test` with the fake
+DOM in `tests/fakeDom.js`.
+
 ### Reaction families: `src/chem/mechanisms/families.js`
 
 The Reaction lab is a registry of **families** (Substitution & elimination today; Addition,

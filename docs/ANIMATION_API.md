@@ -111,7 +111,14 @@ to draw your own arrows.
 `plane {atoms}`, `charges {map}`, `label {id,text}`. See `VISUAL_TYPES` in
 `src/chem/functionalGroups.js` and the switch in `MoleculeView._rebuildHighlights`.
 
-## 3. Minimal custom animator
+## 3. Animators that ship
+
+| id | class | notes |
+| --- | --- | --- |
+| `cinematic` | `src/anim/CinematicAnimator.js` | default. Builds a timeline (`src/anim/pacing.js`) that eases between checkpoints, holds ~0.6 s at every energy maximum and at carbocation intermediates, animates electron flow along the step arrows, flashes forming bonds and puffs breaking ones, fades ghost species and guides the camera toward `frame.focus`. Reversible: scrubbing backwards undoes its decorations. |
+| `default` | `src/anim/DefaultAnimator.js` | plain eased tween of `t`; the baseline every new animator is measured against. |
+
+## 4. Minimal custom animator
 
 ```js
 import { Animator, easeInOutCubic } from './Animator.js';
@@ -135,7 +142,7 @@ export class BouncyAnimator extends Animator {
 }
 ```
 
-## 4. Rendering hooks you can decorate
+## 5. Rendering hooks you can decorate
 
 * `ctx.view.layers.arrows` is rebuilt on every `setT`; add your own objects to a sibling
   group (`ctx.viewport.root.add(myGroup)`) so they survive.

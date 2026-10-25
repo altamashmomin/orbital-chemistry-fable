@@ -9,17 +9,21 @@ An interactive 3D organic-chemistry tutor for students doing their own homework.
   **what the R group tunes** (degree, sterics, conjugation, boiling point…). Click an
   invariant and it is highlighted in 3D: bonds, angles, planes, lone pairs, p orbitals,
   dipoles and partial charges.
-* **Mechanism viewer.** SN2, SN1, E2 and E1 as continuous 3D animations you can play, step
+* **Reaction lab.** SN2, SN1, E2 and E1 as continuous 3D animations you can play, step
   through or scrub, with curved electron-pushing arrows, forming/breaking (dashed) bonds,
   charges, lone pairs, the planar carbocation with its empty p orbital, the anti-periplanar
   geometry of E2 and the Walden inversion of SN2, plus a live reaction-coordinate diagram.
+  The default **Cinematic** animator adds checkpoint holds at transition states, animated
+  electron flow, bond-change cues and a gently guided camera; the plain tween is still
+  available from the Animator dropdown.
 * **"Which mechanism will my reaction follow?"** Set substrate, nucleophile/base, solvent,
   temperature and leaving group from a homework problem; the predictor applies the standard
   decision table, shows the SN2 / SN1 / E2 / E1 tendencies, explains every factor and jumps
   to the matching animation.
-* **Pluggable animation layer.** All motion goes through an `Animator` interface so a richer,
-  cinematic animator can be dropped in without touching the chemistry
-  (see `docs/ANIMATION_API.md` and `docs/CHATGPT_ANIMATION_PROMPT.md`).
+* **Pluggable animation layer.** All motion goes through an `Animator` interface, so new
+  animators can be dropped in without touching the chemistry
+  (see `docs/ANIMATION_API.md`; `docs/CHATGPT_ANIMATION_PROMPT.md` is the brief the first
+  cinematic animator was built from and can be reused for a refinement pass).
 
 ## Run it
 
@@ -56,13 +60,15 @@ src/
   anim/
     Animator.js              the animator contract (documented)
     DefaultAnimator.js       plain eased tween (baseline)
+    CinematicAnimator.js     default: electron flow, holds at energy maxima, bond cues, camera
+    pacing.js                timeline builder shared by the cinematic animator and its tests
     index.js                 registry; window.OrbitalChemistry.registerAnimator()
   ui/
-    explorer.js              functional-group panel
-    mechanism.js             mechanism panel: transport, steps, narration, predictor
+    explorer.js              functional-group panel (controls left, field guide right)
+    mechanism.js             reaction-lab panel: transport, steps, narration, predictor
     energyDiagram.js         reaction-coordinate canvas
   main.js, style.css, index.html
-tests/                       node --test suites
+tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing)
 docs/                        animation API + ChatGPT handoff prompt
 ```
 
@@ -81,7 +87,6 @@ docs/                        animation API + ChatGPT handoff prompt
 
 ## Roadmap
 
-* Cinematic animator (camera choreography, animated electron flow) – see the ChatGPT prompt.
 * More mechanisms: electrophilic addition to alkenes, nucleophilic acyl substitution,
   electrophilic aromatic substitution, carbocation rearrangements.
 * Newman-projection overlay for E2; stereodescriptor (R/S) computation from 3D.

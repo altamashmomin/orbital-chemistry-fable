@@ -1,5 +1,10 @@
 # Prompt for ChatGPT: build the cinematic animation layer
 
+> Status: a first `CinematicAnimator` built from this brief now ships as the default
+> (`src/anim/CinematicAnimator.js`, `src/anim/pacing.js`, tests in `tests/cinematic.test.js`).
+> Reuse the prompt for a refinement pass by also attaching those files and saying what to
+> improve; the contract below is unchanged.
+
 Copy everything below the line into ChatGPT (GPT-4-class model with code ability). Attach or
 paste these files from the repo so it has the real interfaces in front of it:
 

@@ -23,6 +23,10 @@ An interactive 3D organic-chemistry tutor for students doing their own homework.
 * **Two depths.** A Refresher/Learn switch in the header: Refresher keeps the facts, tables and
   invariants for someone who has done this before; Learn adds narration, reasoning and hints
   for someone meeting the topic for the first time. Content opts in per item.
+* **Nexus glue.** A header search (`/`) over every topic, step, note and glossary term; a
+  glossary drawer with ~50 cross-cutting terms that deep-link into the topics; cross-links
+  inside the content (an alkyl halide's C–X card links to SN2, a carbonyl's δ+ card to LUMO);
+  shareable deep links such as `#functional-groups/alcohol/acid` and `#mechanisms/e2/ts`.
 * **Topic registry.** Every topic is a folder under `src/topics/` registered with one line;
   tabs, routing, header copy and the workspace come from the registry. New topics (transition
   metals, atomic orbitals, HOMO/LUMO, redox, …) arrive as `topic/<id>` branches; see
@@ -75,6 +79,10 @@ src/
     CinematicAnimator.js     default: electron flow, holds at energy maxima, bond cues, camera
     pacing.js                timeline builder shared by the cinematic animator and its tests
     index.js                 registry; window.OrbitalChemistry.registerAnimator()
+  nexus/
+    glossary.js              cross-cutting terms with deep links
+    search.js                index builder + ranking (dependency-free)
+    ui.js                    header search box and glossary drawer
   topics/
     registry.js              the topic contract, validation, directory, hash resolution
     index.js                 one import + one registerTopic line per topic
@@ -83,6 +91,7 @@ src/
     _template/               copy-me topic with a canvas workspace (not registered)
   ui/
     dom.js                   DOM helpers incl. aud() audience tagging
+  chem/audience.js           audience defaults per collection + audienceOf()/textOf()
     level.js                 Refresher/Learn state
     energyDiagram.js         reaction-coordinate canvas
     levelDiagram.js          energy-level diagram: columns, ↑↓ electrons, correlation lines, highlight

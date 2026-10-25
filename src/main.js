@@ -5,6 +5,7 @@ import { clear, h } from './ui/dom.js';
 import { LEVELS, getLevel, setLevel, onLevelChange } from './ui/level.js';
 import { TOPICS, registerTopic, resolveTopicId, topicById, onTopicsChanged, validateTopic } from './topics/index.js';
 import { registerAnimator, listAnimators, Animator } from './anim/index.js';
+import { mountNexus } from './nexus/ui.js';
 import { MECHANISMS } from './chem/mechanisms/index.js';
 import { FUNCTIONAL_GROUPS } from './chem/functionalGroups.js';
 import { R_GROUPS } from './chem/rGroups.js';
@@ -36,7 +37,7 @@ const panels = new Map();          // topic id -> panel instance (created on fir
 let current = null;
 
 function panelFor(topic) {
-  if (!panels.has(topic.id)) panels.set(topic.id, topic.create({ view, viewport, level: getLevel() }));
+  if (!panels.has(topic.id)) panels.set(topic.id, topic.create({ view, viewport, level: getLevel(), navigate: (path) => history.replaceState(null, '', `#${path}`) }));
   return panels.get(topic.id);
 }
 
@@ -59,9 +60,15 @@ function applyCopy(topic) {
   clear($('workspace-hint')).append(...(w.hints || []).flatMap((hint, i) => (i ? [h('span', {}, '·'), hint] : [hint])));
 }
 
+/** Split '#topic/sub/path' into { head, sub }. */
+const parseHash = (idOrHash) => { const raw = String(idOrHash || '').replace(/^#/, '').trim(); const i = raw.indexOf('/'); return i < 0 ? { head: raw, sub: '' } : { head: raw.slice(0, i), sub: raw.slice(i + 1) }; };
+
 export function setTopic(idOrHash) {
-  const topic = topicById(resolveTopicId(idOrHash));
-  if (!topic || topic.id === current) return;
+  const { head, sub } = parseHash(idOrHash);
+  if (head === 'glossary') { if (!current) setTopic(TOPICS[0]?.id); nexus.openGlossary(sub || undefined); return; }
+  const topic = topicById(resolveTopicId(head));
+  if (!topic) return;
+  if (topic.id === current) { if (sub) panelFor(topic).navigate?.(sub); history.replaceState(null, '', `#${topic.id}${sub ? `/${sub}` : ''}`); return; }
   if (current) {
     const prev = panelFor(topicById(current));
     prev.deactivate?.();
@@ -80,11 +87,12 @@ export function setTopic(idOrHash) {
   viewportElement.classList.toggle('custom', custom);
   customEl.hidden = !custom;
   renderTabs();
-  history.replaceState(null, '', `#${topic.id}`);
+  history.replaceState(null, '', `#${topic.id}${sub ? `/${sub}` : ''}`);
   view.clear();
   if (custom) panel.mountWorkspace?.(customEl);
   panel.activate?.();
   panel.setLevel?.(getLevel());
+  if (sub) panel.navigate?.(sub);
 }
 
 // ---------------------------------------------------------------- audience level
@@ -98,6 +106,9 @@ onLevelChange((level) => { renderLevelSwitch(); if (current) panelFor(topicById(
 setLevel(getLevel());
 renderLevelSwitch();
 
+// ---------------------------------------------------------------- nexus: search + glossary
+const nexus = mountNexus({ searchRoot: $('nexus'), drawerRoot: document.body, topics: TOPICS, navigate: (href) => setTopic(href), getLevel, onLevelChange, onTopicsChanged });
+
 // ---------------------------------------------------------------- boot
 onTopicsChanged(() => renderTabs());
 $('repoLink').href = REPO_URL;
@@ -106,8 +117,8 @@ setTopic(location.hash);
 
 // Public hook for custom topics/animators and for poking at the data from the console.
 window.OrbitalChemistry = {
-  version: '0.2.0',
-  topics: TOPICS, registerTopic, validateTopic, setTopic, panels, getLevel, setLevel,
+  version: '0.3.0',
+  topics: TOPICS, registerTopic, validateTopic, setTopic, panels, getLevel, setLevel, nexus,
   registerAnimator, listAnimators, Animator,
   mechanisms: MECHANISMS, functionalGroups: FUNCTIONAL_GROUPS, rGroups: R_GROUPS, makeMolecule,
   viewport, view,

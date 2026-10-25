@@ -4,12 +4,13 @@ import { h, clear, fill, select, toggle, section, aud } from '../../ui/dom.js';
 import { MECHANISMS, MECHANISM_ORDER, stepIndexAt, predict, SUBSTRATES, REAGENTS, SOLVENTS, TEMPERATURES, LEAVING_GROUPS } from '../../chem/mechanisms/index.js';
 import { listAnimators, createAnimator, onAnimatorsChanged } from '../../anim/index.js';
 import { EnergyDiagram } from '../../ui/energyDiagram.js';
+import { audienceOf, textOf, listAudience } from '../../chem/audience.js';
 
 const DWELL_MS = 1100;
 
 export class MechanismPanel {
-  constructor({ view, viewport, level = 'learn' }) {
-    this.view = view; this.viewport = viewport; this.level = level;
+  constructor({ view, viewport, level = 'learn', navigate = null }) {
+    this.view = view; this.viewport = viewport; this.level = level; this.nav = navigate;
     this.mechId = 'sn2';
     this.t = 0; this.stepIdx = -1; this.playing = false; this.speed = 1;
     this.animatorId = 'cinematic';
@@ -47,7 +48,7 @@ export class MechanismPanel {
     this.refs = {};
     const ref = (name, node) => { this.refs[name] = node; return node; };
     this.el.append(
-      h('div', { class: 'mech-tabs' }, MECHANISM_ORDER.map((id) => h('button', { class: `mtab ${id === this.mechId ? 'active' : ''}`, dataset: { id }, onClick: () => this.setMechanism(id) }, h('b', {}, MECHANISMS[id].name), h('small', {}, MECHANISMS[id].fullName)))),
+      h('div', { class: 'mech-tabs' }, MECHANISM_ORDER.map((id) => h('button', { class: `mtab ${id === this.mechId ? 'active' : ''}`, dataset: { id }, onClick: () => { this.setMechanism(id); this.nav?.(`mechanisms/${id}`); } }, h('b', {}, MECHANISMS[id].name), h('small', {}, MECHANISMS[id].fullName)))),
       ref('header', h('div', { class: 'card mech-header' })),
       section('Play the mechanism',
         h('div', { class: 'transport' },
@@ -122,6 +123,7 @@ export class MechanismPanel {
         h('dt', {}, 'Steps'), h('dd', {}, m.molecularity),
         h('dt', {}, 'Stereo'), h('dd', {}, m.stereochemistry),
       ),
+      m.related?.length ? h('div', { class: 'xlinks' }, h('span', { class: 'xlinks-label' }, 'Related'), m.related.map((l) => h('a', { class: 'xlink', href: l.href }, l.label))) : null,
     );
     this.el.querySelectorAll('.mtab').forEach((b) => b.classList.toggle('active', b.dataset.id === this.mechId));
   }
@@ -135,7 +137,7 @@ export class MechanismPanel {
     fill(this.refs.narration,
       h('div', { class: 'step-title' }, `Step view ${this.stepIdx + 1} of ${this.mech.steps.length}: ${s.title}`),
       h('p', {}, s.narration),
-      aud(h('ul', { class: 'keypoints' }, s.keyPoints.map((k) => h('li', {}, k))), 'learn'),
+      aud(h('ul', { class: 'keypoints' }, s.keyPoints.map((k) => aud(h('li', {}, textOf(k)), audienceOf(k, 'keyPoints')))), listAudience(s.keyPoints, 'keyPoints')),
       s.arrows?.length ? aud(h('div', { class: 'hint' }, 'Amber curved arrows show where each electron pair moves in this step (from a lone pair or bond, to an atom or a new bond).'), 'learn') : null,
     );
     this.refs.steps.querySelectorAll('li').forEach((li, i) => li.classList.toggle('active', i === this.stepIdx));
@@ -144,7 +146,7 @@ export class MechanismPanel {
   renderIdeas() {
     const m = this.mech;
     fill(this.refs.ideas,
-      aud(section('Key ideas', h('ul', { class: 'ideas' }, m.keyIdeas.map((k) => h('li', {}, k)))), 'learn'),
+      aud(section('Key ideas', h('ul', { class: 'ideas' }, m.keyIdeas.map((k) => aud(h('li', {}, textOf(k)), audienceOf(k, 'keyIdeas'))))), listAudience(m.keyIdeas, 'keyIdeas')),
       section('Conditions',
         h('div', { class: 'cond' }, h('b', {}, 'Favoured by'), h('ul', {}, m.conditions.favoredBy.map((x) => h('li', {}, x)))),
         h('div', { class: 'cond bad' }, h('b', {}, 'Disfavoured by'), h('ul', {}, m.conditions.disfavoredBy.map((x) => h('li', {}, x)))),
@@ -183,6 +185,14 @@ export class MechanismPanel {
     if (idx !== this.stepIdx || force) { this.stepIdx = idx; this.renderNarration(); }
     this.refs.scrub.value = Math.round(t * 1000);
     this.energy.draw(t);
+  }
+
+  /** Deep link: 'sn2' or 'sn2/ts' (mechanism id, optional step id). */
+  navigate(sub = '') {
+    const [mechId, stepId] = String(sub).split('/');
+    if (mechId && MECHANISMS[mechId] && mechId !== this.mechId) this.setMechanism(mechId);
+    const step = stepId && this.mech.steps.find((s) => s.id === stepId);
+    if (step) this.jump(step.t);
   }
 
   setMechanism(id) {

@@ -240,3 +240,46 @@ body[data-level='learn'] [data-audience='refresher'] { display: none !important;
   .repo-link { display: none; }
   .level-btn { padding: 4px 10px; font-size: 10px; }
 }
+
+/* Nexus: search, glossary drawer, cross-links. */
+.nexus { display: flex; align-items: center; gap: 8px; }
+.nexus-search { position: relative; }
+.nexus-input { width: 220px; padding: 7px 30px 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: #f3f6ef; font-size: 11px; color: var(--text); }
+.nexus-input:focus { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--panel); }
+.nexus-kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 10px/1 ui-monospace, monospace; color: var(--muted); border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 5px; pointer-events: none; }
+.nexus-results { position: absolute; top: calc(100% + 6px); left: 0; width: min(440px, 90vw); max-height: 60vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(45, 59, 50, 0.14); z-index: 25; padding: 6px; }
+.nexus-result { display: grid; grid-template-columns: 64px 1fr; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; }
+.nexus-result:hover, .nexus-result.active { background: #eef3ea; }
+.nexus-kind { align-self: start; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; text-align: center; }
+.nexus-kind.k-term { color: var(--accent); border-color: #cfdcc8; }
+.nexus-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nexus-text b { font-weight: 600; font-size: 12px; }
+.nexus-text small { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.nexus-empty { padding: 12px; color: var(--muted); font-size: 11px; }
+.nexus-glossary { padding: 7px 12px; font-size: 11px; border-radius: 999px; }
+.xlinks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.xlinks-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.xlink { display: inline-block; padding: 3px 9px; border: 1px solid #cfdcc8; border-radius: 999px; background: #f1f5ec; color: var(--accent); font-size: 10.5px; text-decoration: none; }
+.xlink:hover { background: #e4ece0; }
+.drawer-backdrop { position: fixed; inset: 0; background: rgba(45, 59, 50, 0.25); z-index: 40; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); z-index: 41; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 40px rgba(45, 59, 50, 0.16); display: flex; flex-direction: column; gap: 12px; padding: 20px 22px 28px; overflow: hidden; }
+.drawer-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.drawer-head h2 { margin: 4px 0 0; font-size: 22px; letter-spacing: -0.6px; font-weight: 600; }
+.drawer .nexus-input { width: 100%; }
+.terms { overflow-y: auto; min-height: 0; padding-right: 6px; display: flex; flex-direction: column; gap: 10px; }
+.term-letter { font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--line); }
+.term { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.term.hit { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(72, 114, 92, 0.15); }
+.term h3 { margin: 0 0 4px; font-size: 13px; font-weight: 650; }
+.term p { margin: 0; font-size: 12px; line-height: 1.5; }
+.term-why { margin-top: 6px !important; color: var(--muted); }
+body.drawer-open { overflow: hidden; }
+/* Author display rules above must not defeat the hidden attribute (drawer, results, custom workspace). */
+[hidden] { display: none !important; }
+@media (max-width: 1100px) { .repo-link { display: none; } .nexus-input { width: 160px; } }
+@media (max-width: 760px) {
+  .nexus { order: 4; width: 100%; }
+  .nexus-search { flex: 1; }
+  .nexus-input { width: 100%; }
+  .nexus-results { width: calc(100vw - 10%); }
+}

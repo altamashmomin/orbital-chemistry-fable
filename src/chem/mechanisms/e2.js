@@ -76,19 +76,20 @@ export const e2 = {
   keyIdeas: [
     'The base removes a β-hydrogen (on the carbon NEXT to the C–Br carbon) while the C–Br bond breaks and the C=C forms, all in one transition state.',
     'Anti-periplanar geometry is required: the C–H σ bond donates into the C–Br σ* orbital, and they only line up when anti.',
-    'Zaitsev′s rule: with small bases the more substituted (more stable) alkene is the major product. Bulky bases (tBuO⁻) give the less substituted Hofmann alkene.',
-    'Strong base is essential; a tertiary substrate with a strong base does E2 (not SN2, which is blocked).',
+    { text: 'Zaitsev′s rule: with small bases the more substituted (more stable) alkene is the major product. Bulky bases (tBuO⁻) give the less substituted Hofmann alkene.', audience: 'both' },
+    { text: 'Strong base is essential; a tertiary substrate with a strong base does E2 (not SN2, which is blocked).', audience: 'both' },
   ],
   conditions: {
     favoredBy: ['strong bases: HO⁻, RO⁻, NH₂⁻, tBuO⁻, LDA', 'tertiary > secondary > primary substrates (more substituted alkene = more stable TS)', 'heat', 'bulky bases (they cannot do SN2 but can grab an exposed H)', 'high base concentration'],
     disfavoredBy: ['weak bases', 'no β-hydrogen on the substrate (e.g. neopentyl halides, methyl halides)', 'no accessible anti-periplanar H (locked rings)'],
   },
   view: { position: [5, 5, 9.5], target: [0, 0, 0] },
+  related: [{ label: 'Alkyl halides', href: '#functional-groups/haloalkane' }, { label: 'Alkenes', href: '#functional-groups/alkene' }, { label: 'Anti-periplanar', href: '#glossary/anti-periplanar' }, { label: 'Zaitsev′s rule', href: '#glossary/zaitsev-rule' }],
   steps: [
     {
       id: 'anti', t: 0, cue: 'e2.antiPeriplanar', title: 'Anti-periplanar alignment',
       narration: 'Look at the H–C3–C2–Br dihedral: 180°. The β-H (on C3) and the bromine (on C2) lie in the same plane on opposite sides. Only in this conformation can the C–H electrons flow into the C–Br σ* orbital as the base pulls off the proton.',
-      keyPoints: ['Base must reach a β-hydrogen, not the α-hydrogen', 'The molecule rotates about the C2–C3 bond until an anti H is available', 'The methyl groups end up anti to each other → the E (trans) alkene'],
+      keyPoints: [{ text: 'Base must reach a β-hydrogen, not the α-hydrogen', audience: 'both' }, 'The molecule rotates about the C2–C3 bond until an anti H is available', 'The methyl groups end up anti to each other → the E (trans) alkene'],
       arrows: [
         { from: { type: 'lonePair', atom: 'B.O' }, to: { type: 'atom', atom: 'Hb' } },
         { from: { type: 'bond', a: 'C3', b: 'Hb' }, to: { type: 'bond', a: 'C2', b: 'C3' } },
@@ -99,14 +100,14 @@ export const e2 = {
     {
       id: 'ts', t: 0.5, cue: 'e2.transitionState', title: 'Concerted transition state (‡)',
       narration: 'O···H forming, C···H breaking, C···C turning into a double bond, C···Br breaking: four partial bonds in one transition state. Both carbons are flattening toward sp².',
-      keyPoints: ['One step → rate depends on BOTH base and substrate', 'The more alkene-like the TS, the more Zaitsev selectivity', 'Negative charge is spread over O and Br'],
+      keyPoints: [{ text: 'One step → rate depends on BOTH base and substrate', audience: 'both' }, 'The more alkene-like the TS, the more Zaitsev selectivity', 'Negative charge is spread over O and Br'],
       arrows: [],
       highlights: [{ type: 'charges', map: { 'B.O': 'δ−', Br: 'δ−' } }, { type: 'bond', a: 'C2', b: 'C3' }],
     },
     {
       id: 'alkene', t: 1, cue: 'e2.products', title: '(E)-but-2-ene + ethanol + bromide',
       narration: 'The new π bond is perpendicular to the plane where Br and H used to be. The two methyls are trans. The disubstituted but-2-ene forms faster than but-1-ene because its transition state is more stable (Zaitsev).',
-      keyPoints: ['Zaitsev: most substituted alkene is major (≈ 80 %)', 'E usually beats Z: the anti conformer with methyls anti is lower in energy', 'Bulky base (tBuO⁻) would shift the product to but-1-ene (Hofmann)'],
+      keyPoints: [{ text: 'Zaitsev: most substituted alkene is major (≈ 80 %)', audience: 'both' }, { text: 'E usually beats Z: the anti conformer with methyls anti is lower in energy', audience: 'both' }, 'Bulky base (tBuO⁻) would shift the product to but-1-ene (Hofmann)'],
       arrows: [],
       highlights: [{ type: 'bond', a: 'C2', b: 'C3' }, { type: 'plane', atoms: ['C2', 'C3', 'H2', 'MeA.C', 'H3', 'MeB.C'] }],
     },

@@ -11,14 +11,20 @@
 //     audiences: ['refresher', 'learn'],  // which depth levels the content supports
 //     workspace: { kind: '3d' | 'canvas', label, badge, hints: ['Drag to rotate', ...] },
 //     copy: { eyebrow, headline (may contain <em>), subtitle, note, noteSub },
-//     create: ({ view, viewport, level }) => panel,
+//     create: ({ view, viewport, level, navigate }) => panel,
+//     index?: () => searchEntries[],   // optional: entries for the global search (see src/nexus/search.js)
+//     glossary?: term[],               // optional: glossary terms this topic contributes (see src/nexus/glossary.js)
 //   }
-// and `panel` is { el, inspector?, activate(), deactivate(), setLevel?(level),
+// and `panel` is { el, inspector?, activate(), deactivate(), setLevel?(level), navigate?(subPath),
 //                  mountWorkspace?(container), unmountWorkspace?(container) }.
+// Deep links: '#<topic-id>/<sub/path>' opens the topic and calls panel.navigate('sub/path');
+// panels call ctx.navigate('<topic-id>/<sub>') to keep the hash in sync when the user moves.
 // kind '3d' topics draw into the shared MoleculeView; kind 'canvas' topics own the workspace
 // container (mountWorkspace) and may draw anything (2D canvas, SVG, text).
+import { AUDIENCES } from '../chem/audience.js';
+
 export const WORKSPACE_KINDS = ['3d', 'canvas'];
-export const AUDIENCES = ['refresher', 'learn'];
+export { AUDIENCES };
 
 const topics = [];
 const listeners = new Set();
@@ -34,6 +40,8 @@ export function validateTopic(t) {
   if (!t.workspace || !WORKSPACE_KINDS.includes(t.workspace.kind)) errors.push(`workspace.kind must be one of ${WORKSPACE_KINDS.join('/')}`);
   if (!t.copy || typeof t.copy.headline !== 'string') errors.push('copy.headline is required');
   if (t.aliases && !Array.isArray(t.aliases)) errors.push('aliases must be an array');
+  if (t.index !== undefined && typeof t.index !== 'function') errors.push('index must be a function returning search entries');
+  if (t.glossary !== undefined && !Array.isArray(t.glossary)) errors.push('glossary must be an array of terms');
   return errors;
 }
 

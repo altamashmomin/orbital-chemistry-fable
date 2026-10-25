@@ -40,7 +40,12 @@ That is the only shared file a topic branch touches, which keeps parallel branch
 ## 3. Tag content by audience
 
 Two depths exist: **Refresher** (an industry chemist checking a fact) and **Learn** (a
-freshman meeting it for the first time). Everything is visible to both unless tagged:
+freshman meeting it for the first time). Every collection has a default audience in
+`src/chem/audience.js` (`invariants`, `identify`, `conditions` → both; `varies`, `keyIdeas`,
+`keyPoints` → learn) and any item overrides it with `audience: 'both' | 'learn' | 'refresher'`;
+string lists accept `{ text, audience }` objects. Use `audienceOf(item, collection)` when
+rendering, and `listAudience(items, collection)` to hide a whole section only when every item is
+learn-only. In the UI, tag nodes directly:
 
 ```js
 import { aud } from '../../ui/dom.js';
@@ -53,14 +58,31 @@ Data items may carry `audience: 'learn' | 'refresher'` and the renderers forward
 definitions, invariants, tables, equations and tests are for both; narration, "why",
 worked reasoning and hints are `learn`.
 
-## 4. Keep it honest
+## 4. Deep links, search and the glossary
+
+* **Deep links.** The hash is `#<topic-id>/<sub/path>`. The shell opens the topic and calls
+  `panel.navigate(sub)`; implement it to select the entity (`'alcohol/acid'`, `'sn2/ts'`). Call
+  `ctx.navigate('<topic-id>/<sub>')` when the user changes entity so the URL stays shareable.
+  `#glossary/<term-id>` opens the glossary drawer on a term over the current topic.
+* **Cross-links.** Data items may carry `links: [{ label, href }]` (functional-group invariants
+  and mechanism `related` already do). Render them with `class="xlink"` anchors; any `#…` href
+  routes through the shell.
+* **Search.** Give the topic an `index()` returning entries
+  `{ kind: 'group' | 'mechanism' | 'step' | 'item', title, snippet, href, keywords?, audience? }`.
+  The header search (`/` to focus) merges every topic's entries with the glossary and filters by
+  the current depth. See `src/nexus/search.js`.
+* **Glossary.** Add general terms to `src/nexus/glossary.js`; add topic-specific ones as
+  `glossary: [{ id, term, definition, why?, links? }]` on the topic object so they ship with the
+  branch. `why` is learn-level.
+
+## 5. Keep it honest
 
 * Put sources in `src/topics/<id>/references.md` (textbook chapter, review, database).
 * Add a data test in `tests/` (see `tests/builder.test.js` for the pattern): every entry has
   the fields it needs, numbers are finite, nothing overlaps in 3D.
 * Mark anything illustrative (energies, percentages) as such in the UI text.
 
-## 5. Branch workflow
+## 6. Branch workflow
 
 * Branch from `main` as `topic/<id>`; rebase on `main` often.
 * Changes to the shared core (`src/chem/geometry.js`, `src/render/*`, `src/ui/*`,

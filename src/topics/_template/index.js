@@ -21,6 +21,9 @@ export const template = {
     noteSub: 'Three steps to a new topic.',
   },
   create: ({ level }) => new TemplatePanel(level),
+  // Optional: entries for the global search and terms for the glossary.
+  index: () => [{ kind: 'item', title: 'Standing wave', snippet: 'A wave confined between two walls: only whole numbers of half-wavelengths fit.', href: '#template-topic' }],
+  glossary: [{ id: 'standing-wave', term: 'Standing wave', definition: 'A wave pattern fixed in space, with nodes where the amplitude is always zero.', links: [{ label: 'Template topic', href: '#template-topic' }] }],
 };
 
 class TemplatePanel {

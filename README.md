@@ -20,6 +20,13 @@ An interactive 3D organic-chemistry tutor for students doing their own homework.
   temperature and leaving group from a homework problem; the predictor applies the standard
   decision table, shows the SN2 / SN1 / E2 / E1 tendencies, explains every factor and jumps
   to the matching animation.
+* **Two depths.** A Refresher/Learn switch in the header: Refresher keeps the facts, tables and
+  invariants for someone who has done this before; Learn adds narration, reasoning and hints
+  for someone meeting the topic for the first time. Content opts in per item.
+* **Topic registry.** Every topic is a folder under `src/topics/` registered with one line;
+  tabs, routing, header copy and the workspace come from the registry. New topics (transition
+  metals, atomic orbitals, HOMO/LUMO, redox, …) arrive as `topic/<id>` branches; see
+  `docs/ADDING_A_TOPIC.md`.
 * **Pluggable animation layer.** All motion goes through an `Animator` interface, so new
   animators can be dropped in without touching the chemistry
   (see `docs/ANIMATION_API.md`; `docs/CHATGPT_ANIMATION_PROMPT.md` is the brief the first
@@ -63,13 +70,20 @@ src/
     CinematicAnimator.js     default: electron flow, holds at energy maxima, bond cues, camera
     pacing.js                timeline builder shared by the cinematic animator and its tests
     index.js                 registry; window.OrbitalChemistry.registerAnimator()
+  topics/
+    registry.js              the topic contract, validation, directory, hash resolution
+    index.js                 one import + one registerTopic line per topic
+    functional-groups/       panel.js (controls + field guide), index.js (metadata), references.md
+    mechanisms/              panel.js (transport, steps, narration, predictor), index.js, references.md
+    _template/               copy-me topic with a canvas workspace (not registered)
   ui/
-    explorer.js              functional-group panel (controls left, field guide right)
-    mechanism.js             reaction-lab panel: transport, steps, narration, predictor
+    dom.js                   DOM helpers incl. aud() audience tagging
+    level.js                 Refresher/Learn state
     energyDiagram.js         reaction-coordinate canvas
   main.js, style.css, index.html
-tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing)
-docs/                        animation API + ChatGPT handoff prompt
+tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing, topics)
+docs/                        adding a topic, animation API, ChatGPT handoff prompt
+.github/workflows/ci.yml     npm test + npm run build on every push to main and every PR
 ```
 
 ### Modelling choices
@@ -84,6 +98,11 @@ docs/                        animation API + ChatGPT handoff prompt
   numbers are not measured values).
 * The predictor's percentages are a **teaching heuristic** that reproduces the standard
   substrate × reagent decision table with solvent, temperature and leaving-group modifiers.
+
+## Adding a topic
+
+Copy `src/topics/_template/`, rename it, fill in the contract, add two lines to
+`src/topics/index.js`. Full guide: [docs/ADDING_A_TOPIC.md](docs/ADDING_A_TOPIC.md).
 
 ## Roadmap
 

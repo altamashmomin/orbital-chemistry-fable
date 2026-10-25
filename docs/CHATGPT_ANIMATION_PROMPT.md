@@ -11,7 +11,7 @@ paste these files from the repo so it has the real interfaces in front of it:
 * `docs/ANIMATION_API.md`
 * `src/anim/Animator.js`, `src/anim/DefaultAnimator.js`, `src/anim/index.js`
 * `src/render/moleculeView.js`, `src/render/scene.js`
-* `src/ui/mechanism.js`
+* `src/topics/mechanisms/panel.js`
 * `src/chem/mechanisms/sn2.js` (one mechanism is enough to see the frame/step shape)
 
 ---
@@ -46,7 +46,7 @@ Create **`src/anim/CinematicAnimator.js`** (plus any helper modules under `src/a
 register it in `src/anim/index.js` with `static id = 'cinematic'` and
 `static label = 'Cinematic'`. Make it the default selection in the dropdown by registering it
 before `DefaultAnimator` or by setting `animatorId = 'cinematic'` in
-`src/ui/mechanism.js` (that one-line change in the UI is allowed).
+`src/topics/mechanisms/panel.js` (that one-line change in the UI is allowed).
 
 Required behaviour:
 

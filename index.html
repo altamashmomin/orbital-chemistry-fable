@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8f9f4" />
     <title>Orbital · Chemistry, in perspective.</title>
-    <meta name="description" content="Interactive 3D organic chemistry tutor: functional groups with swappable R groups, and step-by-step SN1, SN2, E1 and E2 mechanisms." />
+    <meta name="description" content="Orbital: an interactive chemistry nexus. Functional groups with swappable R groups, step-by-step SN1/SN2/E1/E2 mechanisms, and more topics as they land." />
   </head>
   <body>
     <a class="skip-link" href="#viewport">Skip to molecule workspace</a>
     <header class="topbar">
-      <a class="brand" href="#explorer" aria-label="Orbital home">
+      <a class="brand" href="#functional-groups" aria-label="Orbital home">
         <svg class="logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <ellipse cx="16" cy="16" rx="14" ry="6" transform="rotate(-55 16 16)" />
           <ellipse cx="16" cy="16" rx="14" ry="6" transform="rotate(55 16 16)" />
@@ -18,11 +18,11 @@
         </svg>
         orbital.
       </a>
-      <nav class="tabs" id="tabs" aria-label="Main navigation">
-        <button class="tab" data-mode="explorer">Functional groups</button>
-        <button class="tab" data-mode="mechanisms">Reaction lab <span class="beta">BETA</span></button>
-      </nav>
-      <a class="repo-link" id="repoLink" href="#" target="_blank" rel="noopener">View project <span aria-hidden="true">↗</span></a>
+      <nav class="tabs" id="tabs" aria-label="Topics"><!-- generated from src/topics/index.js --></nav>
+      <div class="topbar-right">
+        <div class="level-switch" id="levelSwitch" role="group" aria-label="Depth: refresher or learn"></div>
+        <a class="repo-link" id="repoLink" href="#" target="_blank" rel="noopener">View project <span aria-hidden="true">↗</span></a>
+      </div>
     </header>
     <section class="workspace-intro" aria-labelledby="page-title">
       <div>
@@ -30,20 +30,21 @@
         <h1 id="page-title">Get to know your <em>functional groups.</em></h1>
         <p id="page-subtitle">Turn the molecule. Change the R group. Find the chemistry that connects them.</p>
       </div>
-      <div class="intro-aside"><span class="intro-symbol" aria-hidden="true">⌬</span><div><b id="intro-note">Start with structure.</b><span>Build your chemical intuition.</span></div></div>
+      <div class="intro-aside"><span class="intro-symbol" aria-hidden="true">⌬</span><div><b id="intro-note">Start with structure.</b><span id="intro-note-sub">Build your chemical intuition.</span></div></div>
     </section>
     <div class="app">
       <aside id="panel" class="panel" aria-label="Explore and configure"></aside>
       <main id="viewport" class="viewport" tabindex="-1" aria-label="Interactive 3D workspace">
         <div class="viewport-heading">
           <div><span class="eyebrow" id="workspace-label">Molecule workspace</span><h2 id="workspace-name">Ethanol</h2></div>
-          <span class="live-badge"><i></i>3D interactive</span>
+          <span class="live-badge"><i></i><span id="workspace-badge">3D interactive</span></span>
         </div>
-        <div class="viewport-hint">Drag to rotate <span>·</span> Scroll to zoom <span>·</span> Right-drag to pan</div>
+        <div class="viewport-hint" id="workspace-hint">Drag to rotate <span>·</span> Scroll to zoom <span>·</span> Right-drag to pan</div>
+        <div id="workspace-custom" class="workspace-custom" hidden></div>
       </main>
       <aside id="inspector" class="panel inspector" aria-label="Chemistry field guide"></aside>
     </div>
-    <footer class="workspace-footer"><span><b>orbital.</b> A clearer view of organic chemistry.</span><span>Experimental UI <span aria-hidden="true">·</span> v0.1</span></footer>
+    <footer class="workspace-footer"><span><b>orbital.</b> A clearer view of chemistry.</span><span>Experimental UI <span aria-hidden="true">·</span> v0.1</span></footer>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

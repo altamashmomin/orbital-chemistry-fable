@@ -1,15 +1,15 @@
 // Mechanism viewer panel: SN2 / SN1 / E2 / E1 with stepper, scrubber, energy diagram,
 // environment predictor and pluggable animators.
-import { h, clear, fill, select, toggle, section } from './dom.js';
-import { MECHANISMS, MECHANISM_ORDER, stepIndexAt, predict, SUBSTRATES, REAGENTS, SOLVENTS, TEMPERATURES, LEAVING_GROUPS } from '../chem/mechanisms/index.js';
-import { listAnimators, createAnimator, onAnimatorsChanged } from '../anim/index.js';
-import { EnergyDiagram } from './energyDiagram.js';
+import { h, clear, fill, select, toggle, section, aud } from '../../ui/dom.js';
+import { MECHANISMS, MECHANISM_ORDER, stepIndexAt, predict, SUBSTRATES, REAGENTS, SOLVENTS, TEMPERATURES, LEAVING_GROUPS } from '../../chem/mechanisms/index.js';
+import { listAnimators, createAnimator, onAnimatorsChanged } from '../../anim/index.js';
+import { EnergyDiagram } from '../../ui/energyDiagram.js';
 
 const DWELL_MS = 1100;
 
 export class MechanismPanel {
-  constructor({ view, viewport }) {
-    this.view = view; this.viewport = viewport;
+  constructor({ view, viewport, level = 'learn' }) {
+    this.view = view; this.viewport = viewport; this.level = level;
     this.mechId = 'sn2';
     this.t = 0; this.stepIdx = -1; this.playing = false; this.speed = 1;
     this.animatorId = 'cinematic';
@@ -38,6 +38,7 @@ export class MechanismPanel {
     this.animator.onMechanismChange?.(this.mech);
   }
   deactivate() { this.pause(); }
+  setLevel(level) { this.level = level; }
 
   // ---------------------------------------------------------------- rendering
   render() {
@@ -64,7 +65,7 @@ export class MechanismPanel {
       ref('narration', h('div', { class: 'card narration' })),
       section('Energy profile', ref('energyWrap', h('div', { class: 'energy-wrap' }, h('canvas', { class: 'energy' })))),
       section('Which mechanism will my reaction follow?',
-        h('div', { class: 'hint' }, 'Set the conditions from your homework problem. The predictor applies the standard decision table and explains each factor.'),
+        aud(h('div', { class: 'hint' }, 'Set the conditions from your homework problem. The predictor applies the standard decision table and explains each factor.'), 'learn'),
         this.envRow('Substrate', SUBSTRATES, 'substrate'),
         this.envRow('Nucleophile / base', REAGENTS, 'reagent'),
         this.envRow('Solvent', SOLVENTS, 'solvent'),
@@ -134,8 +135,8 @@ export class MechanismPanel {
     fill(this.refs.narration,
       h('div', { class: 'step-title' }, `Step view ${this.stepIdx + 1} of ${this.mech.steps.length}: ${s.title}`),
       h('p', {}, s.narration),
-      h('ul', { class: 'keypoints' }, s.keyPoints.map((k) => h('li', {}, k))),
-      s.arrows?.length ? h('div', { class: 'hint' }, 'Amber curved arrows show where each electron pair moves in this step (from a lone pair or bond, to an atom or a new bond).') : null,
+      aud(h('ul', { class: 'keypoints' }, s.keyPoints.map((k) => h('li', {}, k))), 'learn'),
+      s.arrows?.length ? aud(h('div', { class: 'hint' }, 'Amber curved arrows show where each electron pair moves in this step (from a lone pair or bond, to an atom or a new bond).'), 'learn') : null,
     );
     this.refs.steps.querySelectorAll('li').forEach((li, i) => li.classList.toggle('active', i === this.stepIdx));
   }
@@ -143,11 +144,11 @@ export class MechanismPanel {
   renderIdeas() {
     const m = this.mech;
     fill(this.refs.ideas,
-      section('Key ideas', h('ul', { class: 'ideas' }, m.keyIdeas.map((k) => h('li', {}, k)))),
+      aud(section('Key ideas', h('ul', { class: 'ideas' }, m.keyIdeas.map((k) => h('li', {}, k)))), 'learn'),
       section('Conditions',
         h('div', { class: 'cond' }, h('b', {}, 'Favoured by'), h('ul', {}, m.conditions.favoredBy.map((x) => h('li', {}, x)))),
         h('div', { class: 'cond bad' }, h('b', {}, 'Disfavoured by'), h('ul', {}, m.conditions.disfavoredBy.map((x) => h('li', {}, x)))),
-        m.solventNote ? h('div', { class: 'hint' }, `Solvent: ${m.solventNote}.`) : null,
+        m.solventNote ? aud(h('div', { class: 'hint' }, `Solvent: ${m.solventNote}.`), 'learn') : null,
       ),
     );
   }
@@ -161,8 +162,8 @@ export class MechanismPanel {
       p.pct.none ? bar('none', 'no rxn', p.pct.none, '#64748b') : null,
       p.dominant !== 'none' ? h('button', { class: 'btn primary', onClick: () => { this.setMechanism(p.dominant); this.play(); } }, `Watch ${p.dominant.toUpperCase()}`) : null,
       p.warnings.length ? h('div', { class: 'warn' }, p.warnings.map((w) => h('div', {}, '⚠ ', w))) : null,
-      h('details', { open: true }, h('summary', {}, 'Why?'), h('ul', { class: 'reasons' }, p.reasons.map((r) => h('li', {}, r)))),
-      h('div', { class: 'hint' }, 'Percentages are a teaching heuristic, not measured yields: they rank tendencies the way a textbook decision table does.'),
+      aud(h('details', { open: true }, h('summary', {}, 'Why?'), h('ul', { class: 'reasons' }, p.reasons.map((r) => h('li', {}, r)))), 'learn'),
+      aud(h('div', { class: 'hint' }, 'Percentages are a teaching heuristic, not measured yields: they rank tendencies the way a textbook decision table does.'), 'learn'),
     );
   }
 

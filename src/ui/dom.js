@@ -34,4 +34,6 @@ export function toggle(label, checked, onChange) {
   input.checked = !!checked;
   return h('label', { class: 'toggle' }, input, h('span', {}, label));
 }
+/** Tag a node for one audience level ('refresher' | 'learn'); 'both'/undefined leaves it visible everywhere. */
+export const aud = (node, audience) => { if (node && audience && audience !== 'both') node.dataset.audience = audience; return node; };
 export const section = (title, ...children) => h('section', { class: 'sec' }, title ? h('h3', { class: 'sec-title' }, title) : null, ...children);

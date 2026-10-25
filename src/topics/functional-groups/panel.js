@@ -1,13 +1,13 @@
 // Functional-group explorer panel.
-import { h, clear, fill, select, toggle, section } from './dom.js';
-import { FUNCTIONAL_GROUPS, FUNCTIONAL_GROUP_ORDER } from '../chem/functionalGroups.js';
-import { R_GROUPS, R_GROUP_ORDER } from '../chem/rGroups.js';
-import { makeMolecule, defaultChoice } from '../chem/builder.js';
-import { ELEMENTS } from '../chem/elements.js';
+import { h, clear, fill, select, toggle, section, aud } from '../../ui/dom.js';
+import { FUNCTIONAL_GROUPS, FUNCTIONAL_GROUP_ORDER } from '../../chem/functionalGroups.js';
+import { R_GROUPS, R_GROUP_ORDER } from '../../chem/rGroups.js';
+import { makeMolecule, defaultChoice } from '../../chem/builder.js';
+import { ELEMENTS } from '../../chem/elements.js';
 
 export class ExplorerPanel {
-  constructor({ view, viewport }) {
-    this.view = view; this.viewport = viewport;
+  constructor({ view, viewport, level = 'learn' }) {
+    this.view = view; this.viewport = viewport; this.level = level;
     this.fgId = 'alcohol';
     this.choice = defaultChoice(FUNCTIONAL_GROUPS[this.fgId]);
     this.selected = null;          // selected invariant id
@@ -23,6 +23,7 @@ export class ExplorerPanel {
     this.update(true);
   }
   deactivate() { this.viewport.setAutoRotate(false); }
+  setLevel(level) { this.level = level; }
 
   get fg() { return FUNCTIONAL_GROUPS[this.fgId]; }
 
@@ -52,16 +53,16 @@ export class ExplorerPanel {
           h('label', {}, att.label),
           select(R_GROUP_ORDER.map((id) => ({ id, label: `${R_GROUPS[id].label}  (${R_GROUPS[id].name})` })), this.choice.R[att.id], (v) => { this.choice.R[att.id] = v; this.update(); }),
         )),
-        h('div', { class: 'hint' }, 'Swap R groups and watch which properties stay fixed. The highlighted cards below are true for every member of the class.'),
+        aud(h('div', { class: 'hint' }, 'Swap R groups and watch which properties stay fixed. The highlighted cards below are true for every member of the class.'), 'learn'),
       ),
       h('div', { class: 'card molecule-card', ref: 'mol' }),
       section(`Always true for every ${fg.name.toLowerCase()}`,
         h('div', { class: 'invariants', ref: 'inv' })),
-      section('What the R group changes',
-        h('ul', { class: 'varies' }, fg.varies.map((x) => h('li', {}, h('details', {}, h('summary', {}, x.title), h('p', {}, x.detail)))))),
+      aud(section('What the R group changes',
+        h('ul', { class: 'varies' }, fg.varies.map((x) => aud(h('li', {}, h('details', {}, h('summary', {}, x.title), h('p', {}, x.detail))), x.audience)))), 'learn'),
       section('How to recognise it (spectroscopy & tests)',
-        h('ul', { class: 'identify' }, fg.identify.map((x) => h('li', {}, x)))),
-      section('About the current R groups', h('div', { class: 'rnotes', ref: 'rnotes' })),
+        h('ul', { class: 'identify' }, fg.identify.map((x) => aud(h('li', {}, typeof x === 'string' ? x : x.text), typeof x === 'string' ? null : x.audience)))),
+      aud(section('About the current R groups', h('div', { class: 'rnotes', ref: 'rnotes' })), 'learn'),
       section('View',
         h('div', { class: 'toggles' },
           toggle('Lone pairs', this.opts.lonePairs, (v) => { this.opts.lonePairs = v; this.view.setOptions({ lonePairs: v }); }),
@@ -100,10 +101,10 @@ export class ExplorerPanel {
       m.classification ? h('div', { class: 'mol-class' }, m.classification) : null,
     );
 
-    fill(this.refs.inv, this.fg.invariants.map((inv) => h('button', {
+    fill(this.refs.inv, this.fg.invariants.map((inv) => aud(h('button', {
       class: `invariant ${this.selected === inv.id ? 'active' : ''}`, style: { '--fg': this.fg.color },
       onClick: () => { this.selected = this.selected === inv.id ? null : inv.id; this.update(); },
-    }, h('div', { class: 'inv-title' }, inv.title), this.selected === inv.id ? h('p', { class: 'inv-detail' }, inv.detail) : null)));
+    }, h('div', { class: 'inv-title' }, inv.title), this.selected === inv.id ? h('p', { class: 'inv-detail' }, inv.detail) : null), inv.audience)));
 
     fill(this.refs.rnotes, this.fg.attachments.map((att) => {
       const rg = R_GROUPS[this.choice.R[att.id]];

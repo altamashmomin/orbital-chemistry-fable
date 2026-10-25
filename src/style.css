@@ -219,3 +219,23 @@ details summary { cursor: pointer; font-size: 11px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* Depth switch: Refresher shows the facts, Learn adds the reasoning (see src/ui/level.js). */
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.level-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: #f3f6ef; }
+.level-btn { border: 0; background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 550; color: var(--muted); }
+.level-btn:hover { color: var(--text); }
+.level-btn.active { background: var(--panel); color: var(--accent); box-shadow: 0 1px 2px rgba(45, 59, 50, 0.14); }
+body[data-level='refresher'] [data-audience='learn'] { display: none !important; }
+body[data-level='learn'] [data-audience='refresher'] { display: none !important; }
+
+/* Topics with a 'canvas' workspace own this layer instead of the 3D view. */
+.workspace-custom { position: absolute; inset: 0; }
+.workspace-custom .workspace-canvas { display: block; width: 100%; height: 100%; }
+.viewport.custom .gl-canvas, .viewport.custom .label-layer { display: none; }
+@media (max-width: 760px) {
+  /* Phones: row 1 = brand + depth switch, row 2 = tabs (Codex's wrap rule above). */
+  .topbar-right { margin-left: auto; gap: 8px; }
+  .repo-link { display: none; }
+  .level-btn { padding: 4px 10px; font-size: 10px; }
+}

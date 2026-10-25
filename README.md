@@ -100,6 +100,7 @@ src/
   chem/audience.js           audience defaults per collection + audienceOf()/textOf()
     level.js                 Refresher/Learn state
     energyDiagram.js         reaction-coordinate canvas
+    overlays.js              Newman projection and wedge/dash sketch computed from 3D frames
     levelDiagram.js          energy-level diagram: columns, ↑↓ electrons, correlation lines, highlight
   main.js, style.css, index.html
 tests/                       node --test suites (geometry, builder, mechanisms, predictor, cinematic pacing,

@@ -4,6 +4,8 @@
 // This example uses a 'canvas' workspace (a 2D standing wave) to show how non-molecular topics
 // (uncertainty principle, redox potentials, MO diagrams) own the workspace area.
 import { h, clear, section, aud } from '../../ui/dom.js';
+import { drawNewman, drawWedgeDash } from '../../ui/overlays.js';
+import { makeMolecule } from '../../chem/builder.js';
 
 export const template = {
   id: 'template-topic',
@@ -37,13 +39,24 @@ class TemplatePanel {
         aud(h('div', { class: 'hint' }, 'Learn-level hint: explain what the control does and why it matters.'), 'learn'),
       ),
     );
+    // Demo of the 2D overlays (src/ui/overlays.js): a Newman projection and a wedge/dash sketch
+    // drawn from the same 3D frame the molecule workspace would show.
+    this.newman = h('canvas', { class: 'overlay-canvas', 'aria-label': 'Newman projection of ethanol down the C–C bond' });
+    this.sketch = h('canvas', { class: 'overlay-canvas', 'aria-label': 'Wedge/dash sketch of ethanol' });
     this.inspector = h('div', { class: 'panel-inner study-guide' },
       section('Always true',
         h('ul', { class: 'identify' }, h('li', {}, 'Refresher fact: a standing wave has n − 1 interior nodes.'))),
       aud(section('Why it works', h('p', {}, 'Learn-only reasoning goes here: boundary conditions force sin(nπx/L).')), 'learn'),
+      section('2D overlays (demo)', this.newman, this.sketch,
+        aud(h('div', { class: 'hint' }, 'drawNewman() looks down one bond; drawWedgeDash() lays the heavy-atom skeleton in the page and marks bonds toward (wedge) and away (dash) from you. Both read the 3D frame, so they stay in step with the model.'), 'learn')),
     );
   }
-  activate() {}
+  activate() { this.drawOverlays(); }
+  drawOverlays() {
+    const { frame } = makeMolecule('alcohol', { R: { R1: 'ethyl' } });   // ethanol: R1.C1 (carbinol carbon) – R1.C2 (methyl)
+    drawNewman(this.newman, frame, 'R1.C1', 'R1.C2', { labels: { O: 'OH' } });
+    drawWedgeDash(this.sketch, frame);
+  }
   deactivate() {}
   setLevel(level) { this.level = level; }
   mountWorkspace(container) {

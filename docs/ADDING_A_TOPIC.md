@@ -302,6 +302,32 @@ a `Map` of positions, a `{ id: vec3 }` object or a whole render frame (positions
 p-orbital directions) through a plane, inverting every stereocentre: the enantiomer of a frame is
 one call.
 
+### 2D overlays: `src/ui/overlays.js`
+
+Textbook sketches computed from the 3D frame, so they never disagree with the model. The
+projection math is pure and node-tested; the two `draw*` functions paint on a `<canvas>` in the
+sage theme (colours come from the CSS custom properties, so a theme change follows automatically).
+
+```js
+import { drawNewman, drawWedgeDash, newmanProjection, wedgeDashProjection } from '../../ui/overlays.js';
+
+const canvas = h('canvas', { class: 'overlay-canvas' });        // sized by CSS; DPR handled for you
+drawNewman(canvas, frame, 'C2', 'C3', { labels: { C1: 'CH₃' } });   // look down C2 → C3; title = "staggered · 60°"
+drawWedgeDash(canvas, frame);                                   // skeleton flat in the page, H's wedged/dashed
+drawWedgeDash(canvas, frame, { viewAxis: [0, 1, 0], up: [0, 0, 1], hydrogens: false, labelCarbons: true });
+
+const P = newmanProjection(frame, 'C2', 'C3');   // { substituents: { front: [{ id, angle, r }], back }, dihedrals: [{ front, back, angle }], conformation }
+P.dihedrals.find((d) => d.front === 'C1' && d.back === 'C4').angle;   // the C–C–C–C torsion, signed, in (−180, 180]
+const S = wedgeDashProjection(frame);            // { atoms: [{ id, el, x, y, depth }], bonds: [{ a, b, kind: 'plain' | 'wedge' | 'dash', from, to }] }
+```
+
+Conventions: the viewer looks from the front atom toward the back one (Newman) or along
+`viewAxis`, which points from the molecule **toward the viewer** (wedge/dash; default: the normal
+of the heavy-atom principal plane, so the skeleton lies flat). Wedges and dashes have their narrow
+end at the atom nearer the drawing plane. `groupLabel(frame, id, { exclude })` gives CH₃ / CH₂R /
+OH / NH₂-style labels; pass `labels: { id: text }` to override. The `_template` topic's field guide
+has a live demo of both.
+
 ### Energy-level diagrams: `src/ui/levelDiagram.js`
 
 A canvas diagram of horizontal levels grouped in columns, with ↑↓ electron arrows, dashed

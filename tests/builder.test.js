@@ -22,6 +22,11 @@ function checkFrame(frame, label) {
 
 test('every functional group builds and embeds with default R groups', () => {
   for (const id of FUNCTIONAL_GROUP_ORDER) {
+    const fg = FUNCTIONAL_GROUPS[id];
+    assert.equal(typeof fg.name, 'string', `${id}: display name is a string`);
+    assert.equal(typeof fg.nameFor, 'function', `${id}: nameFor is a function`);
+    assert.ok(fg.invariants.length >= 4 && fg.varies.length >= 2 && fg.identify.length >= 2, `${id}: has teaching content`);
+    for (const inv of fg.invariants) assert.ok(Array.isArray(inv.visuals) && inv.visuals.length, `${id}/${inv.id}: has visuals`);
     const mol = buildMolecule(id);
     assert.ok(mol.meta.name, `${id} has a name`);
     assert.ok(mol.meta.formula, `${id} has a formula`);

@@ -75,7 +75,7 @@ export function buildMolecule(fgId, choice = {}) {
 
   const rIds = fg.attachments.map((att) => R[att.id]);
   const rNames = rIds.map((id) => R_GROUPS[id].name);
-  let name = fg.name ? fg.name(rIds, variantId) : undefined;
+  let name = fg.nameFor ? fg.nameFor(rIds, variantId) : undefined;
   if (!name) {
     const parts = rIds.filter((id) => id !== 'H').map((id) => R_GROUPS[id].name);
     name = `${parts.join(' ') || 'parent'} ${fg.fallbackNoun}`;

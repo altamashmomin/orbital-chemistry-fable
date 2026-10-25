@@ -10,7 +10,7 @@ import { FUNCTIONAL_GROUPS } from './chem/functionalGroups.js';
 import { R_GROUPS } from './chem/rGroups.js';
 import { makeMolecule } from './chem/builder.js';
 
-export const REPO_URL = 'https://github.com/altamashmomin/orbital-chemistry';
+export const REPO_URL = 'https://github.com/altamashmomin/orbital-chemistry-fable';
 
 const viewport = createViewport(document.getElementById('viewport'));
 const view = new MoleculeView(viewport);

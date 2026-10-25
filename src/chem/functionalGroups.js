@@ -17,7 +17,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'O', el: 'O', lonePairs: 2 }, { id: 'H', el: 'H' }], bonds: [bond('O', 'H')] },
     attachments: [{ id: 'R1', atom: 'O', default: 'ethyl', label: 'R' }],
     fallbackNoun: 'alcohol',
-    name: (r) => ({ H: 'water (the parent: H–OH)', methyl: 'methanol', ethyl: 'ethanol', isopropyl: 'propan-2-ol (isopropyl alcohol)', tBu: '2-methylpropan-2-ol (tert-butanol)', phenyl: 'phenol', benzyl: 'benzyl alcohol', vinyl: 'ethenol (vinyl alcohol: an enol, tautomerises to acetaldehyde)', allyl: 'prop-2-en-1-ol (allyl alcohol)', CF3: 'trifluoromethanol (unstable: loses HF)' }[r[0]]),
+    nameFor: (r) => ({ H: 'water (the parent: H–OH)', methyl: 'methanol', ethyl: 'ethanol', isopropyl: 'propan-2-ol (isopropyl alcohol)', tBu: '2-methylpropan-2-ol (tert-butanol)', phenyl: 'phenol', benzyl: 'benzyl alcohol', vinyl: 'ethenol (vinyl alcohol: an enol, tautomerises to acetaldehyde)', allyl: 'prop-2-en-1-ol (allyl alcohol)', CF3: 'trifluoromethanol (unstable: loses HF)' }[r[0]]),
     classify: ({ attach }) => degreeLabel(attach.R1, { aromatic: 'aryl alcohol = a PHENOL (pKa ≈ 10, not 16): its own class', sp2: 'enol (vinyl alcohol): tautomerises to the carbonyl', H: 'water' }),
     invariants: [
       { id: 'oh', title: 'An O–H bond on an sp³ oxygen', detail: 'The defining feature. The oxygen is sp³ and bent: the C–O–H angle is always about 104–109°, never linear or planar.', visuals: [{ type: 'bond', a: 'O', b: 'H' }, { type: 'angle', center: 'O', a: 'R1', b: 'H', text: '≈ 105–109°' }] },
@@ -42,7 +42,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'O', el: 'O', lonePairs: 2 }], bonds: [] },
     attachments: [{ id: 'R1', atom: 'O', default: 'ethyl', label: 'R' }, { id: 'R2', atom: 'O', default: 'ethyl', label: 'R′' }],
     symmetric: true, fallbackNoun: 'ether',
-    name: (r) => ({ 'ethyl|ethyl': 'diethyl ether', 'methyl|methyl': 'dimethyl ether', 'ethyl|methyl': 'ethyl methyl ether (methoxyethane)', 'methyl|phenyl': 'anisole (methoxybenzene)', 'methyl|tBu': 'MTBE (methyl tert-butyl ether)', 'phenyl|phenyl': 'diphenyl ether', 'H|methyl': 'methanol (one R = H makes it an alcohol!)', 'H|H': 'water' }[r.slice().sort().join('|')]),
+    nameFor: (r) => ({ 'ethyl|ethyl': 'diethyl ether', 'methyl|methyl': 'dimethyl ether', 'ethyl|methyl': 'ethyl methyl ether (methoxyethane)', 'methyl|phenyl': 'anisole (methoxybenzene)', 'methyl|tBu': 'MTBE (methyl tert-butyl ether)', 'phenyl|phenyl': 'diphenyl ether', 'H|methyl': 'methanol (one R = H makes it an alcohol!)', 'H|H': 'water' }[r.slice().sort().join('|')]),
     classify: ({ R }) => (R.R1 === 'H' || R.R2 === 'H' ? 'With an H on oxygen this is an alcohol, not an ether.' : R.R1 === R.R2 ? 'symmetrical ether (small net dipole)' : 'unsymmetrical ether'),
     invariants: [
       { id: 'bent', title: 'C–O–C is bent, oxygen is sp³', detail: 'The angle is about 110–112°, so ethers are never linear and always have a net dipole (unless the two R groups are identical and the conformation cancels it).', visuals: [{ type: 'angle', center: 'O', a: 'R1', b: 'R2', text: '≈ 110°' }] },
@@ -65,7 +65,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'C', el: 'C', hyb: 'sp2' }, sp2O('O'), { id: 'H', el: 'H' }], bonds: [bond('C', 'O', 2), bond('C', 'H')] },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R' }],
     fallbackNoun: 'aldehyde',
-    name: (r) => ({ H: 'methanal (formaldehyde)', methyl: 'ethanal (acetaldehyde)', ethyl: 'propanal', isopropyl: '2-methylpropanal', tBu: '2,2-dimethylpropanal (pivaldehyde)', phenyl: 'benzaldehyde', benzyl: 'phenylacetaldehyde', vinyl: 'propenal (acrolein)', allyl: 'but-3-enal', CF3: 'trifluoroacetaldehyde (fluoral)' }[r[0]]),
+    nameFor: (r) => ({ H: 'methanal (formaldehyde)', methyl: 'ethanal (acetaldehyde)', ethyl: 'propanal', isopropyl: '2-methylpropanal', tBu: '2,2-dimethylpropanal (pivaldehyde)', phenyl: 'benzaldehyde', benzyl: 'phenylacetaldehyde', vinyl: 'propenal (acrolein)', allyl: 'but-3-enal', CF3: 'trifluoroacetaldehyde (fluoral)' }[r[0]]),
     classify: ({ attach }) => (attach.R1.el === 'H' ? 'formaldehyde: both substituents are H (most reactive aldehyde)' : attach.R1.aromatic ? 'aromatic aldehyde (conjugated, no α-H, does Cannizzaro)' : 'aliphatic aldehyde'),
     invariants: [
       { id: 'co', title: 'C=O double bond, trigonal planar carbon', detail: 'The carbonyl carbon is sp² with 120° angles; C, O, H and the R attachment atom all lie in one plane. The bond is short (1.21 Å) and strong, but its π bond is polarised and easy to attack.', visuals: [{ type: 'bond', a: 'C', b: 'O' }, { type: 'plane', atoms: ['C', 'O', 'H', 'R1'] }] },
@@ -89,7 +89,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'C', el: 'C', hyb: 'sp2' }, sp2O('O')], bonds: [bond('C', 'O', 2)] },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R' }, { id: 'R2', atom: 'C', default: 'methyl', label: 'R′' }],
     symmetric: true, fallbackNoun: 'ketone',
-    name: (r) => ({ 'methyl|methyl': 'propanone (acetone)', 'ethyl|methyl': 'butanone (MEK)', 'ethyl|ethyl': 'pentan-3-one', 'methyl|phenyl': 'acetophenone', 'phenyl|phenyl': 'benzophenone', 'isopropyl|methyl': '3-methylbutan-2-one', 'methyl|tBu': '3,3-dimethylbutan-2-one (pinacolone)', 'methyl|vinyl': 'but-3-en-2-one (methyl vinyl ketone)', 'CF3|methyl': '1,1,1-trifluoroacetone' }[r.slice().sort().join('|')]),
+    nameFor: (r) => ({ 'methyl|methyl': 'propanone (acetone)', 'ethyl|methyl': 'butanone (MEK)', 'ethyl|ethyl': 'pentan-3-one', 'methyl|phenyl': 'acetophenone', 'phenyl|phenyl': 'benzophenone', 'isopropyl|methyl': '3-methylbutan-2-one', 'methyl|tBu': '3,3-dimethylbutan-2-one (pinacolone)', 'methyl|vinyl': 'but-3-en-2-one (methyl vinyl ketone)', 'CF3|methyl': '1,1,1-trifluoroacetone' }[r.slice().sort().join('|')]),
     classify: ({ R }) => (R.R1 === 'H' || R.R2 === 'H' ? 'With an H on the carbonyl carbon this is an ALDEHYDE, not a ketone.' : R.R1 === R.R2 ? 'symmetrical ketone (one kind of α-position)' : 'unsymmetrical ketone (two different α-positions: regiochemistry matters)'),
     invariants: [
       { id: 'co', title: 'C=O between two carbons, trigonal planar', detail: 'sp² carbonyl carbon, 120° angles; the two R attachment atoms, C and O are coplanar.', visuals: [{ type: 'bond', a: 'C', b: 'O' }, { type: 'plane', atoms: ['C', 'O', 'R1', 'R2'] }] },
@@ -116,7 +116,7 @@ export const FUNCTIONAL_GROUPS = {
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R' }],
     fallbackNoun: 'carboxylic acid',
-    name: (r) => ({ H: 'methanoic acid (formic acid)', methyl: 'ethanoic acid (acetic acid)', ethyl: 'propanoic acid', isopropyl: '2-methylpropanoic acid', tBu: '2,2-dimethylpropanoic acid (pivalic acid)', phenyl: 'benzoic acid', benzyl: 'phenylacetic acid', vinyl: 'propenoic acid (acrylic acid)', allyl: 'but-3-enoic acid', CF3: 'trifluoroacetic acid (TFA, pKa 0.2)' }[r[0]]),
+    nameFor: (r) => ({ H: 'methanoic acid (formic acid)', methyl: 'ethanoic acid (acetic acid)', ethyl: 'propanoic acid', isopropyl: '2-methylpropanoic acid', tBu: '2,2-dimethylpropanoic acid (pivalic acid)', phenyl: 'benzoic acid', benzyl: 'phenylacetic acid', vinyl: 'propenoic acid (acrylic acid)', allyl: 'but-3-enoic acid', CF3: 'trifluoroacetic acid (TFA, pKa 0.2)' }[r[0]]),
     classify: () => null,
     invariants: [
       { id: 'planar', title: 'C=O and O–H on the same sp² carbon (planar carboxyl)', detail: 'The whole COOH unit is planar, and the O–H prefers to sit syn to the C=O.', visuals: [{ type: 'plane', atoms: ['C', 'O1', 'O2', 'H', 'R1'] }, { type: 'bond', a: 'O2', b: 'H' }] },
@@ -143,7 +143,7 @@ export const FUNCTIONAL_GROUPS = {
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R (acyl)' }, { id: 'R2', atom: 'O2', default: 'ethyl', label: 'R′ (alkoxy)' }],
     fallbackNoun: 'ester',
-    name: (r) => ({ 'methyl|ethyl': 'ethyl ethanoate (ethyl acetate)', 'methyl|methyl': 'methyl acetate', 'H|ethyl': 'ethyl formate', 'H|methyl': 'methyl formate', 'phenyl|methyl': 'methyl benzoate', 'phenyl|ethyl': 'ethyl benzoate', 'methyl|phenyl': 'phenyl acetate', 'methyl|isopropyl': 'isopropyl acetate', 'methyl|benzyl': 'benzyl acetate (jasmine)', 'methyl|tBu': 'tert-butyl acetate', 'vinyl|methyl': 'methyl acrylate', 'methyl|H': 'acetic acid (R′ = H makes it an ACID)' }[r.join('|')]),
+    nameFor: (r) => ({ 'methyl|ethyl': 'ethyl ethanoate (ethyl acetate)', 'methyl|methyl': 'methyl acetate', 'H|ethyl': 'ethyl formate', 'H|methyl': 'methyl formate', 'phenyl|methyl': 'methyl benzoate', 'phenyl|ethyl': 'ethyl benzoate', 'methyl|phenyl': 'phenyl acetate', 'methyl|isopropyl': 'isopropyl acetate', 'methyl|benzyl': 'benzyl acetate (jasmine)', 'methyl|tBu': 'tert-butyl acetate', 'vinyl|methyl': 'methyl acrylate', 'methyl|H': 'acetic acid (R′ = H makes it an ACID)' }[r.join('|')]),
     classify: ({ R, attach }) => (R.R2 === 'H' ? 'R′ = H: that is a carboxylic acid, not an ester.' : attach.R2.aromatic ? 'aryl ester (phenoxide is a better leaving group: more reactive)' : attach.R1.el === 'H' ? 'formate ester' : 'alkyl ester'),
     invariants: [
       { id: 'two', title: 'Two different C–O bonds on one sp² carbon', detail: 'C=O (1.21 Å) and C–O–R′ (1.34 Å, shortened by resonance). The ester carbon, both oxygens and both attachment atoms are coplanar; R′ sits Z (cis) to the C=O.', visuals: [{ type: 'bond', a: 'C', b: 'O1' }, { type: 'bond', a: 'C', b: 'O2' }, { type: 'plane', atoms: ['C', 'O1', 'O2', 'R1', 'R2'] }] },
@@ -170,7 +170,7 @@ export const FUNCTIONAL_GROUPS = {
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R (acyl)' }, { id: 'R2', atom: 'N', default: 'H', label: 'R′ on N' }, { id: 'R3', atom: 'N', default: 'H', label: 'R″ on N' }],
     fallbackNoun: 'amide',
-    name: (r) => ({ 'methyl|H|H': 'ethanamide (acetamide)', 'H|H|H': 'methanamide (formamide)', 'H|methyl|methyl': 'N,N-dimethylformamide (DMF)', 'methyl|methyl|methyl': 'N,N-dimethylacetamide (DMAc)', 'methyl|methyl|H': 'N-methylacetamide', 'methyl|H|methyl': 'N-methylacetamide', 'phenyl|H|H': 'benzamide', 'methyl|phenyl|H': 'acetanilide', 'methyl|H|phenyl': 'acetanilide' }[r.join('|')]),
+    nameFor: (r) => ({ 'methyl|H|H': 'ethanamide (acetamide)', 'H|H|H': 'methanamide (formamide)', 'H|methyl|methyl': 'N,N-dimethylformamide (DMF)', 'methyl|methyl|methyl': 'N,N-dimethylacetamide (DMAc)', 'methyl|methyl|H': 'N-methylacetamide', 'methyl|H|methyl': 'N-methylacetamide', 'phenyl|H|H': 'benzamide', 'methyl|phenyl|H': 'acetanilide', 'methyl|H|phenyl': 'acetanilide' }[r.join('|')]),
     classify: ({ R }) => { const n = [R.R2, R.R3].filter((x) => x !== 'H').length; return ['primary amide (–NH₂, two N–H)', 'secondary amide (one N–H; E/Z about C–N)', 'tertiary amide (no N–H)'][n]; },
     invariants: [
       { id: 'planar', title: 'Planar C(=O)–N with partial double-bond character', detail: 'The N lone pair delocalises into C=O (resonance form C(–O⁻)=N⁺). C–N is short (1.32 Å vs 1.47 in amines), rotation about it costs 15–20 kcal/mol, and the N is trigonal planar, not pyramidal. This is the geometry that locks peptide backbones.', visuals: [{ type: 'plane', atoms: ['C', 'O', 'N', 'R1', 'R2', 'R3'] }, { type: 'bond', a: 'C', b: 'N' }, { type: 'orbital', id: 'N' }] },
@@ -194,7 +194,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'N', el: 'N', lonePairs: 1 }], bonds: [] },
     attachments: [{ id: 'R1', atom: 'N', default: 'ethyl', label: 'R' }, { id: 'R2', atom: 'N', default: 'H', label: 'R′' }, { id: 'R3', atom: 'N', default: 'H', label: 'R″' }],
     symmetric: true, fallbackNoun: 'amine',
-    name: (r) => ({ 'H|H|H': 'ammonia (the parent)', 'H|H|methyl': 'methanamine (methylamine)', 'H|H|ethyl': 'ethanamine (ethylamine)', 'H|H|isopropyl': 'propan-2-amine (isopropylamine)', 'H|H|tBu': '2-methylpropan-2-amine (tert-butylamine)', 'H|H|phenyl': 'aniline (an aryl amine)', 'H|H|benzyl': 'benzylamine', 'H|methyl|methyl': 'dimethylamine', 'methyl|methyl|methyl': 'trimethylamine', 'H|ethyl|ethyl': 'diethylamine', 'ethyl|ethyl|ethyl': 'triethylamine (Et₃N)', 'H|isopropyl|isopropyl': 'diisopropylamine', 'ethyl|isopropyl|isopropyl': 'Hünig′s base (DIPEA)', 'H|allyl|allyl': 'diallylamine' }[r.slice().sort((a, b) => (a === 'H' ? -1 : b === 'H' ? 1 : a.localeCompare(b))).join('|')]),
+    nameFor: (r) => ({ 'H|H|H': 'ammonia (the parent)', 'H|H|methyl': 'methanamine (methylamine)', 'H|H|ethyl': 'ethanamine (ethylamine)', 'H|H|isopropyl': 'propan-2-amine (isopropylamine)', 'H|H|tBu': '2-methylpropan-2-amine (tert-butylamine)', 'H|H|phenyl': 'aniline (an aryl amine)', 'H|H|benzyl': 'benzylamine', 'H|methyl|methyl': 'dimethylamine', 'methyl|methyl|methyl': 'trimethylamine', 'H|ethyl|ethyl': 'diethylamine', 'ethyl|ethyl|ethyl': 'triethylamine (Et₃N)', 'H|isopropyl|isopropyl': 'diisopropylamine', 'ethyl|isopropyl|isopropyl': 'Hünig′s base (DIPEA)', 'H|allyl|allyl': 'diallylamine' }[r.slice().sort((a, b) => (a === 'H' ? -1 : b === 'H' ? 1 : a.localeCompare(b))).join('|')]),
     classify: ({ R, attach }) => { const subs = ['R1', 'R2', 'R3'].filter((k) => R[k] !== 'H'); const n = subs.length; const aryl = subs.some((k) => attach[k].aromatic); return (['ammonia', 'primary amine (1°)', 'secondary amine (2°)', 'tertiary amine (3°, no N–H)'][n]) + (aryl ? ' — ARYL amine: lone pair delocalised into the ring, pKaH ≈ 4.6, far less basic' : ''); },
     invariants: [
       { id: 'pyr', title: 'Pyramidal sp³ nitrogen with ONE lone pair', detail: 'Bond angles ≈ 107–108°. The lone pair is in an sp³ orbital pointing out of the pyramid: it is available, so every amine is a base and a nucleophile.', visuals: [{ type: 'lonePairs', id: 'N' }, { type: 'angle', center: 'N', a: 'R1', b: 'R2', text: '≈ 107°' }] },
@@ -224,7 +224,7 @@ export const FUNCTIONAL_GROUPS = {
     defaultVariant: 'Br',
     attachments: [{ id: 'R1', atom: 'X', default: 'ethyl', label: 'R' }],
     fallbackNoun: 'halide',
-    name: (r, variant) => { const x = { F: 'fluoro', Cl: 'chloro', Br: 'bromo', I: 'iodo' }[variant]; const base = { H: `hydrogen ${x.replace(/o$/, 'ide')} (H–X, the parent acid)`, methyl: `${x}methane (methyl ${x.replace(/o$/, 'ide')})`, ethyl: `${x}ethane (ethyl ${x.replace(/o$/, 'ide')})`, isopropyl: `2-${x}propane (isopropyl ${x.replace(/o$/, 'ide')})`, tBu: `2-${x}-2-methylpropane (tert-butyl ${x.replace(/o$/, 'ide')})`, phenyl: `${x}benzene (an ARYL halide)`, benzyl: `benzyl ${x.replace(/o$/, 'ide')}`, vinyl: `vinyl ${x.replace(/o$/, 'ide')} (${x}ethene)`, allyl: `allyl ${x.replace(/o$/, 'ide')} (3-${x}propene)`, CF3: `${x}trifluoromethane` }; return base[r[0]]; },
+    nameFor: (r, variant) => { const x = { F: 'fluoro', Cl: 'chloro', Br: 'bromo', I: 'iodo' }[variant]; const base = { H: `hydrogen ${x.replace(/o$/, 'ide')} (H–X, the parent acid)`, methyl: `${x}methane (methyl ${x.replace(/o$/, 'ide')})`, ethyl: `${x}ethane (ethyl ${x.replace(/o$/, 'ide')})`, isopropyl: `2-${x}propane (isopropyl ${x.replace(/o$/, 'ide')})`, tBu: `2-${x}-2-methylpropane (tert-butyl ${x.replace(/o$/, 'ide')})`, phenyl: `${x}benzene (an ARYL halide)`, benzyl: `benzyl ${x.replace(/o$/, 'ide')}`, vinyl: `vinyl ${x.replace(/o$/, 'ide')} (${x}ethene)`, allyl: `allyl ${x.replace(/o$/, 'ide')} (3-${x}propene)`, CF3: `${x}trifluoromethane` }; return base[r[0]]; },
     classify: ({ attach }) => degreeLabel(attach.R1, { aromatic: 'ARYL halide: no SN1, no SN2 (needs SNAr or metal catalysis)', sp2: 'VINYL halide: no SN1, no SN2 (sp² carbon, strong bond)', H: 'hydrogen halide (the acid H–X)' }),
     invariants: [
       { id: 'polar', title: 'Polar C–X bond: δ+ carbon = electrophile', detail: 'X is more electronegative than C (except I ≈ C), and X⁻ is a stable anion, so the α-carbon is attacked by nucleophiles. This bond is the business end of SN1, SN2, E1 and E2.', visuals: [{ type: 'bond', a: 'R1', b: 'X' }, { type: 'charges', map: { R1: 'δ+', X: 'δ−' } }, { type: 'dipole', from: 'R1', to: 'X' }] },
@@ -248,7 +248,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'C1', el: 'C', hyb: 'sp2' }, { id: 'C2', el: 'C', hyb: 'sp2' }], bonds: [bond('C1', 'C2', 2)] },
     attachments: [{ id: 'R1', atom: 'C1', default: 'methyl', label: 'R¹' }, { id: 'R2', atom: 'C1', default: 'H', label: 'R²' }, { id: 'R3', atom: 'C2', default: 'H', label: 'R³' }, { id: 'R4', atom: 'C2', default: 'H', label: 'R⁴' }],
     fallbackNoun: 'alkene',
-    name: (r) => { const k = r.join('|'); return { 'H|H|H|H': 'ethene (ethylene)', 'methyl|H|H|H': 'propene (propylene)', 'methyl|H|methyl|H': '(Z)-but-2-ene (cis)', 'methyl|H|H|methyl': '(E)-but-2-ene (trans)', 'methyl|methyl|H|H': '2-methylpropene (isobutylene)', 'ethyl|H|H|H': 'but-1-ene', 'phenyl|H|H|H': 'styrene', 'methyl|methyl|methyl|methyl': '2,3-dimethylbut-2-ene (tetrasubstituted)', 'methyl|methyl|methyl|H': '2-methylbut-2-ene', 'vinyl|H|H|H': 'buta-1,3-diene (conjugated)' }[k]; },
+    nameFor: (r) => { const k = r.join('|'); return { 'H|H|H|H': 'ethene (ethylene)', 'methyl|H|H|H': 'propene (propylene)', 'methyl|H|methyl|H': '(Z)-but-2-ene (cis)', 'methyl|H|H|methyl': '(E)-but-2-ene (trans)', 'methyl|methyl|H|H': '2-methylpropene (isobutylene)', 'ethyl|H|H|H': 'but-1-ene', 'phenyl|H|H|H': 'styrene', 'methyl|methyl|methyl|methyl': '2,3-dimethylbut-2-ene (tetrasubstituted)', 'methyl|methyl|methyl|H': '2-methylbut-2-ene', 'vinyl|H|H|H': 'buta-1,3-diene (conjugated)' }[k]; },
     classify: ({ R }) => { const n = ['R1', 'R2', 'R3', 'R4'].filter((k) => R[k] !== 'H').length; return ['unsubstituted (ethene)', 'monosubstituted', 'disubstituted', 'trisubstituted', 'tetrasubstituted (most stable)'][n] + ' alkene'; },
     invariants: [
       { id: 'pi', title: 'σ + π double bond, 1.34 Å', detail: 'Shorter and stronger than C–C (1.54 Å), but the π component (~65 kcal/mol) is weak and exposed above and below the plane: it is the reactive part.', visuals: [{ type: 'bond', a: 'C1', b: 'C2' }] },
@@ -272,7 +272,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'C1', el: 'C', hyb: 'sp' }, { id: 'C2', el: 'C', hyb: 'sp' }], bonds: [bond('C1', 'C2', 3)] },
     attachments: [{ id: 'R1', atom: 'C1', default: 'methyl', label: 'R' }, { id: 'R2', atom: 'C2', default: 'H', label: 'R′' }],
     symmetric: true, fallbackNoun: 'alkyne',
-    name: (r) => ({ 'H|H': 'ethyne (acetylene)', 'H|methyl': 'propyne', 'methyl|methyl': 'but-2-yne (internal)', 'H|ethyl': 'but-1-yne', 'H|phenyl': 'phenylacetylene (ethynylbenzene)', 'H|tBu': '3,3-dimethylbut-1-yne', 'ethyl|methyl': 'pent-2-yne', 'phenyl|phenyl': 'diphenylacetylene' }[r.slice().sort().join('|')]),
+    nameFor: (r) => ({ 'H|H': 'ethyne (acetylene)', 'H|methyl': 'propyne', 'methyl|methyl': 'but-2-yne (internal)', 'H|ethyl': 'but-1-yne', 'H|phenyl': 'phenylacetylene (ethynylbenzene)', 'H|tBu': '3,3-dimethylbut-1-yne', 'ethyl|methyl': 'pent-2-yne', 'phenyl|phenyl': 'diphenylacetylene' }[r.slice().sort().join('|')]),
     classify: ({ R }) => (R.R1 === 'H' || R.R2 === 'H' ? 'terminal alkyne (has the acidic ≡C–H, pKa ≈ 25)' : 'internal alkyne (no acidic H)'),
     invariants: [
       { id: 'triple', title: 'σ + 2π triple bond, 1.20 Å', detail: 'Two perpendicular π bonds form a cylinder of electron density around the C–C axis.', visuals: [{ type: 'bond', a: 'C1', b: 'C2' }] },
@@ -294,7 +294,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'C', el: 'C', hyb: 'sp' }, { id: 'N', el: 'N', hyb: 'sp', lonePairs: 1 }], bonds: [bond('C', 'N', 3)] },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R' }],
     fallbackNoun: 'nitrile',
-    name: (r) => ({ H: 'hydrogen cyanide (HCN, the parent)', methyl: 'ethanenitrile (acetonitrile, MeCN)', ethyl: 'propanenitrile', isopropyl: '2-methylpropanenitrile', tBu: 'pivalonitrile', phenyl: 'benzonitrile', benzyl: 'phenylacetonitrile (benzyl cyanide)', vinyl: 'acrylonitrile', allyl: 'but-3-enenitrile', CF3: 'trifluoroacetonitrile' }[r[0]]),
+    nameFor: (r) => ({ H: 'hydrogen cyanide (HCN, the parent)', methyl: 'ethanenitrile (acetonitrile, MeCN)', ethyl: 'propanenitrile', isopropyl: '2-methylpropanenitrile', tBu: 'pivalonitrile', phenyl: 'benzonitrile', benzyl: 'phenylacetonitrile (benzyl cyanide)', vinyl: 'acrylonitrile', allyl: 'but-3-enenitrile', CF3: 'trifluoroacetonitrile' }[r[0]]),
     classify: ({ attach }) => (attach.R1.aromatic || attach.R1.sp2 ? 'conjugated nitrile' : 'alkyl nitrile'),
     invariants: [
       { id: 'triple', title: 'C≡N triple bond, linear, 1.16 Å', detail: 'Both C and N are sp, so R–C≡N is a straight line (180°).', visuals: [{ type: 'bond', a: 'C', b: 'N' }, { type: 'angle', center: 'C', a: 'R1', b: 'N', text: '180°' }] },
@@ -316,7 +316,7 @@ export const FUNCTIONAL_GROUPS = {
     core: { atoms: [{ id: 'S', el: 'S', lonePairs: 2 }, { id: 'H', el: 'H' }], bonds: [bond('S', 'H')] },
     attachments: [{ id: 'R1', atom: 'S', default: 'ethyl', label: 'R' }],
     fallbackNoun: 'thiol',
-    name: (r) => ({ H: 'hydrogen sulfide (H₂S, the parent)', methyl: 'methanethiol', ethyl: 'ethanethiol (the gas odorant)', isopropyl: 'propane-2-thiol', tBu: '2-methylpropane-2-thiol (tert-butyl mercaptan)', phenyl: 'thiophenol (benzenethiol, pKa 6.6)', benzyl: 'benzyl mercaptan', allyl: 'allyl mercaptan (garlic)', vinyl: 'ethenethiol', CF3: 'trifluoromethanethiol' }[r[0]]),
+    nameFor: (r) => ({ H: 'hydrogen sulfide (H₂S, the parent)', methyl: 'methanethiol', ethyl: 'ethanethiol (the gas odorant)', isopropyl: 'propane-2-thiol', tBu: '2-methylpropane-2-thiol (tert-butyl mercaptan)', phenyl: 'thiophenol (benzenethiol, pKa 6.6)', benzyl: 'benzyl mercaptan', allyl: 'allyl mercaptan (garlic)', vinyl: 'ethenethiol', CF3: 'trifluoromethanethiol' }[r[0]]),
     classify: ({ attach }) => degreeLabel(attach.R1, { aromatic: 'aryl thiol (thiophenol): much more acidic', sp2: 'enethiol', H: 'hydrogen sulfide' }),
     invariants: [
       { id: 'sh', title: 'S–H on sp³ sulfur, C–S–H ≈ 96°', detail: 'Sulfur uses nearly pure p orbitals for bonding, so the angle is tighter than in alcohols. C–S is long (1.82 Å) and S–H is weak (87 kcal/mol vs 105 for O–H).', visuals: [{ type: 'bond', a: 'S', b: 'H' }, { type: 'angle', center: 'S', a: 'R1', b: 'H', text: '≈ 96°' }] },
@@ -341,7 +341,7 @@ export const FUNCTIONAL_GROUPS = {
       core: { atoms: ring.atoms, bonds: ring.bonds, rigid: ring.rigid },
       attachments: [{ id: 'R1', atom: 'C1', default: 'methyl', label: 'R' }],
       fallbackNoun: 'benzene',
-      name: (r) => ({ H: 'benzene', methyl: 'toluene (methylbenzene)', ethyl: 'ethylbenzene', isopropyl: 'cumene (isopropylbenzene)', tBu: 'tert-butylbenzene', phenyl: 'biphenyl', benzyl: 'diphenylmethane', vinyl: 'styrene', allyl: 'allylbenzene', CF3: 'benzotrifluoride (trifluoromethylbenzene)' }[r[0]]),
+      nameFor: (r) => ({ H: 'benzene', methyl: 'toluene (methylbenzene)', ethyl: 'ethylbenzene', isopropyl: 'cumene (isopropylbenzene)', tBu: 'tert-butylbenzene', phenyl: 'biphenyl', benzyl: 'diphenylmethane', vinyl: 'styrene', allyl: 'allylbenzene', CF3: 'benzotrifluoride (trifluoromethylbenzene)' }[r[0]]),
       classify: ({ R }) => ({ H: 'parent arene', methyl: 'alkyl arene: benzylic C–H oxidisable (KMnO₄ → benzoic acid); R is an o/p-directing activator', ethyl: 'alkyl arene: benzylic position reactive; o/p-director', isopropyl: 'alkyl arene (cumene): benzylic C–H → cumene hydroperoxide → phenol + acetone industrially', tBu: 'alkyl arene with NO benzylic H: not oxidised by KMnO₄; directs para (bulk)', phenyl: 'biaryl: conjugated rings, twisted ~45°', benzyl: 'diarylmethane: doubly benzylic CH₂ (very stabilised radical/cation/anion)', vinyl: 'styrene: conjugated, polymerises', allyl: 'allylbenzene: isomerises to the conjugated propenylbenzene', CF3: 'CF₃ is a strong deactivator and meta-director' }[R.R1]),
       invariants: [
         { id: 'planar', title: 'Planar hexagon, all C sp², 120°', detail: 'Six identical C–C bonds of 1.39 Å, between a single (1.54) and a double (1.34). No alternation: the Kekulé picture is two resonance forms of one structure.', visuals: [{ type: 'plane', atoms: ring.ring }, { type: 'bond', a: 'C1', b: 'C2' }, { type: 'bond', a: 'C2', b: 'C3' }] },
@@ -368,7 +368,7 @@ export const FUNCTIONAL_GROUPS = {
     },
     attachments: [{ id: 'R1', atom: 'N', default: 'methyl', label: 'R' }],
     fallbackNoun: 'nitro compound',
-    name: (r) => ({ H: 'nitrous acid tautomer (H–NO₂)', methyl: 'nitromethane', ethyl: 'nitroethane', isopropyl: '2-nitropropane', tBu: '2-methyl-2-nitropropane', phenyl: 'nitrobenzene', benzyl: '(nitromethyl)benzene', vinyl: 'nitroethene', allyl: '3-nitropropene', CF3: 'trifluoronitromethane' }[r[0]]),
+    nameFor: (r) => ({ H: 'nitrous acid tautomer (H–NO₂)', methyl: 'nitromethane', ethyl: 'nitroethane', isopropyl: '2-nitropropane', tBu: '2-methyl-2-nitropropane', phenyl: 'nitrobenzene', benzyl: '(nitromethyl)benzene', vinyl: 'nitroethene', allyl: '3-nitropropene', CF3: 'trifluoronitromethane' }[r[0]]),
     classify: ({ attach }) => (attach.R1.aromatic ? 'nitroarene: strongly deactivated ring, meta-director, SNAr-activated' : 'nitroalkane: α-H acidic (pKa ≈ 10 for nitromethane)'),
     invariants: [
       { id: 'fc', title: 'Formal charges: N is +1, one O is −1, overall neutral', detail: 'Nitrogen can only make four bonds, so one N–O must be a single bond to O⁻ while the other is N=O. This is the standard formal-charge exercise: N has 4 bonds and 0 lone pairs → +1.', visuals: [{ type: 'charges', map: { N: '+', O2: '−' } }, { type: 'atom', id: 'N' }] },

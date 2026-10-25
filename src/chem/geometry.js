@@ -73,25 +73,34 @@ export const m3 = {
 // ---- Ideal slot directions (unit vectors) in a local frame; slot 0 is +z ----
 const S120 = Math.sin(120 * DEG), C120 = Math.cos(120 * DEG);
 const ST = Math.sin(TETRAHEDRAL), CT = Math.cos(TETRAHEDRAL);
-const TEMPLATES = {
+export const TEMPLATES = {
   single: [[0, 0, 1]],
   linear: [[0, 0, 1], [0, 0, -1]],
   trigonal: [[0, 0, 1], [S120, 0, C120], [-S120, 0, C120]],
   tetrahedral: [[0, 0, 1], [ST, 0, CT], [ST * C120, ST * S120, CT], [ST * C120, -ST * S120, CT]],
   tbp: [[0, 0, 1], [0, 0, -1], [1, 0, 0], [C120, S120, 0], [C120, -S120, 0]],
+  // Coordination geometries. Slots (0,1), (2,3) and (4,5) are trans pairs; the square plane is xz, its normal y.
+  octahedral: [[0, 0, 1], [0, 0, -1], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0]],
+  squarePlanar: [[0, 0, 1], [0, 0, -1], [1, 0, 0], [-1, 0, 0]],
 };
+// Template slot that fixes the torsion about slot 0 (the first slot not collinear with it).
+const TORSION_REF = { octahedral: 2, squarePlanar: 2 };
+export const GEOMETRY_KINDS = Object.keys(TEMPLATES);
 
 /** Decide the slot geometry for an atom given its explicit hybridization or steric number. */
 export function geometryKind(atom, nNeighbors) {
   if (atom.hyb === 'sp') return 'linear';
   if (atom.hyb === 'sp2') return 'trigonal';
   if (atom.hyb === 'sp3') return 'tetrahedral';
+  if (atom.hyb === 'oct' || atom.hyb === 'd2sp3' || atom.hyb === 'sp3d2') return 'octahedral';
+  if (atom.hyb === 'sqp' || atom.hyb === 'dsp2') return 'squarePlanar';
   const lp = atom.lonePairs || 0;
   const s = nNeighbors + lp;
   if (s <= 1) return 'single';
   if (s === 2) return 'linear';
   if (s === 3) return 'trigonal';
   if (s === 4) return 'tetrahedral';
+  if (s === 6) return 'octahedral';
   return 'tbp';
 }
 
@@ -144,7 +153,7 @@ function orientSlots(kind, id, p, placedN, pos, adj, hint, pickRef, synRef) {
       else if (hint) target = v.perp(hint, u);
     }
     if (target && v.len(target) > 1e-6) {
-      const e1w = v.norm(m3.apply(R, v.perp(tmpl[1], [0, 0, 1])));
+      const e1w = v.norm(m3.apply(R, v.perp(tmpl[TORSION_REF[kind] ?? 1], [0, 0, 1])));
       const ang = v.signedAngle(e1w, v.norm(target), u);
       R = m3.mul(m3.axisAngle(u, ang), R);
     }
@@ -295,8 +304,8 @@ export function embed(graph, opts = {}) {
     const free = slots.filter((_, i) => !used.has(i));
     lonePairDirs.set(id, free.slice(0, slotLonePairs(a)));
     let normal = null;
-    if (kind === 'trigonal' || kind === 'linear') {
-      const s0 = slots[0], s1 = slots[1] || v.anyPerp(s0);
+    if (kind === 'trigonal' || kind === 'linear' || kind === 'squarePlanar') {
+      const s0 = slots[0], s1 = kind === 'squarePlanar' ? slots[2] : slots[1] || v.anyPerp(s0);
       normal = v.norm(v.cross(s0, s1));
       if (v.len(normal) < 1e-6) normal = v.anyPerp(s0);
     }
@@ -438,4 +447,36 @@ export function polar(axis, theta, phi, r, ref) {
   const e2 = v.cross(u, e1);
   const s = Math.sin(theta);
   return v.scale(v.add(v.scale(u, Math.cos(theta)), v.add(v.scale(e1, s * Math.cos(phi)), v.scale(e2, s * Math.sin(phi)))), r);
+}
+
+// ---- Coordination complexes -------------------------------------------------------------------
+/**
+ * Build a render frame for an MLn complex with explicit ligand ids, ready for MoleculeView.setFrame().
+ * opts: {
+ *   metal = 'Fe', id = 'M', charge = 0, label?, center = [0, 0, 0],
+ *   geometry = 'octahedral' | 'squarePlanar' | 'tetrahedral' | 'tbp' | 'trigonal' | 'linear',
+ *   ligands: ['N1', 'N2', …] or [{ id, el = 'N', length?, charge?, lonePairs?, label? }],   // ligand i → slot i
+ *   bondLength?: number   // default per ligand: bondLength(metal, el) from elements.js
+ * }
+ * Octahedral slots: 0/1 along ±z (axial), 2/3 along ±x, 4/5 along ±y, so (0,1), (2,3), (4,5) are trans pairs.
+ * Returns { atoms, bonds, aliases: {}, geometry, slots } in the frame format of builder.js/toFrame.
+ */
+export function complexFrame({ metal = 'Fe', id = 'M', charge = 0, label = null, center = [0, 0, 0], geometry = 'octahedral', ligands = [], bondLength: fixedLength } = {}) {
+  const tmpl = TEMPLATES[geometry];
+  if (!tmpl) throw new Error(`complexFrame(): unknown geometry ${geometry}; expected one of ${GEOMETRY_KINDS.join(', ')}`);
+  if (ligands.length > tmpl.length) throw new Error(`complexFrame(): ${geometry} has ${tmpl.length} sites, got ${ligands.length} ligands`);
+  const atom = (a) => ({ id: a.id, el: a.el, charge: a.charge || 0, lonePairs: a.lonePairs || 0, pos: a.pos, lonePairDirs: [], orbital: null, ghost: false, label: a.label || null, aromatic: false });
+  const atoms = [atom({ id, el: metal, charge, label, pos: [center[0], center[1], center[2]] })];
+  const bonds = [];
+  const slots = {};
+  ligands.forEach((lig, i) => {
+    const L = typeof lig === 'string' ? { id: lig } : lig;
+    const el = L.el || 'N';
+    const len = L.length ?? fixedLength ?? bondLength(metal, el, 1);
+    const pos = v.add(center, v.scale(tmpl[i], len));
+    atoms.push(atom({ ...L, el, pos }));
+    bonds.push({ a: id, b: L.id, order: 1, partial: 1, aromatic: false, ring: null, ghost: false, piOnly: false });
+    slots[L.id] = i;
+  });
+  return { atoms, bonds, aliases: {}, geometry, slots };
 }

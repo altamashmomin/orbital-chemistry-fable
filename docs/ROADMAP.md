@@ -25,7 +25,7 @@ fully unit-testable, and lands on its own. ✅ marks a row that is merged on `ma
 | --- | --- | --- | --- |
 | 0a | ✅ **Mechanism families** in the Reaction lab: a family registry (Substitution & elimination, Addition, Carbonyl, Aromatic …) with family tabs, each family bringing its mechanisms and its own predictor | the Reaction lab currently hard-codes four mechanisms; every reaction branch would edit the same file | 1, 2, 5, 9 |
 | 0b | ✅ **`CollectionExplorer`** extracted from the functional-group panel: chips → build controls → entity card → invariant cards → field guide, driven by a collection definition | shapes, ligands, orbitals and complexes all want this exact panel | 3, 6, 7, 10 |
-| 0c | **Embedder additions**: lone-pair slot preferences (equatorial in tbp, trans in octahedral), seesaw / T-shaped / square-pyramidal shapes, cycloalkane ring templates (cyclopropane → cyclohexane chair and boat) with substituent attachment, `mirror()` helper | cheap now, invasive later; VSEPR and conformations depend on it | 3, 4, 6, 10 |
+| 0c | ✅ **Embedder additions**: lone-pair slot preferences (equatorial in tbp, trans in octahedral), seesaw / T-shaped / square-pyramidal shapes, cycloalkane ring templates (cyclopropane → cyclohexane chair and boat) with substituent attachment, `mirror()` helper | cheap now, invasive later; VSEPR and conformations depend on it | 3, 4, 6, 10 |
 | 0d | **2D overlays**: Newman projection and wedge/dash sketch drawn from 3D coordinates onto a small canvas | stereochemistry and conformations both need them | 3, 4 |
 
 ## Phase 1 — pure reuse of the molecule and reaction engines

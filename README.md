@@ -53,10 +53,12 @@ Requires Node 18+ and a browser with WebGL2.
 src/
   chem/                      pure JavaScript, no Three.js, runs in Node for tests
     elements.js              CPK colours, radii, electronegativity, bond-length table
-    geometry.js              vector math + VSEPR embedder (tetrahedral / trigonal / linear /
-                             octahedral / square-planar slots, staggered & planar torsions, rigid
-                             ring templates, pinned atoms for reaction frames, torsion relaxation,
-                             complexFrame() for MLₙ complexes)
+    geometry.js              vector math + VSEPR embedder (tetrahedral / trigonal / linear / tbp /
+                             octahedral / square-planar slots with lone-pair preferences → seesaw,
+                             T-shaped, square pyramidal, square planar; staggered & planar torsions;
+                             rigid ring templates incl. cyclopropane → cyclohexane chair / boat with
+                             axial / equatorial sites; pinned atoms for reaction frames; torsion
+                             relaxation; complexFrame() for MLₙ complexes; mirror(), dihedral())
     orbitals.js              hydrogen-like orbitals (n ≤ 3) with phase, σ/π combinations, grid sampling
     marchingCubes.js         watertight isosurface extraction (marching tetrahedra), mesh checks
     references.md            sources for the chemistry encoded in the shared core

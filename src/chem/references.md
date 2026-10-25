@@ -55,3 +55,15 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
 * `octahedralSplitting()` uses the barycentre rule: t₂g at −0.4 Δₒ, e_g at +0.6 Δₒ relative to
   the free-ion d level, low-spin or high-spin filling (Housecroft & Sharpe ch. 20). Δₒ is in
   arbitrary units; label it as illustrative in the UI.
+
+## Ring templates and lone-pair placement (`geometry.js`)
+
+* VSEPR lone-pair positions (equatorial in a trigonal bipyramid, trans in an octahedron) and the
+  seesaw / T-shaped / square-pyramidal / square-planar shapes of SF₄, ClF₃, BrF₅ and XeF₄: Gillespie
+  & Hargittai, *The VSEPR Model of Molecular Geometry* (Allyn & Bacon, 1991); any general-chemistry
+  text (e.g. Atkins & Jones, *Chemical Principles*, ch. 3).
+* Cyclohexane chair (C–C–C ≈ 111°, ring torsion ≈ 55°, axial bonds parallel to the C₃ axis,
+  1,3-diaxial H···H ≈ 2.5 Å), the boat with its flagpole hydrogens, the cyclopentane envelope and the
+  puckered cyclobutane (fold ≈ 25–35°): Eliel & Wilen, *Stereochemistry of Organic Compounds*
+  (Wiley, 1994), ch. 11; Clayden, Greeves & Warren, *Organic Chemistry* (OUP, 2nd ed.), ch. 16.
+  The templates are idealised (all C–C = 1.54 Å, exact closure) for teaching, not refined structures.

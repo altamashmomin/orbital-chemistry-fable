@@ -262,6 +262,46 @@ panel starts from; `familyOf(mechanismId)` and `listFamilies()` read the registr
 family the way `tests/families.test.js` and `tests/mechanisms.test.js` do: frames sane across `t`,
 no clashes, predictor table reproduced, every `related` link resolving.
 
+### Shapes, rings and mirror images: `src/chem/geometry.js`
+
+**Lone-pair placement.** The embedder now reserves slots for lone pairs before substituents:
+equatorial slots in a trigonal bipyramid, a trans pair in an octahedron. So a centre described by
+its lone-pair count alone comes out right: `{ el: 'S', lonePairs: 1 }` with four fluorines is a
+seesaw, `ClF₃` (two lone pairs) is T-shaped, `BrF₅` square pyramidal and `XeF₄` square planar.
+`vseprShape(nBonds, nLonePairs)` gives the vocabulary (`{ steric, kind, shape, angles }`) and
+`lonePairSlots(kind, freeSlots, n)` is the preference table behind it. Ordinary molecules embed
+exactly as before.
+
+**Cycloalkane templates.** `ringTemplate(shape, opts)` returns a rigid fragment in the format the
+embedder's `rigid` groups use (`atoms`, `bonds`, `rigid: { atoms, coords, attach, attachDir,
+planeAxis }`), with exact ring closure and a hydrogen on every free site:
+
+```js
+import { ringTemplate, RING_SHAPES, dihedral, mirror } from '../../chem/geometry.js';
+// RING_SHAPES: cyclopropane, cyclobutane (puckered), cyclopentane (envelope), cyclohexaneChair, cyclohexaneBoat
+
+// Methylcyclohexane with an axial methyl: the C1 axial hydrogen is replaced by Me.C (add Me's hydrogens yourself).
+const ring = ringTemplate('cyclohexaneChair', { substituents: { C1: { axial: 'Me.C' } } });
+const graph = { atoms: [...ring.atoms, ...methylHydrogens], bonds: [...ring.bonds, ...methylBonds], rigid: [ring.rigid] };
+const { positions, lonePairDirs, orbitals } = embed(graph, { root: 'C1' });
+
+ring.sites.C1.axial;          // unit vectors per carbon: axial / equatorial (chair, boat, …) and always up / down
+ring.sites.C2.equatorial;     // cis = both substituents up (or both down); C1 axial-up + C2 equatorial-up is cis-1,2
+ringTemplate('cyclohexaneChair', { prefix: 'R.', attachAt: 'C1' });   // an R-group cyclohexyl (equatorial attachment)
+ringTemplate('cyclopentane', { substituents: { C2: { up: { id: 'Cl', el: 'Cl' } } } });
+dihedral(a, b, c, d);         // signed torsion in radians, for Newman projections and ring puckering tests
+```
+
+Hydrogens are named `H<k>ax` / `H<k>eq` where axial and equatorial are defined and `H<k>up` /
+`H<k>dn` otherwise. Chair sites are ideal (axial bonds parallel to the ring axis, alternating;
+trans-diaxial H–C–C–H ≈ 180°, gauche pairs ≈ 60°, 1,3-diaxial H···H ≈ 2.5 Å), which is what the
+conformations topic needs for A-values and ring flips.
+
+**Mirror images.** `mirror(x, { normal = [1, 0, 0], point = [0, 0, 0] })` reflects a vec3, an array,
+a `Map` of positions, a `{ id: vec3 }` object or a whole render frame (positions, lone-pair and
+p-orbital directions) through a plane, inverting every stereocentre: the enantiomer of a frame is
+one call.
+
 ### Energy-level diagrams: `src/ui/levelDiagram.js`
 
 A canvas diagram of horizontal levels grouped in columns, with ↑↓ electron arrows, dashed

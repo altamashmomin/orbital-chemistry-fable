@@ -111,6 +111,39 @@ function slotLonePairs(atom) {
   return lp;
 }
 
+/**
+ * Slot indices lone pairs should occupy, chosen from the free slots of a template.
+ * tbp: equatorial (slots 2–4) before axial; octahedral: a trans pair whenever two or more lone pairs
+ * are present, otherwise the last free slot; every other kind: the last free slots (the slots
+ * substituents would not have taken anyway, so existing molecules embed exactly as before).
+ */
+export function lonePairSlots(kind, free, n) {
+  if (!(n > 0) || !free.length) return [];
+  const out = [];
+  const take = (i) => { if (out.length < n && free.includes(i) && !out.includes(i)) out.push(i); };
+  if (kind === 'tbp') [4, 3, 2, 1, 0].forEach(take);
+  else if (kind === 'octahedral') {
+    if (n >= 2) for (const [a, b] of [[5, 4], [3, 2], [1, 0]]) if (out.length + 1 < n && free.includes(a) && free.includes(b)) { take(a); take(b); }
+    [5, 4, 3, 2, 1, 0].forEach(take);
+  } else [...free].reverse().forEach(take);
+  return out;
+}
+
+/** VSEPR vocabulary: molecular shape from the numbers of bonded atoms and lone pairs on a centre. */
+const SHAPES = {
+  '1,0': 'linear', '2,0': 'linear', '3,0': 'trigonal planar', '2,1': 'bent', '4,0': 'tetrahedral', '3,1': 'trigonal pyramidal', '2,2': 'bent',
+  '5,0': 'trigonal bipyramidal', '4,1': 'seesaw', '3,2': 'T-shaped', '2,3': 'linear',
+  '6,0': 'octahedral', '5,1': 'square pyramidal', '4,2': 'square planar', '3,3': 'T-shaped', '2,4': 'linear',
+};
+const SHAPE_ANGLES = { linear: [180], 'trigonal planar': [120], bent: [], tetrahedral: [109.5], 'trigonal pyramidal': [109.5], 'trigonal bipyramidal': [90, 120, 180], seesaw: [90, 120, 180], 'T-shaped': [90, 180], octahedral: [90, 180], 'square pyramidal': [90, 180], 'square planar': [90, 180] };
+export function vseprShape(nBonds, nLonePairs = 0) {
+  const steric = nBonds + nLonePairs;
+  const kind = geometryKind({ lonePairs: nLonePairs }, nBonds);
+  const shape = SHAPES[`${nBonds},${nLonePairs}`] || (steric === 3 ? 'bent' : steric === 4 ? 'bent' : 'irregular');
+  const angles = shape === 'bent' ? (steric === 3 ? [120] : [109.5]) : SHAPE_ANGLES[shape] || [];
+  return { steric, kind, shape, angles };
+}
+
 function buildAdjacency(graph) {
   const adj = new Map();
   for (const a of graph.atoms) adj.set(a.id, []);
@@ -275,6 +308,10 @@ export function embed(graph, opts = {}) {
       slots.forEach((s, i) => { if (!used.has(i)) { const dd = v.dot(d, s); if (dd > bd) { bd = dd; best = i; } } });
       if (best >= 0) { used.add(best); slotOf[n.id] = best; }
     }
+    // Lone pairs reserve their preferred slots first (equatorial in tbp, trans pairs in octahedral),
+    // so SF4 is a seesaw, ClF3 T-shaped, BrF5 square pyramidal and XeF4 square planar.
+    const lpSlots = lonePairSlots(kind, slots.map((_, k) => k).filter((k) => !used.has(k)), slotLonePairs(a));
+    for (const k of lpSlots) used.add(k);
     // Biggest substituent takes the anti slot, except on alkene-like atoms where definition order is kept.
     const ordered = isAlkeneLike(id) ? unplacedN : [...unplacedN].sort((x, y) => bulk(y.id, id) - bulk(x.id, id));
     const refNeighbor = placedN[0];
@@ -283,6 +320,7 @@ export function embed(graph, opts = {}) {
       : null;
     for (const n of ordered) {
       let i = slots.findIndex((_, k) => !used.has(k));
+      if (i < 0 && lpSlots.length) i = lpSlots.pop();   // more neighbours than slots: a lone pair gives way
       if (i < 0) i = slots.length - 1;
       used.add(i);
       slotOf[n.id] = i;
@@ -301,8 +339,7 @@ export function embed(graph, opts = {}) {
         queue.push(n.id);
       }
     }
-    const free = slots.filter((_, i) => !used.has(i));
-    lonePairDirs.set(id, free.slice(0, slotLonePairs(a)));
+    lonePairDirs.set(id, lpSlots.map((k) => slots[k]));
     let normal = null;
     if (kind === 'trigonal' || kind === 'linear' || kind === 'squarePlanar') {
       const s0 = slots[0], s1 = kind === 'squarePlanar' ? slots[2] : slots[1] || v.anyPerp(s0);
@@ -479,4 +516,146 @@ export function complexFrame({ metal = 'Fe', id = 'M', charge = 0, label = null,
     slots[L.id] = i;
   });
   return { atoms, bonds, aliases: {}, geometry, slots };
+}
+
+/** Signed dihedral angle (radians) a–b–c–d: the torsion about b–c, in (−π, π]. */
+export function dihedral(a, b, c, d) {
+  const b1 = v.sub(b, a), b2 = v.sub(c, b), b3 = v.sub(d, c);
+  const n1 = v.cross(b1, b2), n2 = v.cross(b2, b3);
+  const m1 = v.cross(n1, v.norm(b2));
+  return Math.atan2(v.dot(m1, n2), v.dot(n1, n2));
+}
+
+// ---- Mirror images ----------------------------------------------------------------------------
+/**
+ * Reflect through the plane with unit normal `normal` through `point` (default: the yz plane).
+ * Accepts a vec3, an array of vec3, a Map<id, vec3>, a plain { id: vec3 } object, or a render
+ * frame ({ atoms: [{ pos, lonePairDirs, orbital }] }) and returns the same kind of thing. Bond
+ * lengths and angles are preserved; every stereocentre is inverted (R ↔ S).
+ */
+export function mirror(input, { normal = [1, 0, 0], point = [0, 0, 0] } = {}) {
+  const n = v.norm(normal);
+  const pt = (p) => { const d = v.dot(v.sub(p, point), n); return v.sub(p, v.scale(n, 2 * d)); };
+  const dir = (d) => v.sub(d, v.scale(n, 2 * v.dot(d, n)));
+  if (Array.isArray(input)) return input.length === 3 && typeof input[0] === 'number' ? pt(input) : input.map((p) => pt(p));
+  if (input instanceof Map) { const out = new Map(); for (const [k, p] of input) out.set(k, pt(p)); return out; }
+  if (input && Array.isArray(input.atoms)) {
+    return {
+      ...input,
+      atoms: input.atoms.map((a) => ({ ...a, pos: pt(a.pos), lonePairDirs: (a.lonePairDirs || []).map(dir), orbital: a.orbital ? { ...a.orbital, dirs: a.orbital.dirs.map(dir) } : a.orbital })),
+      bonds: (input.bonds || []).map((b) => ({ ...b })),
+    };
+  }
+  if (input && typeof input === 'object') return Object.fromEntries(Object.entries(input).map(([k, p]) => [k, pt(p)]));
+  throw new Error('mirror(): expected a vec3, an array, a Map, an object or a frame');
+}
+
+// ---- Cycloalkane ring templates -----------------------------------------------------------------
+// Rigid templates in the format the embedder's `rigid` groups use (see rGroups.benzeneTemplate):
+// ring carbons with exact closure, two substituent sites per carbon (axial / equatorial on the
+// chair, pseudo-axial / pseudo-equatorial elsewhere, always up / down), hydrogens on every site
+// not taken by a substituent. Coordinates are stored for C–C = 1.54 Å and scaled by `ccLength`.
+const RING_L = 1.54;
+const RING_COORDS = {
+  cyclopropane: () => { const R = RING_L / Math.sqrt(3); return [0, 1, 2].map((k) => [R * Math.cos(k * 120 * DEG), R * Math.sin(k * 120 * DEG), 0]); },
+  // Puckered square, fold angle ≈ 25°, C–C–C ≈ 88.6°.
+  cyclobutane: () => { const d = 0.12, a = Math.sqrt((RING_L * RING_L - 4 * d * d) / 2); return [[a, 0, d], [0, a, -d], [-a, 0, d], [0, -a, -d]]; },
+  // Envelope: C2–C5 coplanar, C1 is the flap; angles 101.7° (flap) and 106°.
+  cyclopentane: () => [[1.219417, 0, 0.459566], [0.435317, 1.194482, -0.114891], [-1.045026, 0.77, -0.114891], [-1.045026, -0.77, -0.114891], [0.435317, -1.194482, -0.114891]],
+  // Chair: carbons alternate ±0.25 Å about the mean plane (z), C–C–C = 110°.
+  cyclohexaneChair: () => { const h = 0.25, r = Math.sqrt(RING_L * RING_L - 4 * h * h); return [0, 1, 2, 3, 4, 5].map((k) => [r * Math.cos(k * 60 * DEG), r * Math.sin(k * 60 * DEG), k % 2 ? -h : h]); },
+  // Boat: C1 and C4 are the bow and stern (up), C2–C3 and C5–C6 lie in the plane, C–C–C = 111°.
+  cyclohexaneBoat: () => [[1.321887, 0, 0.675476], [0.77, 1.269154, 0], [-0.77, 1.269154, 0], [-1.321887, 0, 0.675476], [-0.77, -1.269154, 0], [0.77, -1.269154, 0]],
+};
+export const RING_SHAPES = Object.keys(RING_COORDS);
+const RING_LABELS = { cyclopropane: 'cyclopropane', cyclobutane: 'cyclobutane (puckered)', cyclopentane: 'cyclopentane (envelope)', cyclohexaneChair: 'cyclohexane (chair)', cyclohexaneBoat: 'cyclohexane (boat)' };
+const SITE_KEYS = ['axial', 'equatorial', 'up', 'down'];
+
+/**
+ * Substituent sites on each ring carbon: the two directions that complete a (near-)tetrahedral
+ * centre, symmetric about the local C–C–C plane, with H–C–H capped at 115° for small rings.
+ * `axial` is the direction closer to the ring axis (z), `equatorial` the other; `up` has the
+ * positive z component (cis substituents are both up or both down).
+ */
+function ringSites(coords) {
+  const n = coords.length, sites = [];
+  for (let k = 0; k < n; k++) {
+    const c = coords[k], u1 = v.norm(v.sub(coords[(k + n - 1) % n], c)), u2 = v.norm(v.sub(coords[(k + 1) % n], c));
+    const phi = Math.acos(Math.max(-1, Math.min(1, v.dot(u1, u2))));
+    const alpha = Math.min(Math.acos(Math.min(1, (1 / 3) / Math.cos(phi / 2))), 57.5 * DEG);
+    const b = v.norm(v.neg(v.add(u1, u2))), nrm = v.norm(v.cross(u1, u2));
+    const d1 = v.add(v.scale(b, Math.cos(alpha)), v.scale(nrm, Math.sin(alpha)));
+    const d2 = v.add(v.scale(b, Math.cos(alpha)), v.scale(nrm, -Math.sin(alpha)));
+    const [up, down] = d1[2] >= d2[2] ? [d1, d2] : [d2, d1];
+    const site = { up, down, dirs: [up, down] };
+    if (Math.abs(Math.abs(up[2]) - Math.abs(down[2])) > 1e-6) { const axialIsUp = Math.abs(up[2]) > Math.abs(down[2]); site.axial = axialIsUp ? up : down; site.equatorial = axialIsUp ? down : up; }
+    sites.push(site);
+  }
+  return sites;
+}
+
+/**
+ * Build a cycloalkane fragment.
+ * opts: {
+ *   prefix = '',                 // id prefix (C1…Cn, H1up/H1dn or H1ax/H1eq)
+ *   ccLength = 1.54, chLength = 1.09,
+ *   substituents = { C1: { axial: 'Me' } | { up: { id: 'Cl', el: 'Cl', length? } } },  // replaces that site's H
+ *   attachAt = null,             // 'C1' makes the fragment an R group: that carbon's `attachSite` H is dropped
+ *   attachSite = null,           // 'equatorial' (default when defined) | 'axial' | 'up' | 'down'
+ * }
+ * Returns { shape, label, atoms, bonds, rigid: { atoms, coords, attach, attachDir, planeAxis }, ring, sites, attach, substituted }.
+ */
+export function ringTemplate(shape, { prefix = '', ccLength = RING_L, chLength = 1.09, substituents = {}, attachAt = null, attachSite = null } = {}) {
+  const make = RING_COORDS[shape];
+  if (!make) throw new Error(`ringTemplate(): unknown ring shape ${shape}; expected one of ${RING_SHAPES.join(', ')}`);
+  const coords0 = make().map((p) => v.scale(p, ccLength / RING_L));
+  const n = coords0.length;
+  const siteList = ringSites(coords0);
+  const atoms = [], bonds = [], coords = {}, sites = {}, substituted = {};
+  const ring = [];
+  for (let k = 0; k < n; k++) { const id = `${prefix}C${k + 1}`; ring.push(id); atoms.push({ id, el: 'C' }); coords[id] = coords0[k]; sites[id] = siteList[k]; }
+  for (let k = 0; k < n; k++) bonds.push({ a: ring[k], b: ring[(k + 1) % n], order: 1, ring });
+  const siteName = (site, key) => (site.axial ? (site.axial === site[key] ? 'ax' : 'eq') : key === 'up' ? 'up' : 'dn');
+  const resolve = (site, key) => { if (!SITE_KEYS.includes(key)) throw new Error(`ringTemplate(): unknown site ${key}`); const d = site[key]; if (!d) throw new Error(`ringTemplate(): ${shape} has no ${key} site`); return d; };
+  const attachCarbon = attachAt ? `${prefix}${attachAt}` : null;
+  if (attachAt && !sites[attachCarbon]) throw new Error(`ringTemplate(): no ring carbon ${attachAt}`);
+  let attachDir = null, planeAxis = null;
+  for (let k = 0; k < n; k++) {
+    const cid = ring[k], site = sites[cid];
+    const subs = substituents[`C${k + 1}`] || substituents[cid] || {};
+    const taken = new Set();
+    for (const [key, spec] of Object.entries(subs)) {
+      const d = resolve(site, key);
+      const S = typeof spec === 'string' ? { id: spec } : spec;
+      const el = S.el || 'C';
+      const len = S.length ?? bondLength('C', el, 1);
+      const id = `${prefix}${S.id}`;
+      atoms.push({ id, el, ...(S.atom || {}) });
+      coords[id] = v.add(coords0[k], v.scale(d, len));
+      bonds.push({ a: cid, b: id, order: 1 });
+      substituted[id] = { carbon: cid, site: key, dir: d };
+      for (const kk of SITE_KEYS) if (site[kk] === d) taken.add(kk);
+    }
+    if (cid === attachCarbon) {
+      const key = attachSite || (site.equatorial ? 'equatorial' : 'up');
+      const d = resolve(site, key);
+      if ([...taken].some((kk) => site[kk] === d)) throw new Error(`ringTemplate(): ${attachAt} ${key} site is both the attachment and substituted`);
+      attachDir = d; planeAxis = site.up === d ? site.down : site.up;
+      for (const kk of SITE_KEYS) if (site[kk] === d) taken.add(kk);
+    }
+    for (const key of ['up', 'down']) {
+      if (taken.has(key)) continue;
+      const d = site[key];
+      const hid = `${prefix}H${k + 1}${siteName(site, key)}`;
+      atoms.push({ id: hid, el: 'H' });
+      coords[hid] = v.add(coords0[k], v.scale(d, chLength));
+      bonds.push({ a: cid, b: hid, order: 1 });
+    }
+  }
+  const attach = attachCarbon || ring[0];
+  if (!attachDir) { const site = sites[attach]; attachDir = site.equatorial || site.up; planeAxis = site.up === attachDir ? site.down : site.up; }
+  return {
+    shape, label: RING_LABELS[shape], atoms, bonds, ring, sites, attach, substituted,
+    rigid: { atoms: atoms.map((a) => a.id), coords, attach, attachDir, planeAxis },
+  };
 }

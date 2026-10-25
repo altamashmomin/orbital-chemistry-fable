@@ -92,6 +92,8 @@ src/
     mechanisms/              panel.js (transport, steps, narration, predictor), index.js, references.md
     _template/               copy-me topic with a canvas workspace (not registered)
   ui/
+    collectionExplorer.js    chips → build controls → entity card → invariant cards → field guide,
+                             driven by a collection definition (functional groups; shapes, ligands next)
     dom.js                   DOM helpers incl. aud() audience tagging
   chem/audience.js           audience defaults per collection + audienceOf()/textOf()
     level.js                 Refresher/Learn state

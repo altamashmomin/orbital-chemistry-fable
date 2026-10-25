@@ -125,7 +125,12 @@ h1 em { color: var(--accent); font-style: normal; }
 .swatch { display: inline-flex; gap: 4px; align-items: center; }
 .swatch i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; border: 1px solid #dce1d8; }
 
-/* Reaction lab: muted selection cards and a clearly separated narration surface. */
+/* Reaction lab: family tabs over muted mechanism cards, and a clearly separated narration surface. */
+.mech-nav { display: flex; flex-direction: column; gap: 9px; }
+.family-tabs { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #f3f6ef; }
+.ftab { flex: 1 1 auto; border: 0; background: transparent; border-radius: 6px; padding: 7px 10px; font-size: 10px; font-weight: 550; line-height: 1.3; color: var(--muted); text-align: center; }
+.ftab:hover { color: var(--accent); }
+.ftab.active { background: var(--panel); color: var(--accent); box-shadow: 0 1px 2px rgba(45, 59, 50, 0.14); }
 .mech-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .mtab { min-height: 85px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fcfdf8; text-align: left; }
 .mtab b { font-size: 23px; line-height: 1; letter-spacing: -1px; font-weight: 550; color: #667f60; }

@@ -1,10 +1,13 @@
-import { sn2 } from './sn2.js';
-import { sn1 } from './sn1.js';
-import { e2 } from './e2.js';
-import { e1 } from './e1.js';
+// Mechanism directory. One import and one registerFamily(...) line per family, in tab order.
+// Branch convention: a reaction branch adds its family module (mechanisms + predictor) and the
+// two lines here, and touches nothing else in this file. MECHANISMS / MECHANISM_ORDER are the
+// live, flattened registries the Reaction lab, the search index and the tests read.
+import { registerFamily } from './families.js';
+import { substitutionElimination, substitutionEliminationMechanisms } from './substitutionElimination.js';
 
-export const MECHANISMS = { sn2, sn1, e2, e1 };
-export const MECHANISM_ORDER = ['sn2', 'sn1', 'e2', 'e1'];
+registerFamily(substitutionElimination, substitutionEliminationMechanisms);
+
+export { MECHANISMS, MECHANISM_ORDER, FAMILIES, FAMILY_ORDER, registerFamily, familyOf, listFamilies, validateFamily, defaultEnv, familyColor, createFamilyRegistry } from './families.js';
 
 /** Index of the step currently "in progress" for a parameter t. */
 export function stepIndexAt(mechanism, t) {

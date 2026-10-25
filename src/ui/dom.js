@@ -17,6 +17,12 @@ export function h(tag, attrs = {}, ...children) {
   return el;
 }
 export const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
+/** Empty `el` and append children, skipping null/false (Element.append would render them as text). */
+export const fill = (el, ...children) => {
+  clear(el);
+  for (const c of children.flat(Infinity)) { if (c == null || c === false) continue; el.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return el;
+};
 
 export function select(options, value, onChange, attrs = {}) {
   const el = h('select', { class: 'select', ...attrs, onChange: (e) => onChange(e.target.value) },

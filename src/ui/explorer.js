@@ -1,5 +1,5 @@
 // Functional-group explorer panel.
-import { h, clear, select, toggle, section } from './dom.js';
+import { h, clear, fill, select, toggle, section } from './dom.js';
 import { FUNCTIONAL_GROUPS, FUNCTIONAL_GROUP_ORDER } from '../chem/functionalGroups.js';
 import { R_GROUPS, R_GROUP_ORDER } from '../chem/rGroups.js';
 import { makeMolecule, defaultChoice } from '../chem/builder.js';
@@ -87,18 +87,18 @@ export class ExplorerPanel {
     else this.viewport.fitTo(this.view.bounds(), 1.35, true);
 
     const m = mol.meta;
-    clear(this.refs.mol).append(
+    fill(this.refs.mol,
       h('div', { class: 'mol-name' }, m.name),
       h('div', { class: 'mol-meta' }, h('span', { class: 'formula' }, m.formula), h('span', { class: 'pattern', style: { color: this.fg.color } }, this.fg.pattern)),
       m.classification ? h('div', { class: 'mol-class' }, m.classification) : null,
     );
 
-    clear(this.refs.inv).append(...this.fg.invariants.map((inv) => h('button', {
+    fill(this.refs.inv, this.fg.invariants.map((inv) => h('button', {
       class: `invariant ${this.selected === inv.id ? 'active' : ''}`, style: { '--fg': this.fg.color },
       onClick: () => { this.selected = this.selected === inv.id ? null : inv.id; this.update(); },
     }, h('div', { class: 'inv-title' }, inv.title), this.selected === inv.id ? h('p', { class: 'inv-detail' }, inv.detail) : null)));
 
-    clear(this.refs.rnotes).append(...this.fg.attachments.map((att) => {
+    fill(this.refs.rnotes, this.fg.attachments.map((att) => {
       const rg = R_GROUPS[this.choice.R[att.id]];
       return h('div', { class: 'rnote' }, h('b', {}, `${att.label} = ${rg.label} (${rg.name}). `), h('span', {}, `${rg.electronic}. ${rg.note}`));
     }));

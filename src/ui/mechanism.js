@@ -1,6 +1,6 @@
 // Mechanism viewer panel: SN2 / SN1 / E2 / E1 with stepper, scrubber, energy diagram,
 // environment predictor and pluggable animators.
-import { h, clear, select, toggle, section } from './dom.js';
+import { h, clear, fill, select, toggle, section } from './dom.js';
 import { MECHANISMS, MECHANISM_ORDER, stepIndexAt, predict, SUBSTRATES, REAGENTS, SOLVENTS, TEMPERATURES, LEAVING_GROUPS } from '../chem/mechanisms/index.js';
 import { listAnimators, createAnimator, onAnimatorsChanged } from '../anim/index.js';
 import { EnergyDiagram } from './energyDiagram.js';
@@ -99,12 +99,12 @@ export class MechanismPanel {
   renderAnimatorSelect() {
     if (!this.refs?.animSel) return;
     const list = listAnimators();
-    clear(this.refs.animSel).append(select(list.map((a) => ({ id: a.id, label: a.label })), this.animatorId, (id) => this.setAnimator(id), { class: 'select', title: list.find((a) => a.id === this.animatorId)?.description || '' }));
+    fill(this.refs.animSel, select(list.map((a) => ({ id: a.id, label: a.label })), this.animatorId, (id) => this.setAnimator(id), { class: 'select', title: list.find((a) => a.id === this.animatorId)?.description || '' }));
   }
 
   renderHeader() {
     const m = this.mech;
-    clear(this.refs.header).append(
+    fill(this.refs.header,
       h('div', { class: 'mech-title' }, h('b', {}, m.name), ' · ', m.fullName),
       h('div', { class: 'equation' }, m.equation),
       h('dl', { class: 'facts' },
@@ -120,12 +120,12 @@ export class MechanismPanel {
   }
 
   renderSteps() {
-    clear(this.refs.steps).append(...this.mech.steps.map((s, i) => h('li', { class: i === this.stepIdx ? 'active' : '', onClick: () => this.goToStep(i) }, h('span', { class: 'step-n' }, i + 1), h('span', {}, s.title))));
+    fill(this.refs.steps, this.mech.steps.map((s, i) => h('li', { class: i === this.stepIdx ? 'active' : '', onClick: () => this.goToStep(i) }, h('span', { class: 'step-n' }, i + 1), h('span', {}, s.title))));
   }
 
   renderNarration() {
     const s = this.mech.steps[this.stepIdx] || this.mech.steps[0];
-    clear(this.refs.narration).append(
+    fill(this.refs.narration,
       h('div', { class: 'step-title' }, `Step view ${this.stepIdx + 1} of ${this.mech.steps.length}: ${s.title}`),
       h('p', {}, s.narration),
       h('ul', { class: 'keypoints' }, s.keyPoints.map((k) => h('li', {}, k))),
@@ -136,7 +136,7 @@ export class MechanismPanel {
 
   renderIdeas() {
     const m = this.mech;
-    clear(this.refs.ideas).append(
+    fill(this.refs.ideas,
       section('Key ideas', h('ul', { class: 'ideas' }, m.keyIdeas.map((k) => h('li', {}, k)))),
       section('Conditions',
         h('div', { class: 'cond' }, h('b', {}, 'Favoured by'), h('ul', {}, m.conditions.favoredBy.map((x) => h('li', {}, x)))),
@@ -149,7 +149,7 @@ export class MechanismPanel {
   renderPrediction() {
     const p = predict(this.env);
     const bar = (id, label, pct, color) => h('div', { class: 'bar-row' }, h('span', { class: 'bar-label' }, label), h('div', { class: 'bar' }, h('i', { style: { width: `${pct}%`, background: color } })), h('span', { class: 'bar-pct' }, `${pct}%`));
-    clear(this.refs.prediction).append(
+    fill(this.refs.prediction,
       h('div', { class: 'pred-summary' }, p.summary),
       bar('sn2', 'SN2', p.pct.sn2, '#38bdf8'), bar('sn1', 'SN1', p.pct.sn1, '#a78bfa'), bar('e2', 'E2', p.pct.e2, '#34d399'), bar('e1', 'E1', p.pct.e1, '#fbbf24'),
       p.pct.none ? bar('none', 'no rxn', p.pct.none, '#64748b') : null,

@@ -29,7 +29,7 @@ fully unit-testable, and lands on its own. ✅ marks a row that is merged on `ma
 | 0d | ✅ **2D overlays**: Newman projection and wedge/dash sketch drawn from 3D coordinates onto a small canvas | stereochemistry and conformations both need them | 3, 4 |
 | 0e | ✅ **Lone-pair angle compression** in the embedder (deferred from sweep 01): bonded angles at lone-pair centres close to the measured values in `LONE_PAIR_ANGLES` (H₂O 104.5°, NH₃ 107.3°, CH₃OH 108.5°, Me₂O 111.7°, CH₃SH 96.5°, SF₄ 173°/102°, ClF₃ 175°, BrF₅ 85°), 2.5° per lone pair elsewhere; register updated | the shapes topic would otherwise teach 109.5° for water | 6 |
 
-**Phase 0 is complete** (PRs #2, #3, #4, #5 and the 0e PR): topic branches can start from
+**Phase 0 is complete** (PRs #2, #3, #4, #5 and #7): topic branches can start from
 `main`; each primitive is documented with a snippet in [ADDING_A_TOPIC.md](ADDING_A_TOPIC.md) §6.
 
 ## Phase 1 — pure reuse of the molecule and reaction engines

@@ -5,12 +5,12 @@
 import { FUNCTIONAL_GROUPS, FUNCTIONAL_GROUP_ORDER } from './functionalGroups.js';
 import { makeMolecule } from './builder.js';
 import { bondLength, ELEMENTS } from './elements.js';
-import { v, DEG, embed, geometryKind, ringTemplate, complexFrame } from './geometry.js';
+import { v, DEG, embed, geometryKind, ringTemplate, complexFrame, directionalLonePairs, lonePairAngleTargets } from './geometry.js';
 import { MECHANISMS, MECHANISM_ORDER } from './mechanisms/index.js';
 import { predict } from './mechanisms/predictor.js';
 import { orbital, radial, ORBITALS } from './orbitals.js';
 import { audienceOf, isValidAudience } from './audience.js';
-import { BOND_LENGTHS, IDEAL_ANGLES, REAL_ANGLES, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
+import { BOND_LENGTHS, IDEAL_ANGLES, REAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -52,7 +52,6 @@ export function runConformance() {
   }
 
   // ------------------------------------------------------------------ B. built molecules
-  const LP_NOTES = { O: { 2: ['water_HOH', 'methanol_COH', 'dimethylEther_COC'] }, N: { 3: ['ammonia_HNH'] }, S: { 2: ['methanethiol_CSH'] } };
   for (const id of FUNCTIONAL_GROUP_ORDER) {
     const { mol, frame } = makeMolecule(id);
     const byId = new Map(frame.atoms.map((a) => [a.id, a]));
@@ -69,34 +68,42 @@ export function runConformance() {
       if (dev > worstBond.dev) worstBond = { dev, key: `${b.a}–${b.b}`, d, expected, tol };
     }
     add('molecules', `${id}.bonds`, pf(worstBond.dev <= (worstBond.tol ?? 0.03)), `${bondCount} bonds of ${mol.meta.name} within textbook tolerance (worst ${worstBond.key ?? '-'})`, { expected: worstBond.expected && `${worstBond.expected} ± ${worstBond.tol} Å`, actual: worstBond.d && fmt(worstBond.d), source: 'CRC' });
-    // angles at centres without lone pairs
+    // angles: ideal VSEPR at centres without directional lone pairs, the measured LONE_PAIR_ANGLES value
+    // at centres with them (lone-pair angle compression, roadmap Phase 0e)
     const adj = new Map(frame.atoms.map((a) => [a.id, []]));
     for (const b of frame.bonds) { adj.get(b.a).push(b.b); adj.get(b.b).push(b.a); }
-    let worstAngle = { dev: 0 }, lpNotes = [];
+    let worstAngle = { dev: 0 };
     for (const a of frame.atoms) {
       const nb = adj.get(a.id);
       if (nb.length < 2 || a.aromatic) continue;
       const def = atomDef.get(a.id);
       const kind = geometryKind(def, nb.length);
+      const angles = [];
+      for (let i = 0; i < nb.length; i++) for (let j = i + 1; j < nb.length; j++) angles.push(angleDeg(byId.get(nb[i]).pos, a.pos, byId.get(nb[j]).pos));
+      const nLP = directionalLonePairs(def);
+      if (nLP > 0) {
+        const els = nb.map((n) => byId.get(n).el);
+        const lookup = lonePairAngleTargets(a.el, nb.length, nLP, els);
+        const [e1, e2] = [...els].sort();
+        const what = nb.length === 2 ? `${e1}–${a.el}–${e2}` : `angles at ${a.el}`;
+        const actual = `${angles.map((x) => fmt(x, 1)).join('/')}°`;
+        if (lookup.targets?.['bond-bond'] !== undefined) {
+          const target = lookup.targets['bond-bond'];
+          const worst = Math.max(...angles.map((x) => Math.abs(x - target)));
+          add('molecules', `${id}.lp-angle.${a.id}`, pf(worst <= 0.5), `${mol.meta.name}: ${what} closed by ${nLP} lone pair${nLP > 1 ? 's' : ''} to the measured value (${lookup.key})`, { expected: `${target}°`, actual, source: lookup.source });
+        } else {
+          add('simplifications', `${id}.lp-fallback.${a.id}`, 'note', `${mol.meta.name}: ${what} has no LONE_PAIR_ANGLES entry; every bonded angle closed by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair`, { actual, source: lookup.source });
+        }
+        continue;
+      }
       const ideal = kind === 'tetrahedral' ? IDEAL_ANGLES.tetrahedral : kind === 'trigonal' ? IDEAL_ANGLES.trigonal : kind === 'linear' ? IDEAL_ANGLES.linear : null;
       if (ideal === null) continue;
-      const lp = def.lonePairs || 0;
-      for (let i = 0; i < nb.length; i++) for (let j = i + 1; j < nb.length; j++) {
-        const ang = angleDeg(byId.get(nb[i]).pos, a.pos, byId.get(nb[j]).pos);
-        if (lp && def.hyb !== 'sp2' && def.hyb !== 'sp') { lpNotes.push({ el: a.el, n: nb.length, ang }); continue; }
+      for (const ang of angles) {
         const dev = Math.abs(ang - ideal);
         if (dev > worstAngle.dev) worstAngle = { dev, at: a.id, ang, ideal };
       }
     }
     add('molecules', `${id}.angles`, pf(worstAngle.dev <= 1.5), `bond angles at centres without lone pairs match the idealised VSEPR value (worst at ${worstAngle.at ?? '-'})`, { expected: worstAngle.ideal && `${worstAngle.ideal}°`, actual: worstAngle.ang && `${fmt(worstAngle.ang, 1)}°`, source: 'VSEPR' });
-    const seen = new Set();
-    for (const n of lpNotes) {
-      const keys = LP_NOTES[n.el]?.[n.n] || [];
-      const key = keys.find((k) => !seen.has(k)) || keys[0];
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      add('simplifications', `${id}.${key}`, 'note', `${mol.meta.name}: angle at ${n.el} is idealised; measured ${key.replace(/_/g, ' ')} differs`, { expected: `${REAL_ANGLES[key][0]}°`, actual: `${fmt(n.ang, 1)}°`, source: REAL_ANGLES[key][1] });
-    }
     // clashes
     const related = (x, y) => adj.get(x).includes(y) || adj.get(x).some((n) => adj.get(n).includes(y));
     let minNb = Infinity, pair = '';
@@ -145,27 +152,39 @@ export function runConformance() {
   }
 
   // ------------------------------------------------------------------ D. VSEPR shapes with lone pairs
-  const hyper = (el, n, lp, X = 'F') => {
+  const hyper = (el, n, lp, X = 'F', opts = {}) => {
     const atoms = [{ id: 'A', el, lonePairs: lp }], bonds = [];
     for (let i = 1; i <= n; i++) { atoms.push({ id: `X${i}`, el: X, lonePairs: X === 'H' ? 0 : 3 }); bonds.push({ a: 'A', b: `X${i}`, order: 1 }); }
-    const e = embed({ atoms, bonds }, { root: 'A' });
+    const e = embed({ atoms, bonds }, { root: 'A', ...opts });
     const a = e.positions.get('A'); const P = bonds.map((b) => e.positions.get(b.b));
     const angs = []; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) angs.push(angleDeg(P[i], a, P[j]));
     return { angles: angs.sort((x, y) => x - y), lp: e.lonePairDirs.get('A') || [] };
   };
   const expectAngles = (id, label, got, exp, source, tol = 0.5) => {
     const ok = got.length === exp.length && got.every((x, i) => Math.abs(x - exp[i]) <= tol);
-    add('shapes', id, pf(ok), label, { expected: exp.join('/'), actual: got.map((x) => fmt(x, 1)).join('/'), source });
+    add('shapes', id, pf(ok), label, { expected: exp.map((x) => (Number.isInteger(x) ? x : fmt(x, 1))).join('/'), actual: got.map((x) => fmt(x, 1)).join('/'), source });
   };
-  expectAngles('SF4.seesaw', 'SF₄: seesaw (lone pair equatorial)', hyper('S', 4, 1).angles, [90, 90, 90, 90, 120, 180], 'VSEPR');
-  expectAngles('ClF3.T', 'ClF₃: T-shaped (two equatorial lone pairs)', hyper('Cl', 3, 2).angles, [90, 90, 180], 'VSEPR');
-  expectAngles('BrF5.square-pyramid', 'BrF₅: square pyramidal', hyper('Br', 5, 1).angles, [90, 90, 90, 90, 90, 90, 90, 90, 180, 180], 'VSEPR');
+  // Qualitative shapes come from lone-pair slot placement alone (ideal slots, `lonePairAngles: false`) …
+  const ideal = { lonePairAngles: false };
+  expectAngles('SF4.seesaw', 'SF₄: seesaw from ideal slots (lone pair equatorial)', hyper('S', 4, 1, 'F', ideal).angles, [90, 90, 90, 90, 120, 180], 'VSEPR');
+  expectAngles('ClF3.T', 'ClF₃: T-shaped from ideal slots (two equatorial lone pairs)', hyper('Cl', 3, 2, 'F', ideal).angles, [90, 90, 180], 'VSEPR');
+  expectAngles('BrF5.square-pyramid', 'BrF₅: square pyramidal from ideal slots', hyper('Br', 5, 1, 'F', ideal).angles, [90, 90, 90, 90, 90, 90, 90, 90, 180, 180], 'VSEPR');
   expectAngles('XeF4.square-planar', 'XeF₄: square planar (trans lone pairs)', hyper('Xe', 4, 2).angles, [90, 90, 90, 90, 180, 180], 'VSEPR');
   expectAngles('PF5.tbp', 'PF₅: trigonal bipyramid', hyper('P', 5, 0).angles, [90, 90, 90, 90, 90, 90, 120, 120, 120, 180], 'VSEPR');
   expectAngles('SF6.octahedral', 'SF₆: octahedral', hyper('S', 6, 0).angles, [90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 180, 180, 180], 'VSEPR');
-  add('simplifications', 'SF4.measured', 'note', 'SF₄ real angles are compressed by the lone pair', { expected: `${REAL_ANGLES.SF4_axial_FSF[0]}° axial / ${REAL_ANGLES.SF4_equatorial_FSF[0]}° equatorial`, actual: '180° / 120° (ideal slots)', source: 'CRC' });
-  expectAngles('H2O.bent', 'H₂O: bent (tetrahedral slots)', hyper('O', 2, 2, 'H').angles, [IDEAL_ANGLES.tetrahedral], 'VSEPR', 0.1);
-  expectAngles('NH3.pyramidal', 'NH₃: trigonal pyramidal (tetrahedral slots)', hyper('N', 3, 1, 'H').angles, [IDEAL_ANGLES.tetrahedral, IDEAL_ANGLES.tetrahedral, IDEAL_ANGLES.tetrahedral], 'VSEPR', 0.1);
+  // … and the default embedding closes them to the measured angles (lone-pair angle compression, Phase 0e).
+  // The angles the table does not state follow from the two it does: F_ax–S–F_eq in SF₄ from the axial and
+  // equatorial pairs 90° apart in azimuth; cis and trans F_basal–Br–F_basal in BrF₅ from the basal–apical angle.
+  const ax = REAL_ANGLES.SF4_axial_FSF[0], eq = REAL_ANGLES.SF4_equatorial_FSF[0];
+  const axEq = Math.acos(Math.cos((ax / 2) * DEG) * Math.cos((eq / 2) * DEG)) / DEG;
+  expectAngles('SF4.measured', 'SF₄: F–S–F closed by the equatorial lone pair (4 × axial–equatorial, equatorial, axial)', hyper('S', 4, 1).angles, [axEq, axEq, axEq, axEq, eq, ax], REAL_ANGLES.SF4_axial_FSF[1]);
+  const clAx = REAL_ANGLES.ClF3_axial_FClF[0];
+  expectAngles('ClF3.measured', 'ClF₃: axial F–Cl–F closed by the two equatorial lone pairs', hyper('Cl', 3, 2).angles, [clAx / 2, clAx / 2, clAx], REAL_ANGLES.ClF3_axial_FClF[1]);
+  const ba = REAL_ANGLES.BrF5_basal_apical_FBrF[0], cis = Math.acos(Math.cos(ba * DEG) ** 2) / DEG;
+  expectAngles('BrF5.measured', 'BrF₅: basal fluorines lean toward the apical one, away from the lone pair (4 × basal–apical, 4 × cis, 2 × trans)', hyper('Br', 5, 1).angles, [ba, ba, ba, ba, cis, cis, cis, cis, 2 * ba, 2 * ba], REAL_ANGLES.BrF5_basal_apical_FBrF[1]);
+  expectAngles('H2O.bent', 'H₂O: bent, H–O–H at the measured value', hyper('O', 2, 2, 'H').angles, [REAL_ANGLES.water_HOH[0]], REAL_ANGLES.water_HOH[1], 0.1);
+  expectAngles('NH3.pyramidal', 'NH₃: trigonal pyramidal, H–N–H at the measured value', hyper('N', 3, 1, 'H').angles, Array(3).fill(REAL_ANGLES.ammonia_HNH[0]), REAL_ANGLES.ammonia_HNH[1], 0.1);
+  expectAngles('H2S.bent', 'H₂S: bent, H–S–H at the measured value', hyper('S', 2, 2, 'H').angles, [LONE_PAIR_ANGLES['S/2/2/H,H'][0]], LONE_PAIR_ANGLES['S/2/2/H,H'][1], 0.1);
 
   // ------------------------------------------------------------------ E. coordination
   const lmL = (frame, metal) => {
@@ -282,7 +301,10 @@ export function runConformance() {
     'sn2-symmetric-ts': 'SN2 transition state drawn exactly symmetric (both partial bonds 0.5)',
     'no-solvent-shell': 'only reacting species are shown; solvation shells and counter-ions omitted',
     'linear-partials': 'bond order and charge interpolate linearly along t',
-    'schematic-lobes': 'lone pairs and p orbitals drawn as fixed-size schematic lobes',
+    'schematic-lobes': 'lone pairs and p orbitals drawn as fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°)',
+    'amine-angles': `amines use the ammonia value (${LONE_PAIR_ANGLES['N/3/1'][0]}°) for all three angles at N; measured amine angles vary with substitution (≈ 106–112°)`,
+    'carbonyl-angles': `carbonyl centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${REAL_ANGLES.acetone_CCC[0]}°)`,
+    'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES entry close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair`,
   })) add('simplifications', k, 'note', detail);
 
   const summary = { pass: 0, fail: 0, note: 0 };

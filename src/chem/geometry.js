@@ -2,6 +2,7 @@
 // Coordinates are plain [x, y, z] arrays (Å) so this module runs in Node tests
 // and in the browser; the renderer converts to THREE.Vector3.
 import { bondLength } from './elements.js';
+import { LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR } from './references/textbook.js';
 
 export const DEG = Math.PI / 180;
 export const TETRAHEDRAL = 109.4712 * DEG;
@@ -104,8 +105,8 @@ export function geometryKind(atom, nNeighbors) {
   return 'tbp';
 }
 
-/** Number of lone pairs that occupy directional slots (p-orbital lone pairs do not). */
-function slotLonePairs(atom) {
+/** Number of lone pairs that occupy directional slots (a p-orbital lone pair on an sp² atom does not). */
+export function directionalLonePairs(atom) {
   const lp = atom.lonePairs || 0;
   if (atom.hyb === 'sp2' && atom.pOrbital === 'lonePair') return Math.max(0, lp - 1);
   return lp;
@@ -142,6 +143,124 @@ export function vseprShape(nBonds, nLonePairs = 0) {
   const shape = SHAPES[`${nBonds},${nLonePairs}`] || (steric === 3 ? 'bent' : steric === 4 ? 'bent' : 'irregular');
   const angles = shape === 'bent' ? (steric === 3 ? [120] : [109.5]) : SHAPE_ANGLES[shape] || [];
   return { steric, kind, shape, angles };
+}
+
+// ---- Lone-pair angle compression (roadmap Phase 0e) ---------------------------------------------
+const clamp1 = (x) => Math.max(-1, Math.min(1, x));
+
+/**
+ * Target angles for a centre with lone pairs, looked up in LONE_PAIR_ANGLES (references/textbook.js)
+ * by element, number of bonded atoms, number of directional lone pairs and, when listed, the sorted
+ * neighbour elements. Returns { targets, source, key } with targets keyed by slot-class pair
+ * ('bond-bond' for bent and pyramidal centres; 'axial-axial', 'equatorial-equatorial', 'basal-apical'
+ * for trigonal-bipyramidal and octahedral ones), or { targets: null, perPair, source } for the documented
+ * fallback: every bonded angle closes by LONE_PAIR_COMPRESSION_PER_PAIR degrees per lone pair.
+ */
+export function lonePairAngleTargets(el, nBonds, nLonePairs, neighbourEls = []) {
+  const base = `${el}/${nBonds}/${nLonePairs}`;
+  const sig = [...neighbourEls].sort().join(',');
+  const key = sig && LONE_PAIR_ANGLES[`${base}/${sig}`] ? `${base}/${sig}` : LONE_PAIR_ANGLES[base] ? base : null;
+  if (!key) return { targets: null, perPair: LONE_PAIR_COMPRESSION_PER_PAIR, source: `fallback (${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair)`, key: null };
+  const entry = LONE_PAIR_ANGLES[key];
+  if (Array.isArray(entry)) return { targets: { 'bond-bond': entry[0] }, source: entry[1], key };
+  const targets = {};
+  let source = null;
+  for (const [k, val] of Object.entries(entry)) { targets[k] = val[0]; source = source || val[1]; }
+  return { targets, source, key };
+}
+
+/**
+ * Move a centre's bonded slot directions toward the axis its lone pairs point away from
+ * (c = −Σ lone-pair directions) until the bonded angles meet `targets`, and open the lone pairs by
+ * the mean compression. Bonded slots are grouped into classes by their angle to c: one class for bent
+ * and pyramidal centres, axial / equatorial in a trigonal bipyramid, apical / basal in an octahedron.
+ * A class target is the angle between two of its bonds ('X-X') or its angle to the bond lying on the
+ * axis ('X-apex'); without targets every class closes by `perPair` degrees per lone pair (a class with
+ * an apical bond closes its angle to it). Symmetric by construction, so a centre is compressed the
+ * same way whichever neighbour was placed first. Returns the new slot array, or null when nothing can
+ * move: no lone pairs, fewer than two bonds, or lone pairs that cancel (XeF₄, trans lone pairs).
+ */
+export function compressLonePairSlots(kind, slots, bonded, lonePairs, targets = null, perPair = LONE_PAIR_COMPRESSION_PER_PAIR) {
+  if (!lonePairs.length || bonded.length < 2) return null;
+  let lpSum = [0, 0, 0];
+  for (const k of lonePairs) lpSum = v.add(lpSum, slots[k]);
+  if (v.len(lpSum) < 1e-6) return null;
+  const c = v.norm(v.neg(lpSum));
+  const e1 = v.anyPerp(c), e2 = v.cross(c, e1);
+  const ON_AXIS = 1e-6;
+  const className = (k, theta) => (kind === 'tbp' ? (k < 2 ? 'axial' : 'equatorial') : kind === 'octahedral' || kind === 'squarePlanar' ? (theta < ON_AXIS ? 'apical' : 'basal') : 'bond');
+  const classes = new Map();
+  for (const k of bonded) {
+    const d = slots[k];
+    const theta = Math.acos(clamp1(v.dot(d, c))), phi = Math.atan2(v.dot(d, e2), v.dot(d, e1));
+    const name = className(k, theta);
+    if (!classes.has(name)) classes.set(name, { name, members: [] });
+    classes.get(name).members.push({ k, theta, phi });
+  }
+  for (const cl of classes.values()) cl.theta = cl.members.reduce((sum, m) => sum + m.theta, 0) / cl.members.length;
+  const apex = [...classes.values()].find((cl) => cl.theta < ON_AXIS) || null;
+  // Smallest angle between two bonds of a class when all of them sit at polar angle theta from c.
+  const pairAngle = (cl, theta) => {
+    let best = Infinity;
+    for (let i = 0; i < cl.members.length; i++) for (let j = i + 1; j < cl.members.length; j++) {
+      const a = Math.acos(clamp1(Math.cos(theta) ** 2 + Math.sin(theta) ** 2 * Math.cos(cl.members[i].phi - cl.members[j].phi)));
+      if (a < best) best = a;
+    }
+    return best;
+  };
+  const thetaFor = (cl, alpha) => { // pairAngle grows monotonically with theta on [0, π/2]: bisect
+    let lo = 0, hi = Math.PI / 2;
+    for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (pairAngle(cl, mid) < alpha) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  };
+  const moved = new Map();
+  for (const cl of classes.values()) {
+    if (cl.theta < ON_AXIS) continue;
+    const pairKey = `${cl.name}-${cl.name}`, apexKey = apex ? `${cl.name}-${apex.name}` : null;
+    let theta = null;
+    if (targets) {
+      if (targets[pairKey] !== undefined && cl.members.length >= 2) theta = thetaFor(cl, targets[pairKey] * DEG);
+      else if (apexKey && targets[apexKey] !== undefined) theta = targets[apexKey] * DEG;
+    } else {
+      const d = perPair * lonePairs.length * DEG;
+      theta = apex ? Math.max(0, cl.theta - d) : cl.members.length >= 2 ? thetaFor(cl, pairAngle(cl, cl.theta) - d) : null;
+    }
+    if (theta !== null) moved.set(cl.name, theta);
+  }
+  if (!moved.size) return null;
+  const out = slots.map((d) => [...d]);
+  let dSum = 0, dCount = 0;
+  for (const cl of classes.values()) {
+    if (!moved.has(cl.name)) continue;
+    const theta = moved.get(cl.name);
+    for (const m of cl.members) {
+      const e = v.norm(v.perp(slots[m.k], c));
+      out[m.k] = v.add(v.scale(c, Math.cos(theta)), v.scale(e, Math.sin(theta)));
+      dSum += m.theta - theta; dCount++;
+    }
+  }
+  const open = dSum / dCount;
+  for (const k of lonePairs) {
+    const l = slots[k];
+    const psi = Math.acos(clamp1(-v.dot(l, c)));
+    if (psi < ON_AXIS) continue;   // a lone pair on the axis (NH₃, SF₄, BrF₅) stays there
+    const e = v.norm(v.perp(l, c));
+    const psi2 = Math.max(0, Math.min(89 * DEG, psi + open));
+    out[k] = v.add(v.scale(c, -Math.cos(psi2)), v.scale(e, Math.sin(psi2)));
+  }
+  return out;
+}
+
+/** Rotate compressed slots so slot i0 keeps its direction and the torsion reference slot keeps its azimuth about it. */
+function realignSlots(kind, prev, next, i0) {
+  const u = prev[i0], u2 = next[i0];
+  const usable = (k) => k !== i0 && v.len(v.perp(prev[k], u)) > 1e-6 && v.len(v.perp(next[k], u2)) > 1e-6;
+  let r = TORSION_REF[kind] ?? 1;
+  if (!usable(r)) r = prev.findIndex((_, k) => usable(k));
+  if (r < 0) { const R = m3.fromTo(u2, u); return next.map((d) => m3.apply(R, d)); }
+  const e1 = v.norm(v.perp(prev[r], u)), f1 = v.norm(v.perp(next[r], u2));
+  const R = m3.mul(m3.fromColumns(u, e1, v.cross(u, e1)), m3.transpose(m3.fromColumns(u2, f1, v.cross(u2, f1))));
+  return next.map((d) => m3.apply(R, d));
 }
 
 function buildAdjacency(graph) {
@@ -224,11 +343,14 @@ function placeRigid(group, attachId, target, dirFromParent, parentKind, refVec, 
 /**
  * Embed a molecular graph in 3D.
  * graph: { atoms: [{id, el, lonePairs?, hyb?, pOrbital?, charge?}], bonds: [{a, b, order?}], rigid?: [...] }
- * opts:  { pinned: {id: [x,y,z]}, hints: {id: [x,y,z]}, root?: id }
+ * opts:  { pinned: {id: [x,y,z]}, hints: {id: [x,y,z]}, root?: id, lonePairAngles = true }
  * Returns { positions: Map, lonePairDirs: Map<id, dir[]>, orbitals: Map<id, {kind, dirs}>, frames: Map }
+ * frames.get(id) = { kind, slots, normal, slotOf, compression }: `compression` is the LONE_PAIR_ANGLES
+ * lookup applied at that centre (null when its slots are ideal); `lonePairAngles: false` keeps every
+ * centre at the ideal slot angles.
  */
 export function embed(graph, opts = {}) {
-  const { pinned = {}, hints = {}, root } = opts;
+  const { pinned = {}, hints = {}, root, lonePairAngles = true } = opts;
   const atoms = new Map(graph.atoms.map((a) => [a.id, a]));
   const adj = buildAdjacency(graph);
   const pos = new Map(Object.entries(pinned).map(([k, p]) => [k, [p[0], p[1], p[2]]]));
@@ -310,7 +432,7 @@ export function embed(graph, opts = {}) {
     }
     // Lone pairs reserve their preferred slots first (equatorial in tbp, trans pairs in octahedral),
     // so SF4 is a seesaw, ClF3 T-shaped, BrF5 square pyramidal and XeF4 square planar.
-    const lpSlots = lonePairSlots(kind, slots.map((_, k) => k).filter((k) => !used.has(k)), slotLonePairs(a));
+    const lpSlots = lonePairSlots(kind, slots.map((_, k) => k).filter((k) => !used.has(k)), directionalLonePairs(a));
     for (const k of lpSlots) used.add(k);
     // Biggest substituent takes the anti slot, except on alkene-like atoms where definition order is kept.
     const ordered = isAlkeneLike(id) ? unplacedN : [...unplacedN].sort((x, y) => bulk(y.id, id) - bulk(x.id, id));
@@ -318,20 +440,33 @@ export function embed(graph, opts = {}) {
     const refVec = refNeighbor
       ? (() => { const q = pickRef(refNeighbor.id, id); return q ? v.sub(pos.get(q.id), pos.get(refNeighbor.id)) : null; })()
       : null;
+    const assigned = [];
     for (const n of ordered) {
       let i = slots.findIndex((_, k) => !used.has(k));
       if (i < 0 && lpSlots.length) i = lpSlots.pop();   // more neighbours than slots: a lone pair gives way
       if (i < 0) i = slots.length - 1;
       used.add(i);
       slotOf[n.id] = i;
+      assigned.push([n, i]);
+    }
+    // Lone-pair angle compression (Phase 0e): a centre that places at least one neighbour and keeps
+    // lone pairs in directional slots gets the measured bonded angles (LONE_PAIR_ANGLES, or the per-pair
+    // fallback), re-aligned so the first placed neighbour and the torsion stay where the ideal frame put
+    // them. A centre whose neighbours are all pinned (mechanism frames) keeps its ideal slots.
+    let dirs = slots, compression = null;
+    if (lonePairAngles && lpSlots.length && assigned.length) {
+      const lookup = lonePairAngleTargets(a.el, nbrs.length, lpSlots.length, nbrs.map((n) => atoms.get(n.id).el));
+      const next = compressLonePairSlots(kind, slots, Object.values(slotOf), lpSlots, lookup.targets, lookup.perPair);
+      if (next) { dirs = realignSlots(kind, slots, next, placedN.length ? slotOf[placedN[0].id] : 0); compression = lookup; }
+    }
+    for (const [n, i] of assigned) {
       const nb = atoms.get(n.id);
       const L = bondLength(a.el, nb.el, n.order);
-      const target = v.add(p, v.scale(slots[i], L));
+      const target = v.add(p, v.scale(dirs[i], L));
       const g = rigidOf.get(n.id);
       if (g && !placedRigid.has(g)) {
-        const parentKind = kind;
         const ref = placedN.length ? v.sub(pos.get(placedN[0].id), p) : refVec;
-        placeRigid(g, n.id, target, slots[i], parentKind, ref, pos);
+        placeRigid(g, n.id, target, dirs[i], kind, ref, pos);
         placedRigid.add(g);
         for (const x of g.atoms) queue.push(x);
       } else {
@@ -339,14 +474,14 @@ export function embed(graph, opts = {}) {
         queue.push(n.id);
       }
     }
-    lonePairDirs.set(id, lpSlots.map((k) => slots[k]));
+    lonePairDirs.set(id, lpSlots.map((k) => dirs[k]));
     let normal = null;
     if (kind === 'trigonal' || kind === 'linear' || kind === 'squarePlanar') {
-      const s0 = slots[0], s1 = kind === 'squarePlanar' ? slots[2] : slots[1] || v.anyPerp(s0);
+      const s0 = dirs[0], s1 = kind === 'squarePlanar' ? dirs[2] : dirs[1] || v.anyPerp(s0);
       normal = v.norm(v.cross(s0, s1));
       if (v.len(normal) < 1e-6) normal = v.anyPerp(s0);
     }
-    frames.set(id, { kind, slots, normal, slotOf });
+    frames.set(id, { kind, slots: dirs, normal, slotOf, compression });
     for (const n of placedN) if (!visited.has(n.id)) queue.push(n.id);
   }
 

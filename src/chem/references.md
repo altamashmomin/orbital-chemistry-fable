@@ -67,3 +67,12 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
   puckered cyclobutane (fold ≈ 25–35°): Eliel & Wilen, *Stereochemistry of Organic Compounds*
   (Wiley, 1994), ch. 11; Clayden, Greeves & Warren, *Organic Chemistry* (OUP, 2nd ed.), ch. 16.
   The templates are idealised (all C–C = 1.54 Å, exact closure) for teaching, not refined structures.
+* Lone-pair angle compression (`LONE_PAIR_ANGLES` in `references/textbook.js`): the bonded angles at
+  centres with lone pairs are closed from the ideal slot angle to the gas-phase values in the CRC
+  Handbook of Chemistry and Physics, "Structure of free molecules in the gas phase" (H₂O 104.5°,
+  NH₃ 107.3°, H₂S 92.1°, CH₃OH C–O–H 108.5°, (CH₃)₂O 111.7°, CH₃SH 96.5°, (CH₃)₂S 98.9°, CH₃COOH
+  C–O–H 107.0°, CH₃COOCH₃ C–O–C 116.4°, SF₄ 173.1°/101.6°, ClF₃ 87.5° axial–equatorial, BrF₅ 84.8°
+  apical–basal). The picture behind the rule — lone pairs repel more than bonding pairs, so bonded
+  angles close and the lone pairs spread — is Gillespie & Hargittai (above); the 2.5° per lone pair
+  default for centres not in the table is a rounded version of the H₂O / NH₃ deficit and is a
+  teaching convention, not a measurement.

@@ -273,8 +273,28 @@ equatorial slots in a trigonal bipyramid, a trans pair in an octahedron. So a ce
 its lone-pair count alone comes out right: `{ el: 'S', lonePairs: 1 }` with four fluorines is a
 seesaw, `ClF₃` (two lone pairs) is T-shaped, `BrF₅` square pyramidal and `XeF₄` square planar.
 `vseprShape(nBonds, nLonePairs)` gives the vocabulary (`{ steric, kind, shape, angles }`) and
-`lonePairSlots(kind, freeSlots, n)` is the preference table behind it. Ordinary molecules embed
-exactly as before.
+`lonePairSlots(kind, freeSlots, n)` is the preference table behind it.
+
+**Lone-pair angles.** A centre that keeps lone pairs in directional slots does not show the ideal
+slot angle: after the slots are assigned the embedder closes its bonded directions toward each other
+(symmetrically, so the first placed neighbour and the torsion stay put) until they meet the measured
+angle in `LONE_PAIR_ANGLES` (`src/chem/references/textbook.js`), keyed `El/nBonds/nLonePairs` with an
+optional sorted-neighbour suffix: water `O/2/2/H,H` 104.5°, alcohols `O/2/2/C,H` 108.5°, ethers 111.7°,
+amines `N/3/1` 107.3°, thiols 96.5°, the ester / acid sp² oxygen `O/2/1`, and SF₄ / ClF₃ / BrF₅ by slot
+class (`axial-axial`, `equatorial-equatorial`, `basal-apical`). Centres with no entry close every
+bonded angle by `LONE_PAIR_COMPRESSION_PER_PAIR` (2.5°) per lone pair; lone-pair lobes open by the same
+amount. Pinned centres whose neighbours are all placed (mechanism frames) are left alone, and
+`embed(graph, { lonePairAngles: false })` gives the ideal slots back. Teaching a new lone-pair centre?
+Add its measured angle to the table (with a source) before the topic quotes it:
+
+```js
+import { embed, lonePairAngleTargets, compressLonePairSlots } from '../../chem/geometry.js';
+embed(graph, { root: 'O' });                       // alcohol O: C–O–H = 108.5°
+embed(graph, { root: 'O', lonePairAngles: false }); // ideal slots: 109.47°
+lonePairAngleTargets('O', 2, 2, ['C', 'H']);        // { targets: { 'bond-bond': 108.5 }, source: 'CRC', key: 'O/2/2/C,H' }
+lonePairAngleTargets('Se', 2, 2, ['H', 'H']);       // { targets: null, perPair: 2.5, … } → the fallback
+e.frames.get('O').compression;                      // the lookup applied at that centre, or null
+```
 
 **Cycloalkane templates.** `ringTemplate(shape, opts)` returns a rigid fragment in the format the
 embedder's `rigid` groups use (`atoms`, `bonds`, `rigid: { atoms, coords, attach, attachDir,

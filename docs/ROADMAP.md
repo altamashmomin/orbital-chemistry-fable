@@ -9,7 +9,7 @@ finesse the branches that fit the architecture least.
 
 | Layer | Reusable pieces | Used by |
 | --- | --- | --- |
-| Molecule engine (`src/chem/`) | graph → VSEPR embedder (tetrahedral, trigonal, linear, tbp, octahedral, square planar), rigid ring templates, pinned atoms, torsion relaxation, builder (core + R groups), bond-length and element tables | anything that shows a molecule |
+| Molecule engine (`src/chem/`) | graph → VSEPR embedder (tetrahedral, trigonal, linear, tbp, octahedral, square planar) with measured lone-pair angles, rigid ring templates, pinned atoms, torsion relaxation, builder (core + R groups), bond-length and element tables | anything that shows a molecule |
 | Reaction engine (`src/chem/mechanisms/`) | parametric `frame(t)` with partial bonds, charges, arrows, steps, cues, energy profiles; `System` builder; predictor pattern; Cinematic animator | any mechanism or dynamic process |
 | Renderers (`src/render/`) | `MoleculeView` (ball-and-stick, lone pairs, p lobes, 9 highlight types), `OrbitalView` (phase-coloured isosurfaces, LCAO), viewport + camera | 3D topics |
 | Diagrams (`src/ui/`) | `EnergyDiagram` (reaction coordinate), `LevelDiagram` (levels, electrons ↑↓, correlation lines) | energetics, MO, crystal field, pKa / E° ladders |
@@ -27,9 +27,9 @@ fully unit-testable, and lands on its own. ✅ marks a row that is merged on `ma
 | 0b | ✅ **`CollectionExplorer`** extracted from the functional-group panel: chips → build controls → entity card → invariant cards → field guide, driven by a collection definition | shapes, ligands, orbitals and complexes all want this exact panel | 3, 6, 7, 10 |
 | 0c | ✅ **Embedder additions**: lone-pair slot preferences (equatorial in tbp, trans in octahedral), seesaw / T-shaped / square-pyramidal shapes, cycloalkane ring templates (cyclopropane → cyclohexane chair and boat) with substituent attachment, `mirror()` helper | cheap now, invasive later; VSEPR and conformations depend on it | 3, 4, 6, 10 |
 | 0d | ✅ **2D overlays**: Newman projection and wedge/dash sketch drawn from 3D coordinates onto a small canvas | stereochemistry and conformations both need them | 3, 4 |
-| 0e | **Lone-pair angle compression** in the embedder (deferred from sweep 01): per-centre angle overrides so H₂O shows 104.5°, NH₃ 107.3°, CH₃OH 108.5°, CH₃SH 96.5°, SF₄ 173°/102°, with the register updated | the shapes topic would otherwise teach 109.5° for water | 6 |
+| 0e | ✅ **Lone-pair angle compression** in the embedder (deferred from sweep 01): bonded angles at lone-pair centres close to the measured values in `LONE_PAIR_ANGLES` (H₂O 104.5°, NH₃ 107.3°, CH₃OH 108.5°, Me₂O 111.7°, CH₃SH 96.5°, SF₄ 173°/102°, ClF₃ 175°, BrF₅ 85°), 2.5° per lone pair elsewhere; register updated | the shapes topic would otherwise teach 109.5° for water | 6 |
 
-**Phase 0 is complete** (PRs #2, #3, #4 and #5): topic branches can start from
+**Phase 0 is complete** (PRs #2, #3, #4, #5 and the 0e PR): topic branches can start from
 `main`; each primitive is documented with a snippet in [ADDING_A_TOPIC.md](ADDING_A_TOPIC.md) §6.
 
 ## Phase 1 — pure reuse of the molecule and reaction engines

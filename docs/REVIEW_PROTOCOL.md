@@ -18,7 +18,9 @@ npm run build
      audience, nexus, overlays, …);
    * the **conformance suite** (`src/chem/conformance.js`, run by `tests/sweep.test.js`), which
      compares the model to the reference values in `src/chem/references/textbook.js`:
-     bond lengths and angles of every built molecule; ring templates and VSEPR shapes;
+     bond lengths and angles of every built molecule (ideal VSEPR at centres without lone pairs,
+     the measured `LONE_PAIR_ANGLES` value at centres with them); ring templates and VSEPR shapes
+     (slot placement on ideal slots, then the measured SF₄ / ClF₃ / BrF₅ / H₂O / NH₃ / H₂S angles);
      coordination geometries; mechanism frames (atom and charge conservation, partial-bond
      monotonicity, textbook endpoint geometry, SN2 inversion, SN1 planar cation, E2
      anti-periplanar start and planar E product); energy-profile topology (number of maxima,
@@ -86,13 +88,13 @@ measurement. New idealisations are added here with a measured value, not silentl
 
 | area | model | measured / textbook | why accepted |
 | --- | --- | --- | --- |
-| Bent and pyramidal angles | 109.47° for all sp³ centres (water, alcohols, amines) | H₂O 104.5°, NH₃ 107.3°, CH₃OH C–O–H 108.5°, Me₂O 111.7° | the cards state the measured range; lone-pair angle compression is a roadmap item for the embedder |
+| Amine angles | all three angles at an amine N = 107.3° (the ammonia entry of `LONE_PAIR_ANGLES`) | measured amine angles vary with substitution, ≈ 106–112° | one entry per element / bond count / lone-pair count; substituent effects of a few degrees are below the teaching level |
+| Lone-pair centres outside the table | every bonded angle closes by 2.5° per lone pair (`LONE_PAIR_COMPRESSION_PER_PAIR`) | element-specific (H₂Se 91°, PH₃ 93.5°, TeCl₄ …) | documented default; a topic that teaches such a centre adds a `LONE_PAIR_ANGLES` row first |
 | Carbonyl angles | 120° exactly | acetone C–C–C 116°, C–C=O 122° | idealised VSEPR is the teaching level |
-| Hypervalent shapes | ideal tbp/octahedral slots with lone pairs in preferred positions | SF₄ F–S–F 173° / 102°, ClF₃ 175° | lone-pair repulsion not modelled; qualitative shape is right |
 | Energy profiles | illustrative kcal/mol shapes | measured Eₐ differ by substrate and solvent | labelled "illustrative" in the UI and data |
 | Predictor percentages | heuristic tendencies | no single measured yield exists | labelled as a teaching heuristic |
 | SN2 transition state | exactly symmetric, both partial bonds 0.5 | real TS is earlier or later (Hammond) | pedagogical symmetry |
 | Solvent and counter-ions | only the attacking/departing species shown | solvation shells, ion pairs | clarity; mentioned in narration |
 | Partial bonds and charges | linear interpolation of order and charge | nonlinear along the true reaction path | smooth animation |
-| Lone pairs and p lobes | fixed-size schematic lobes | diffuse densities | schematic, as in textbooks |
+| Lone pairs and p lobes | fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°) | diffuse densities; no single measured lone-pair direction | schematic, as in textbooks |
 | Orbital isosurfaces | one |ψ| threshold, 48³ grid | 90 % probability surfaces | performance; threshold is stated |

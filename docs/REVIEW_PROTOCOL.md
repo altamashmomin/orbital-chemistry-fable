@@ -18,7 +18,9 @@ npm run build
      audience, nexus, overlays, …);
    * the **conformance suite** (`src/chem/conformance.js`, run by `tests/sweep.test.js`), which
      compares the model to the reference values in `src/chem/references/textbook.js`:
-     bond lengths and angles of every built molecule; ring templates and VSEPR shapes;
+     bond lengths and angles of every built molecule (ideal VSEPR at centres without lone pairs,
+     the measured `LONE_PAIR_ANGLES` value at centres with them); ring templates and VSEPR shapes
+     (slot placement on ideal slots, then the measured SF₄ / ClF₃ / BrF₅ / H₂O / NH₃ / H₂S angles);
      coordination geometries; mechanism frames (atom and charge conservation, partial-bond
      monotonicity, textbook endpoint geometry, SN2 inversion, SN1 planar cation, E2
      anti-periplanar start and planar E product); energy-profile topology (number of maxima,
@@ -86,13 +88,16 @@ measurement. New idealisations are added here with a measured value, not silentl
 
 | area | model | measured / textbook | why accepted |
 | --- | --- | --- | --- |
-| Bent and pyramidal angles | 109.47° for all sp³ centres (water, alcohols, amines) | H₂O 104.5°, NH₃ 107.3°, CH₃OH C–O–H 108.5°, Me₂O 111.7° | the cards state the measured range; lone-pair angle compression is a roadmap item for the embedder |
-| Carbonyl angles | 120° exactly | acetone C–C–C 116°, C–C=O 122° | idealised VSEPR is the teaching level |
-| Hypervalent shapes | ideal tbp/octahedral slots with lone pairs in preferred positions | SF₄ F–S–F 173° / 102°, ClF₃ 175° | lone-pair repulsion not modelled; qualitative shape is right |
+| Lone-pair angles: class approximations | alcohols, ethers, thiols, sulfides, acids and esters take the angle of one measured exemplar each (methanol 108.9°, dimethyl ether 111.2°, methanethiol 96.5°, dimethyl sulfide 98.9°, formic acid 106.3°, methyl formate 114.8°); `lonePairAngleTargets().basis` reports `exemplar` or `class` | the displayed molecule is usually not the exemplar (ethanol, diethyl ether; acetic acid 107°, methyl acetate 116.4°) | substituent effects of a degree or two are below the teaching level; every number traces to `src/chem/references/measured.js`, the oracle the embedder never reads |
+| Amine angles | all three angles at an amine N = 106.7° (the ammonia row, as class default) | methylamine H–N–H 105.8° / C–N–H 111°, dimethylamine C–N–C 112.2°, trimethylamine 110.9° | a symmetric compression cannot show two different angles at one centre; the card quotes the range |
+| Lone-pair centres outside the table | every bonded angle closes by 2.5° per lone pair (`LONE_PAIR_COMPRESSION_PER_PAIR`), reported as `basis: 'fallback'` | element-specific (TeCl₄ …); H₂Se, PH₃ and SO₂ have sourced rows | a convention (a rounded H₂O / NH₃ deficit), not a measurement; a topic that teaches such a centre adds a sourced row first |
+| Methanethiol C–S–H | 96.5° (microwave structure as tabulated by Landolt-Börnstein II/7 and the CRC gas-phase table) | the NIST CCCBDB listing quotes Herzberg's 1966 compilation, 100.3° | the microwave value is kept and the discrepancy is recorded in `measured.js` |
+| Pinned reaction centres | the water, alcohol and alkoxide nucleophiles and bases of SN1/SN2/E1/E2 keep ideal 109.47° slots (their atoms are authored and pinned) | the same water shows 104.5° in the explorer | authored mechanism geometry is preserved on purpose; stated in the mechanism references |
+| Carbonyl angles | 120° exactly | acetone C–C–C 116°, C–C=O 122° (CCCBDB) | idealised VSEPR is the teaching level |
 | Energy profiles | illustrative kcal/mol shapes | measured Eₐ differ by substrate and solvent | labelled "illustrative" in the UI and data |
 | Predictor percentages | heuristic tendencies | no single measured yield exists | labelled as a teaching heuristic |
 | SN2 transition state | exactly symmetric, both partial bonds 0.5 | real TS is earlier or later (Hammond) | pedagogical symmetry |
 | Solvent and counter-ions | only the attacking/departing species shown | solvation shells, ion pairs | clarity; mentioned in narration |
 | Partial bonds and charges | linear interpolation of order and charge | nonlinear along the true reaction path | smooth animation |
-| Lone pairs and p lobes | fixed-size schematic lobes | diffuse densities | schematic, as in textbooks |
+| Lone pairs and p lobes | fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°) | diffuse densities; no single measured lone-pair direction | schematic, as in textbooks |
 | Orbital isosurfaces | one |ψ| threshold, 48³ grid | 90 % probability surfaces | performance; threshold is stated |

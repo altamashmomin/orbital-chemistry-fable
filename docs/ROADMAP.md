@@ -9,7 +9,7 @@ finesse the branches that fit the architecture least.
 
 | Layer | Reusable pieces | Used by |
 | --- | --- | --- |
-| Molecule engine (`src/chem/`) | graph → VSEPR embedder (tetrahedral, trigonal, linear, tbp, octahedral, square planar), rigid ring templates, pinned atoms, torsion relaxation, builder (core + R groups), bond-length and element tables | anything that shows a molecule |
+| Molecule engine (`src/chem/`) | graph → VSEPR embedder (tetrahedral, trigonal, linear, tbp, octahedral, square planar) with measured lone-pair angles, rigid ring templates, pinned atoms, torsion relaxation, builder (core + R groups), bond-length and element tables | anything that shows a molecule |
 | Reaction engine (`src/chem/mechanisms/`) | parametric `frame(t)` with partial bonds, charges, arrows, steps, cues, energy profiles; `System` builder; predictor pattern; Cinematic animator | any mechanism or dynamic process |
 | Renderers (`src/render/`) | `MoleculeView` (ball-and-stick, lone pairs, p lobes, 9 highlight types), `OrbitalView` (phase-coloured isosurfaces, LCAO), viewport + camera | 3D topics |
 | Diagrams (`src/ui/`) | `EnergyDiagram` (reaction coordinate), `LevelDiagram` (levels, electrons ↑↓, correlation lines) | energetics, MO, crystal field, pKa / E° ladders |
@@ -19,7 +19,8 @@ finesse the branches that fit the architecture least.
 ## Phase 0 — core hardening (small PRs on `main`, before branches fan out)
 
 These are the pieces several branches would otherwise each invent. Each is a day or less,
-fully unit-testable, and lands on its own. ✅ marks a row that is merged on `main`.
+fully unit-testable, and lands on its own. Status marks, here and below: 🔧 implemented on a branch ·
+🔍 reviewed (a sweep report says *proceed*) · ✅ merged on `main` · 👁 visible as a topic in the app.
 
 | # | Core PR | Why first | Unlocks |
 | --- | --- | --- | --- |
@@ -27,9 +28,9 @@ fully unit-testable, and lands on its own. ✅ marks a row that is merged on `ma
 | 0b | ✅ **`CollectionExplorer`** extracted from the functional-group panel: chips → build controls → entity card → invariant cards → field guide, driven by a collection definition | shapes, ligands, orbitals and complexes all want this exact panel | 3, 6, 7, 10 |
 | 0c | ✅ **Embedder additions**: lone-pair slot preferences (equatorial in tbp, trans in octahedral), seesaw / T-shaped / square-pyramidal shapes, cycloalkane ring templates (cyclopropane → cyclohexane chair and boat) with substituent attachment, `mirror()` helper | cheap now, invasive later; VSEPR and conformations depend on it | 3, 4, 6, 10 |
 | 0d | ✅ **2D overlays**: Newman projection and wedge/dash sketch drawn from 3D coordinates onto a small canvas | stereochemistry and conformations both need them | 3, 4 |
-| 0e | **Lone-pair angle compression** in the embedder (deferred from sweep 01): per-centre angle overrides so H₂O shows 104.5°, NH₃ 107.3°, CH₃OH 108.5°, CH₃SH 96.5°, SF₄ 173°/102°, with the register updated | the shapes topic would otherwise teach 109.5° for water | 6 |
+| 0e | 🔍 **Lone-pair angle compression** in the embedder (deferred from sweep 01): bonded angles at lone-pair centres close to one cited exemplar per row in `LONE_PAIR_ANGLES` (H₂O 104.5°, NH₃ 106.7°, CH₃OH 108.9°, Me₂O 111.2°, CH₃SH 96.5°, HCOOH 106.3°, SF₄ 173.1°/101.6°, ClF₃ 174.9°, BrF₅ 84.8°; oracle in `references/measured.js`), 2.5° per lone pair elsewhere; register updated — PR #7 | the shapes topic would otherwise teach 109.5° for water | 6 |
 
-**Phase 0 is complete** (PRs #2, #3, #4 and #5): topic branches can start from
+**Phase 0 is complete** (PRs #2, #3, #4, #5 and #7): topic branches can start from
 `main`; each primitive is documented with a snippet in [ADDING_A_TOPIC.md](ADDING_A_TOPIC.md) §6.
 
 ## Phase 1 — pure reuse of the molecule and reaction engines

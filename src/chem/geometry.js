@@ -507,7 +507,7 @@ export function embed(graph, opts = {}) {
  * of torsion offsets for the smaller side and keep the one with the fewest steric clashes
  * (the staggered/planar default wins whenever it is clash-free). Mutates the maps in place.
  */
-export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, { steps = 12, passes = 2 } = {}) {
+export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, { steps = 12, passes = 2, rescue = true } = {}) {
   const adj = buildAdjacency(graph);
   const atoms = new Map(graph.atoms.map((a) => [a.id, a]));
   const inRigid = new Set();
@@ -583,6 +583,117 @@ export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, 
         if (o) orbitals.set(id, { ...o, dirs: o.dirs.map((d) => m3.apply(R, d)) });
       }
     }
+  }
+  if (rescue && rotatable.length) rescueClashes(graph, positions, lonePairDirs, orbitals, rotatable, adj);
+}
+
+/** Hard contact limits in Å (H···H, H···X, X···X) below which two non-bonded atoms overlap rather than touch. */
+export const HARD_CONTACT = [1.8, 2.0, 2.5];
+
+/**
+ * Non-bonded, non-1,3 atom pairs closer than the hard contact limits: what the torsion relaxer could not
+ * resolve. Returns null when there is none, else { pairs: [{ a, b, d, limit }] (worst first), worst }.
+ */
+export function stericContacts(graph, positions, limits = HARD_CONTACT) {
+  const adj = buildAdjacency(graph);
+  const atoms = new Map(graph.atoms.map((a) => [a.id, a]));
+  const nbr = new Map(graph.atoms.map((a) => [a.id, new Set(adj.get(a.id).map((n) => n.id))]));
+  const related = (x, y) => { if (nbr.get(x).has(y)) return true; for (const n of nbr.get(x)) if (nbr.get(n).has(y)) return true; return false; };
+  const ids = graph.atoms.filter((a) => !a.ghost && positions.has(a.id)).map((a) => a.id);
+  const pairs = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = ids[i], b = ids[j];
+    if (related(a, b)) continue;
+    const ha = atoms.get(a).el === 'H', hb = atoms.get(b).el === 'H';
+    const limit = ha && hb ? limits[0] : ha || hb ? limits[1] : limits[2];
+    const d = v.dist(positions.get(a), positions.get(b));
+    if (d < limit) pairs.push({ a, b, d, limit });
+  }
+  if (!pairs.length) return null;
+  pairs.sort((x, y) => (x.d - x.limit) - (y.d - y.limit));
+  return { pairs, worst: pairs[0] };
+}
+
+/**
+ * Rescue stage of relaxTorsions for crowded substituents: while hard contacts remain, take the worst
+ * pair, pick the one or two rotatable bonds nearest each of its atoms that move one atom relative to the
+ * other, and search those bonds jointly (30° grid, then 5° around the best), keeping a setting only when
+ * it lowers the total hard-contact penalty. Clash-free molecules never enter this stage, so their
+ * geometry is unchanged. Angles are never widened: what survives is reported by stericContacts().
+ */
+function rescueClashes(graph, positions, lonePairDirs, orbitals, rotatable, adj, { coarse = 12, fineStep = 5 * DEG, rounds = 4 } = {}) {
+  const atoms = new Map(graph.atoms.map((a) => [a.id, a]));
+  const ids = graph.atoms.filter((a) => !a.ghost && positions.has(a.id)).map((a) => a.id);
+  const nbr = new Map(ids.map((id) => [id, new Set((adj.get(id) || []).map((n) => n.id))]));
+  const related = (x, y) => { if (nbr.get(x).has(y)) return true; for (const n of nbr.get(x)) if (nbr.get(n)?.has(y)) return true; return false; };
+  const allPairs = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = ids[i], b = ids[j];
+    if (related(a, b)) continue;
+    const ha = atoms.get(a).el === 'H', hb = atoms.get(b).el === 'H';
+    allPairs.push({ a, b, limit: ha && hb ? HARD_CONTACT[0] : ha || hb ? HARD_CONTACT[1] : HARD_CONTACT[2] });
+  }
+  // Objective: the deepest overlap first (what a viewer sees and the notice reports), total overlap as tie-break.
+  const overlap = (pairs) => { let worst = 0, sum = 0; for (const p of pairs) { const d = v.dist(positions.get(p.a), positions.get(p.b)); if (d < p.limit) { const x = p.limit - d; sum += x * x; if (x > worst) worst = x; } } return { worst, sum }; };
+  const score = (...parts) => parts.reduce((w, o) => Math.max(w, o.worst), 0) * 1000 + parts.reduce((s, o) => s + o.sum, 0);
+  const penaltyOver = (pairs) => score(overlap(pairs));
+  const worstPair = () => { let w = null, wd = 0; for (const p of allPairs) { const d = v.dist(positions.get(p.a), positions.get(p.b)); const x = p.limit - d; if (x > wd) { wd = x; w = p; } } return w; };
+  const snapshot = () => new Map(ids.map((id) => [id, positions.get(id)]));
+  const restore = (snap) => { for (const [id, p] of snap) positions.set(id, p); };
+  const turn = (bond, ang) => {
+    const origin = positions.get(bond.pivot);
+    const axis = v.norm(v.sub(positions.get(bond.moving), origin));
+    const R = m3.axisAngle(axis, ang);
+    for (const id of bond.set) positions.set(id, v.add(origin, m3.apply(R, v.sub(positions.get(id), origin))));
+    return R;
+  };
+  const tried = new Set();
+  for (let round = 0; round < rounds; round++) {
+    const worst = worstPair();
+    if (!worst || tried.has(`${worst.a}|${worst.b}`)) break;
+    tried.add(`${worst.a}|${worst.b}`);
+    const movesOne = (b) => b.set.has(worst.a) !== b.set.has(worst.b);
+    const nearest = (x) => rotatable.filter((b) => b.set.has(x) && movesOne(b)).sort((p, q) => p.set.size - q.set.size).slice(0, 2);
+    const cands = [...new Set([...nearest(worst.a), ...nearest(worst.b)])];
+    if (!cands.length) continue;
+    const combos = cands.length === 1 ? [[cands[0]]] : [];
+    for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) combos.push([cands[i], cands[j]]);
+    const start = snapshot();
+    let best = { pen: penaltyOver(allPairs), plan: null };
+    for (const combo of combos) {
+      const union = new Set(combo.flatMap((b) => [...b.set]));
+      const relevant = allPairs.filter((p) => union.has(p.a) || union.has(p.b));
+      const fixed = overlap(allPairs.filter((p) => !(union.has(p.a) || union.has(p.b))));   // pairs this combo cannot change
+      const evaluate = (angles) => { restore(start); combo.forEach((b, k) => turn(b, angles[k])); return score(overlap(relevant), fixed); };
+      const n = combo.length === 1 ? coarse * 2 : coarse, step = (2 * Math.PI) / n;
+      let local = { pen: Infinity, angles: null };
+      for (let kA = 0; kA < n; kA++) for (let kB = 0; kB < (combo[1] ? n : 1); kB++) {
+        if (kA === 0 && kB === 0) continue;
+        const angles = combo[1] ? [kA * step, kB * step] : [kA * step];
+        const pen = evaluate(angles);
+        if (pen < local.pen) local = { pen, angles };
+      }
+      if (local.angles) {   // refine around the coarse optimum
+        const m = Math.round(step / 2 / fineStep);
+        for (let dA = -m; dA <= m; dA++) for (let dB = -m; dB <= (combo[1] ? m : -m); dB++) {
+          const angles = combo[1] ? [local.angles[0] + dA * fineStep, local.angles[1] + dB * fineStep] : [local.angles[0] + dA * fineStep];
+          const pen = evaluate(angles);
+          if (pen < local.pen - 1e-12) local = { pen, angles };
+        }
+      }
+      if (local.pen < best.pen - 1e-9) best = { pen: local.pen, plan: combo.map((b, k) => [b, local.angles[k]]) };
+    }
+    restore(start);
+    if (!best.plan) continue;
+    for (const [bond, ang] of best.plan) {
+      const R = turn(bond, ang);
+      for (const id of bond.set) {
+        if (lonePairDirs.has(id)) lonePairDirs.set(id, lonePairDirs.get(id).map((d) => m3.apply(R, d)));
+        const o = orbitals.get(id);
+        if (o) orbitals.set(id, { ...o, dirs: o.dirs.map((d) => m3.apply(R, d)) });
+      }
+    }
+    if (best.pen < 1e-9) break;
   }
 }
 

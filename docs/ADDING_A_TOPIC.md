@@ -290,7 +290,12 @@ conformance suite checks against and the embedder never reads. The lookup says w
 default) or `'fallback'` (no row: every bonded angle closes by `LONE_PAIR_COMPRESSION_PER_PAIR`, 2.5°,
 per lone pair — a convention). Show that status next to any angle you display. Lone-pair lobes open by
 the mean compression. Centres whose neighbours are all pinned (mechanism frames) are left alone, and
-`embed(graph, { lonePairAngles: false })` gives the ideal slots back. Teaching a new lone-pair centre?
+`embed(graph, { lonePairAngles: false })` gives the ideal slots back. After `relaxTorsions()` the
+builder calls `stericContacts(graph, positions)` and puts the result on the frame as `frame.crowding`
+(`null`, or `{ pairs, worst, groups }` of hard contacts the relaxer could not resolve, `groups` being
+the R-group attachment ids involved); a topic that lets learners combine bulky groups should show a
+notice from it, as the Functional groups card does, rather than draw overlapping atoms silently.
+Teaching a new lone-pair centre?
 Add a cited row to `measured.js` and a matching row to the table before the topic quotes it:
 
 ```js

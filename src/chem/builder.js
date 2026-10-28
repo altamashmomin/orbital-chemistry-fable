@@ -2,7 +2,7 @@
 // then embed it in 3D and package it as a render "frame".
 import { FUNCTIONAL_GROUPS } from './functionalGroups.js';
 import { R_GROUPS } from './rGroups.js';
-import { embed, alignPrincipal, rotateDirs, relaxTorsions } from './geometry.js';
+import { embed, alignPrincipal, rotateDirs, relaxTorsions, stericContacts } from './geometry.js';
 import { formulaFromAtoms } from './elements.js';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -103,13 +103,21 @@ export function toFrame(mol, positions, lonePairDirs, orbitals, extra = {}) {
   return { atoms, bonds, aliases: mol.aliases || {}, ...extra };
 }
 
-/** Embed a built molecule and return a frame, centred and aligned along x. */
+/**
+ * Embed a built molecule and return a frame, centred and aligned along x. `frame.crowding` is null, or
+ * the hard steric contacts the torsion relaxer could not resolve ({ pairs, worst, groups }): the model
+ * keeps class bond angles and only rotates bonds, so some simultaneous bulky substitutions cannot be
+ * placed honestly. `groups` names the R-group attachments involved (ids like 'R1').
+ */
 export function embedMolecule(mol) {
   const rootId = mol.fg?.attachments?.[0]?.atom || mol.atoms[0].id;
   const { positions, lonePairDirs, orbitals, frames } = embed(mol, { root: rootId });
   relaxTorsions(mol, positions, lonePairDirs, orbitals, frames);
+  const contacts = stericContacts(mol, positions);
+  const groupOf = (id) => { const m = /^(R\d+)\./.exec(id); return m ? m[1] : null; };
+  const crowding = contacts ? { ...contacts, groups: [...new Set(contacts.pairs.flatMap((p) => [groupOf(p.a), groupOf(p.b)]).filter(Boolean))] } : null;
   const aligned = alignPrincipal(positions);
-  return toFrame(mol, aligned.positions, rotateDirs(lonePairDirs, aligned.rotation), rotateDirs(orbitals, aligned.rotation));
+  return toFrame(mol, aligned.positions, rotateDirs(lonePairDirs, aligned.rotation), rotateDirs(orbitals, aligned.rotation), { crowding });
 }
 
 /** Resolve 'R1' style aliases to concrete atom ids. */

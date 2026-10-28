@@ -48,6 +48,58 @@ test('every R group fits on every attachment point', () => {
   }
 });
 
+/** Closest non-bonded, non-1,3 distance in a frame. */
+function closestContact(frame) {
+  const atoms = frame.atoms.filter((a) => !a.ghost);
+  const adj = new Map(atoms.map((a) => [a.id, new Set()]));
+  for (const b of frame.bonds) { adj.get(b.a)?.add(b.b); adj.get(b.b)?.add(b.a); }
+  const related = (x, y) => { if (adj.get(x).has(y)) return true; for (const n of adj.get(x)) if (adj.get(n)?.has(y)) return true; return false; };
+  let m = Infinity;
+  for (let i = 0; i < atoms.length; i++) for (let j = i + 1; j < atoms.length; j++) { if (related(atoms[i].id, atoms[j].id)) continue; m = Math.min(m, v.dist(atoms[i].pos, atoms[j].pos)); }
+  return m;
+}
+
+test('simultaneous bulky substitutions never clash silently: every combination is clean or flagged as crowded', () => {
+  // Every combination of the two-attachment groups; the three-attachment groups with any R on the first
+  // attachment and a bulky-biased set on the others; the alkene with any two positions substituted.
+  const BULKY_BIASED = ['H', 'methyl', 'isopropyl', 'tBu', 'phenyl'];
+  const plan = { ether: null, ketone: null, ester: null, alkyne: null, amide: BULKY_BIASED, amine: BULKY_BIASED };
+  let combos = 0, flagged = 0;
+  const check = (id, R) => {
+    combos++;
+    const frame = embedMolecule(buildMolecule(id, { R }));
+    const d = closestContact(frame);
+    if (frame.crowding) {
+      flagged++;
+      assert.ok(frame.crowding.worst.d < frame.crowding.worst.limit, `${id} ${JSON.stringify(R)}: a flagged contact is below its limit`);
+      assert.ok(frame.crowding.groups.length >= 1 && frame.crowding.groups.every((g) => g in R), `${id} ${JSON.stringify(R)}: crowding names the R groups involved`);
+    } else {
+      assert.ok(d >= 1.6, `${id} ${JSON.stringify(R)}: unflagged frame has atoms ${d.toFixed(2)} Å apart`);
+    }
+  };
+  for (const [id, rest] of Object.entries(plan)) {
+    const atts = FUNCTIONAL_GROUPS[id].attachments.map((a) => a.id);
+    const rec = (k, R) => { if (k === atts.length) return check(id, R); for (const r of (k === 0 || !rest ? R_GROUP_ORDER : rest)) rec(k + 1, { ...R, [atts[k]]: r }); };
+    rec(0, {});
+  }
+  const alk = FUNCTIONAL_GROUPS.alkene.attachments.map((a) => a.id);
+  for (let i = 0; i < alk.length; i++) for (let j = i + 1; j < alk.length; j++) for (const ri of R_GROUP_ORDER) for (const rj of R_GROUP_ORDER) {
+    const R = Object.fromEntries(alk.map((a) => [a, 'H'])); R[alk[i]] = ri; R[alk[j]] = rj; check('alkene', R);
+  }
+  check('alkene', { R1: 'tBu', R2: 'tBu', R3: 'tBu', R4: 'tBu' });
+  assert.ok(combos > 1400 && flagged > 0, `${combos} combinations, ${flagged} flagged`);
+  // Defaults are never crowded; known crowded combinations are flagged with the right groups; the rescue search helps.
+  for (const id of FUNCTIONAL_GROUP_ORDER) assert.equal(embedMolecule(buildMolecule(id)).crowding, null, `${id}: default build is clean`);
+  const ether = embedMolecule(buildMolecule('ether', { R: { R1: 'tBu', R2: 'tBu' } }));
+  assert.ok(ether.crowding && ether.crowding.groups.includes('R1') && ether.crowding.groups.includes('R2'), 'di-tert-butyl ether is flagged on both groups');
+  assert.ok(ether.crowding.worst.d > 1.5, `the rescue search leaves the worst contact at ${ether.crowding.worst.d.toFixed(2)} Å (was 1.34 Å with the greedy passes alone)`);
+  const amine = embedMolecule(buildMolecule('amine', { R: { R1: 'tBu', R2: 'tBu', R3: 'tBu' } }));
+  assert.ok(amine.crowding && amine.crowding.worst.d > 1.1 && amine.crowding.groups.length === 3, 'tri-tert-butylamine is flagged on all three groups');
+  const fixed = embedMolecule(buildMolecule('alkene', { R: { R1: 'tBu', R2: 'methyl', R3: 'isopropyl', R4: 'H' } }));
+  assert.equal(fixed.crowding, null, 'a combination the joint search can untangle is clean');
+  assert.ok(closestContact(fixed) >= 1.6);
+});
+
 test('valence sanity: carbon never exceeds four bonds, hydrogen exactly one', () => {
   for (const id of FUNCTIONAL_GROUP_ORDER) {
     const mol = buildMolecule(id);

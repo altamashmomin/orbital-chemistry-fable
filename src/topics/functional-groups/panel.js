@@ -30,6 +30,7 @@ export const functionalGroupCollection = {
       h('div', { class: 'mol-name' }, fg.name),
       h('div', { class: 'mol-meta' }, h('span', { class: 'formula' }, m.formula), h('span', { class: 'pattern' }, m.name)),
       m.classification ? h('div', { class: 'mol-class' }, m.classification) : null,
+      built.frame.crowding ? crowdingNotice(fg, state, built.frame.crowding) : null,
     ];
   },
   invariants: (fg) => fg.invariants,
@@ -45,6 +46,30 @@ export const functionalGroupCollection = {
   ],
   titles: { invariants: (fg) => `Always true for every ${fg.name.toLowerCase()}` },
 };
+
+/** The next lighter R group to suggest when a combination is too crowded for the embedder. */
+const LIGHTER_R = { tBu: 'isopropyl', isopropyl: 'ethyl', benzyl: 'methyl', phenyl: 'methyl', allyl: 'vinyl', CF3: 'methyl', ethyl: 'methyl', vinyl: 'methyl', methyl: 'H' };
+const R_BULK = { H: 0, methyl: 1, vinyl: 2, ethyl: 2, CF3: 2, allyl: 3, isopropyl: 3, phenyl: 4, benzyl: 4, tBu: 5 };
+
+/**
+ * Honest notice for an R-group combination the embedder cannot place without overlapping atoms
+ * (`frame.crowding`, see builder.embedMolecule): names the groups, the contact, why the model fails
+ * (class bond angles, bond rotation only) and a lighter group to try. The molecule itself is not impossible.
+ */
+function crowdingNotice(fg, state, crowding) {
+  const involved = crowding.groups.map((g) => ({ g, att: fg.attachments.find((a) => a.id === g), r: state.choice.R[g] })).filter((x) => x.att && R_GROUPS[x.r]);
+  const names = involved.map((x) => `${x.att.label} = ${R_GROUPS[x.r].name}`);
+  const el = (id) => (/\.?([A-Z][a-z]?)\d*[a-z]*$/.exec(id.replace(/^R\d+\./, '')) || [])[1] || id;
+  const w = crowding.pairs.reduce((m, p) => (p.d < m.d ? p : m), crowding.worst);   // the closest pair reads best; `worst` is the deepest overlap
+  const bulkiest = [...involved].sort((a, b) => (R_BULK[b.r] || 0) - (R_BULK[a.r] || 0))[0];
+  const lighter = bulkiest && LIGHTER_R[bulkiest.r];
+  return h('div', { class: 'mol-crowding' },
+    h('b', {}, 'Too crowded for this model. '),
+    `${names.join(' and ') || 'These groups'} leave two ${el(w.a)}···${el(w.b)} atoms only ${w.d.toFixed(2)} Å apart (a van der Waals contact is about 2.4 Å). `,
+    'A real molecule opens its bond angles and twists to make room; this embedder keeps the class bond angle and only rotates bonds, so the overlap is a limit of the model, not a property of the molecule. ',
+    lighter ? `Try ${R_GROUPS[lighter].name} instead of ${R_GROUPS[bulkiest.r].name} on ${bulkiest.att.label} for a geometry the model can place.` : null,
+  );
+}
 
 export class ExplorerPanel {
   constructor({ view, viewport, level = 'learn', navigate = null }) {

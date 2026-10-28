@@ -16,6 +16,37 @@ finesse the branches that fit the architecture least.
 | Shell (`src/topics/`, `src/nexus/`) | registry, 3d / canvas workspaces, Refresher / Learn tagging, deep links, search `index()`, glossary contributions | every topic |
 | Content pattern | invariants vs "what R changes", recognise-it notes, decision tables with reasons | explorer-style topics |
 
+## Map: what a learner sees and what it runs on
+
+Built from the code on `main` (2026-10-27). *Runs on* is runtime reuse (imports); *teaches toward* is a
+conceptual link (a deep link or a sentence in a card), not code.
+
+| Topic (status) | Runs on | Teaches toward |
+| --- | --- | --- |
+| **Functional groups** 👁 | `CollectionExplorer`, builder + R groups, embedder (lone-pair angles, crowding flag), `MoleculeView` highlights, search / glossary | Molecular shapes explain its bent and pyramidal centres; the Reaction lab shows its halides and alcohols reacting |
+| **Molecular shapes** 👁 | `src/chem/shapes.js` on the embedder, `CollectionExplorer`, `MoleculeView` angle / plane / lone-pair highlights, wedge-dash overlay (readable without WebGL), `measured.js` citations | Functional-group geometry cards; SN2 inversion and the planar SN1 cation; Conformations next |
+| **Reaction lab** 👁 | mechanism families, `frame(t)` with pinned atoms, Cinematic animator, `EnergyDiagram`, predictor | the tetrahedral centre and planar carbon of Molecular shapes; E2's anti-periplanar geometry wants Conformations |
+| Shared support ✅ (merged, no tab yet) | orbitals + isosurfaces + `OrbitalView` (#1), coordination frames, `LevelDiagram`, ring templates / `mirror()` / dihedrals (#4), Newman projection (#5), lone-pair angle table + oracle (#7), steric rescue + `frame.crowding` (#8), WebGL fallback | Conformations (Newman, chair), Hybridisation / orbitals, Transition metals |
+| Planned | `_template` topic as the starting point | see the learning sequence below |
+
+## Learning sequence (ordered by learning value)
+
+The tabs follow this order; the pipeline tables further down are ordered by implementation ease and
+dependency, which is a different question.
+
+1. **Functional groups** — recognise the pattern, separate what never changes from what R tunes. 👁
+2. **Molecular shapes** — why those centres are bent, pyramidal or flat; measured angles next to the
+   ideal ones; predict-observe-explain. 👁
+3. **Conformations** (next) — ethane and butane with synchronized 3D and Newman views, then a direct
+   explanation of E2's anti-periplanar requirement; the cyclohexane chair after that small lesson is solid.
+4. **Reaction lab: substitution and elimination** — now explained by 2 and 3 (inversion through the
+   tetrahedron, the planar cation, anti-periplanar E2). 👁
+5. Addition and carbonyl chemistry, then stereochemistry and acids / bases (Phase 1 below).
+6. Orbitals, molecular orbitals, redox and transition metals (Phase 2), then the canvas topics (Phase 3).
+
+Reassess after 3 using the teaching gaps the first three topics expose; do not start later milestones
+automatically.
+
 ## Phase 0 — core hardening (small PRs on `main`, before branches fan out)
 
 These are the pieces several branches would otherwise each invent. Each is a day or less,
@@ -28,7 +59,7 @@ fully unit-testable, and lands on its own. Status marks, here and below: 🔧 im
 | 0b | ✅ **`CollectionExplorer`** extracted from the functional-group panel: chips → build controls → entity card → invariant cards → field guide, driven by a collection definition | shapes, ligands, orbitals and complexes all want this exact panel | 3, 6, 7, 10 |
 | 0c | ✅ **Embedder additions**: lone-pair slot preferences (equatorial in tbp, trans in octahedral), seesaw / T-shaped / square-pyramidal shapes, cycloalkane ring templates (cyclopropane → cyclohexane chair and boat) with substituent attachment, `mirror()` helper | cheap now, invasive later; VSEPR and conformations depend on it | 3, 4, 6, 10 |
 | 0d | ✅ **2D overlays**: Newman projection and wedge/dash sketch drawn from 3D coordinates onto a small canvas | stereochemistry and conformations both need them | 3, 4 |
-| 0f | 🔧 **Crowded-R handling**: a joint two-bond rescue search in the torsion relaxer for simultaneous bulky substituents, `stericContacts()` / `frame.crowding` for what it cannot untangle, and an honest notice on the molecule card (sweep 02 finding 4) | the explorer drew di-tert-butyl ether and tri-tert-butylamine with overlapping hydrogens | 3, 4 |
+| 0f | ✅ **Crowded-R handling**: a joint two-bond rescue search in the torsion relaxer for simultaneous bulky substituents, `stericContacts()` / `frame.crowding` for what it cannot untangle, and an honest notice on the molecule card (sweep 02 finding 4) | the explorer drew di-tert-butyl ether and tri-tert-butylamine with overlapping hydrogens | 3, 4 |
 | 0e | ✅ **Lone-pair angle compression** in the embedder (deferred from sweep 01): bonded angles at lone-pair centres close to one cited exemplar per row in `LONE_PAIR_ANGLES` (H₂O 104.5°, NH₃ 106.7°, CH₃OH 108.9°, Me₂O 111.2°, CH₃SH 96.5°, HCOOH 106.3°, SF₄ 173.1°/101.6°, ClF₃ 174.9°, BrF₅ 84.8°; oracle in `references/measured.js`), 2.5° per lone pair elsewhere; register updated — PR #7 | the shapes topic would otherwise teach 109.5° for water | 6 |
 
 **Phase 0 is complete** (PRs #2, #3, #4, #5 and #7): topic branches can start from
@@ -55,7 +86,7 @@ orbitals before MOs, oxidation states before transition metals.
 
 | order | branch | reuses | new | risk |
 | --- | --- | --- | --- | --- |
-| 6 | `topic/hybridization-shapes` — VSEPR gallery (2–6 domains with lone pairs), bond-angle effects, sp³/sp²/sp hybrid lobes | embedder (+0c), `CollectionExplorer`, `OrbitalView` via `lcao()` for hybrid lobes, angle/plane highlights | shapes data | low |
+| 6 | 👁 `topic/molecular-shapes` — VSEPR gallery (2–6 domains with lone pairs), measured vs ideal angles with their status, predict-observe-explain activities (PR #9); the sp³/sp²/sp hybrid lobes via `OrbitalView` / `lcao()` are left for the orbitals topic | embedder (+0c, +0e), `CollectionExplorer`, angle/plane highlights, wedge-dash overlay | `src/chem/shapes.js` | low |
 | 7 | `topic/atomic-orbitals` — s/p/d isosurfaces, nodes, quantum numbers, electron configurations (aufbau, Hund, Pauli), periodic trends | `orbitals.js`, `OrbitalView`, `LevelDiagram` | electron-configuration generator (pure), orbital explorer panel | low–medium (GPU budget: keep grids ≤ 48³) |
 | 8 | `topic/molecular-orbitals` (HOMO / LUMO) — H₂/He₂, N₂/O₂ (paramagnetism), ethylene π/π*, butadiene, C=O π* and C–X σ* as the LUMOs behind the mechanisms | `lcao()` / `molecularOrbital()`, `LevelDiagram`, links to Reaction lab | small Hückel solver (pure, tested), MO-diagram builder | medium (keep it qualitative) |
 | 9 | `topic/redox` — **phase A**: oxidation states from any molecular graph, redox vs non-redox classification of the reactions already in the app, half-reactions and balancing in acid/base; **phase B** (canvas): galvanic cells, E° ladder on `LevelDiagram`, Nernst | FG data, `LevelDiagram`, canvas workspace | oxidation-state assigner and half-reaction balancer (algorithmic, unit-tested) | medium (balancer edge cases) |

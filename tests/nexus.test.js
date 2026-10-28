@@ -7,7 +7,7 @@ import { buildIndex, search, allTerms, normalise } from '../src/nexus/search.js'
 import { FUNCTIONAL_GROUPS } from '../src/chem/functionalGroups.js';
 import { MECHANISMS, FAMILIES } from '../src/chem/mechanisms/index.js';
 
-const termIds = new Set([...GLOSSARY, ...(template.glossary || [])].map((t) => t.id));
+const termIds = new Set([...GLOSSARY, ...(template.glossary || []), ...TOPICS.flatMap((t) => t.glossary || [])].map((t) => t.id));
 
 /** True when a deep link points at something that exists. */
 function resolves(href) {

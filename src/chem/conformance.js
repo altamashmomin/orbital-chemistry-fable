@@ -12,6 +12,7 @@ import { orbital, radial, ORBITALS } from './orbitals.js';
 import { audienceOf, isValidAudience } from './audience.js';
 import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
 import { MEASURED_ANGLES } from './references/measured.js';
+import { SHAPES, buildShape } from './shapes.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -235,6 +236,20 @@ export function runConformance() {
   expectAngles('H2S.bent', 'H₂S: bent, H–S–H at the measured value', hyper('S', 2, 2, 'H').angles, [M.hydrogenSulfide_HSH.value], M.hydrogenSulfide_HSH.source, 0.1);
   expectAngles('H2Se.bent', 'H₂Se: bent, H–Se–H at the measured value', hyper('Se', 2, 2, 'H').angles, [M.hydrogenSelenide_HSeH.value], M.hydrogenSelenide_HSeH.source, 0.1);
   expectAngles('SO2.bent', 'SO₂: bent (trigonal, one lone pair), O–S–O at the measured value', hyper('S', 2, 1, 'O', {}, { xLonePairs: 2, order: 2 }).angles, [M.sulfurDioxide_OSO.value], M.sulfurDioxide_OSO.source, 0.1);
+
+  // The Molecular shapes gallery: every displayed angle is either the ideal value symmetry fixes (and says so)
+  // or the oracle's measured value (and names the exemplar); lone-pair counts shown are the drawn ones.
+  for (const s of SHAPES) {
+    const b = buildShape(s.id);
+    const centre = s.graph.atoms.find((a) => a.id === s.centre);
+    add('shapes', `gallery.${s.id}.bookkeeping`, pf(b.lonePairs === (centre.lonePairs || 0) && b.domains === s.bonds + b.lonePairs && b.bonds === s.graph.bonds.filter((x) => x.a === s.centre || x.b === s.centre).length), `${s.formula}: ${b.bonds} bonds + ${b.lonePairs} lone pairs = ${b.domains} domains, from the drawn atom data`, { expected: `${s.bonds} + ${centre.lonePairs || 0}`, actual: `${b.bonds} + ${b.lonePairs}` });
+    for (const a of b.angles) {
+      if (a.status === 'ideal') add('shapes', `gallery.${s.id}.${a.id}`, pf(Math.abs(a.value - a.ideal) <= 0.1), `${s.formula} ${a.label}: ideal VSEPR value${a.measured != null ? ` (measured ${a.measured}° declared on the card)` : ' (fixed by symmetry)'}`, { expected: `${a.ideal}°`, actual: `${fmt(a.value, 2)}°`, source: a.source || 'symmetry' });
+      else if (a.ref) add('shapes', `gallery.${s.id}.${a.id}`, pf(Math.abs(a.value - MEASURED_ANGLES[a.ref].value) <= 0.5), `${s.formula} ${a.label}: ${a.status === 'class' ? 'class value' : 'measured value'} of ${a.exemplar}`, { expected: `${MEASURED_ANGLES[a.ref].value}°`, actual: `${fmt(a.value, 2)}°`, source: a.source });
+      else add('shapes', `gallery.${s.id}.${a.id}`, 'fail', `${s.formula} ${a.label}: unexpected status ${a.status}`, { actual: `${fmt(a.value, 2)}°` });
+    }
+    add('shapes', `gallery.${s.id}.clean`, pf(!b.frame.crowding), `${s.formula}: no steric contacts in the drawn frame`, { actual: b.frame.crowding ? 'crowded' : 'clean' });
+  }
 
   // ------------------------------------------------------------------ E. coordination
   const lmL = (frame, metal) => {

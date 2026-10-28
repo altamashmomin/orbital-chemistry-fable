@@ -4,8 +4,10 @@
 import { registerTopic } from './registry.js';
 import { functionalGroups } from './functional-groups/index.js';
 import { mechanisms } from './mechanisms/index.js';
+import { molecularShapes } from './molecular-shapes/index.js';
 
 registerTopic(functionalGroups);
 registerTopic(mechanisms);
+registerTopic(molecularShapes);
 
 export * from './registry.js';

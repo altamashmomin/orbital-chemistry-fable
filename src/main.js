@@ -1,6 +1,7 @@
 import './style.css';
 import { createViewport } from './render/scene.js';
 import { MoleculeView } from './render/moleculeView.js';
+import { createFallbackViewport, FallbackMoleculeView, fallbackPanel } from './render/fallback.js';
 import { clear, h } from './ui/dom.js';
 import { LEVELS, getLevel, setLevel, onLevelChange } from './ui/level.js';
 import { TOPICS, registerTopic, resolveTopicId, topicById, onTopicsChanged, validateTopic } from './topics/index.js';
@@ -15,7 +16,16 @@ export const REPO_URL = 'https://github.com/altamashmomin/orbital-chemistry-fabl
 
 const $ = (id) => document.getElementById(id);
 const viewportElement = $('viewport');
-const viewport = createViewport(viewportElement);
+// Without WebGL (or with ?nowebgl for testing) the app still boots: panels get a viewport stub and a
+// frame-only view, and the workspace shows a readable notice (src/render/fallback.js).
+let viewport;
+try {
+  if (new URLSearchParams(location.search).has('nowebgl')) throw new Error('WebGL disabled with ?nowebgl');
+  viewport = createViewport(viewportElement);
+} catch (err) {
+  console.warn('3D viewport unavailable, running without WebGL:', err);
+  viewport = createFallbackViewport(viewportElement, err);
+}
 // Match the reference's softly tinted molecular canvas without changing renderer APIs.
 viewport.scene.background.set('#f0f3ed');
 viewport.scene.fog.color.set('#f0f3ed');
@@ -26,7 +36,8 @@ const framingObserver = new ResizeObserver(() => {
   viewport.camera.updateProjectionMatrix();
 });
 framingObserver.observe(viewportElement);
-const view = new MoleculeView(viewport);
+const view = viewport.fallback ? new FallbackMoleculeView() : new MoleculeView(viewport);
+document.body.classList.toggle('no-webgl', !!viewport.fallback);
 const panelEl = $('panel');
 const inspectorEl = $('inspector');
 const customEl = $('workspace-custom');
@@ -37,7 +48,16 @@ const panels = new Map();          // topic id -> panel instance (created on fir
 let current = null;
 
 function panelFor(topic) {
-  if (!panels.has(topic.id)) panels.set(topic.id, topic.create({ view, viewport, level: getLevel(), navigate: (path) => history.replaceState(null, '', `#${path}`) }));
+  if (!panels.has(topic.id)) {
+    const ctx = { view, viewport, level: getLevel(), navigate: (path) => history.replaceState(null, '', `#${path}`) };
+    let panel;
+    try { panel = topic.create(ctx); } catch (err) {
+      if (!viewport.fallback) throw err;
+      console.warn(`Topic ${topic.id} cannot build its panel without the 3D view:`, err);
+      panel = fallbackPanel(topic, err);   // readable stand-in: title, summary, reason
+    }
+    panels.set(topic.id, panel);
+  }
   return panels.get(topic.id);
 }
 
@@ -89,10 +109,15 @@ export function setTopic(idOrHash) {
   renderTabs();
   history.replaceState(null, '', `#${topic.id}${sub ? `/${sub}` : ''}`);
   view.clear();
-  if (custom) panel.mountWorkspace?.(customEl);
-  panel.activate?.();
-  panel.setLevel?.(getLevel());
-  if (sub) panel.navigate?.(sub);
+  try {
+    if (custom) panel.mountWorkspace?.(customEl);
+    panel.activate?.();
+    panel.setLevel?.(getLevel());
+    if (sub) panel.navigate?.(sub);
+  } catch (err) {
+    if (!viewport.fallback) throw err;
+    console.warn(`Topic ${topic.id} needs the 3D view:`, err);   // the panel's text still renders
+  }
 }
 
 // ---------------------------------------------------------------- audience level

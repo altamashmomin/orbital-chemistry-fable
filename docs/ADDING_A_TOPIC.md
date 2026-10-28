@@ -97,6 +97,15 @@ worked reasoning and hints are `learn`.
   `docs/reviews/` report and commit it with the branch (`docs/REVIEW_PROTOCOL.md`). Put every
   number you quote in `src/chem/references/textbook.js` or the topic's `references.md`.
 
+## 5b. Without WebGL
+
+`main.js` wraps `createViewport()`: when WebGL is unavailable (or the page is opened with `?nowebgl`
+for testing) panels receive a viewport stub and a `FallbackMoleculeView` (`src/render/fallback.js`)
+that only remembers the frame, and the workspace shows a notice. Keep a topic readable in that mode:
+put the facts in cards, not only in the 3D view, and draw a 2D sketch where the structure matters
+(`drawWedgeDash(canvas, built.frame)` as the Molecular shapes card does). `mountWorkspace`
+topics draw into their own canvas and are unaffected.
+
 ## 6. Shared primitives
 
 The core ships a few building blocks that several upcoming topics (atomic orbitals, HOMO/LUMO,
@@ -390,3 +399,15 @@ diagram.set(octahedralSplitting(6, { highSpin: true }));   // ready-made d⁶ cr
 
 `layoutLevels(spec, { width, height })` is the pure layout behind `draw()`; use it in tests to
 assert that your diagram's levels and connections land where you expect.
+
+### A second explorer: Molecular shapes (`src/topics/molecular-shapes/`)
+
+The shapes topic is the smallest complete `CollectionExplorer` topic and a good copy-me for any
+"pick one, build it, read what it shows" lesson: pure data and geometry in `src/chem/shapes.js`
+(`SHAPES`, `buildShape(id)` → `{ frame, angles: [{ value, status, exemplar, source }], bonds, lonePairs,
+domains }`), the panel in `panel.js` (card, invariant cards with highlights, predict-observe-explain
+blocks in `activities.js` whose reveal text quotes the model's own numbers), `index.js` (topic object,
+search entries, three glossary terms) and `references.md`. The rules it follows are the ones to copy:
+lone-pair counts shown to a learner come from `atom.lonePairs`, never from display slots; every angle
+on screen says whether it is ideal, measured (and on which molecule), a class value or the fallback;
+and activities stay local to the topic rather than becoming a quiz engine.

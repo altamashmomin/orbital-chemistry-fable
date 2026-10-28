@@ -14,6 +14,10 @@ export const ELEMENTS = {
   Br: { name: 'Bromine',    color: '#b45309', radius: 0.41, covalent: 1.20, en: 2.96, valence: 1 },
   I:  { name: 'Iodine',     color: '#a855f7', radius: 0.45, covalent: 1.39, en: 2.66, valence: 1 },
   P:  { name: 'Phosphorus', color: '#fb923c', radius: 0.38, covalent: 1.07, en: 2.19, valence: 3 },
+  // Main-group centres of the Molecular shapes topic (Jmol/CPK colours, Cordero covalent radii, Pauling EN).
+  B:  { name: 'Boron',      color: '#f4a6a6', radius: 0.33, covalent: 0.84, en: 2.04, valence: 3 },
+  Se: { name: 'Selenium',   color: '#f59e0b', radius: 0.40, covalent: 1.20, en: 2.55, valence: 2 },
+  Xe: { name: 'Xenon',      color: '#5eb3c9', radius: 0.46, covalent: 1.40, en: 2.60, valence: 0 },
   // Transition metals for coordination complexes (Jmol/CPK colours, Cordero covalent radii, Pauling EN).
   // M–L bond lengths fall back to covalent radii sums, e.g. Fe–N ≈ 2.03 Å, Pt–Cl ≈ 2.38 Å.
   Ti: { name: 'Titanium',   color: '#9ca3af', radius: 0.46, covalent: 1.60, en: 1.54, valence: 4 },

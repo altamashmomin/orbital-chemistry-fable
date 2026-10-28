@@ -152,8 +152,8 @@ const clamp1 = (x) => Math.max(-1, Math.min(1, x));
  * Angle targets for a centre with lone pairs, looked up in LONE_PAIR_ANGLES (references/textbook.js) by
  * element, number of bonded atoms, the atom's lone-pair count, its p-orbital lone pair (`:sp2`) and,
  * when listed, the sorted neighbour elements. Returns
- *   { targets, key, basis, exemplar, ref, appliesTo }  with basis 'exemplar' (the row was measured on a
- *     molecule with these very neighbours) or 'class' (an element-level default standing in for a class),
+ *   { targets, key, basis, exemplar, ref, appliesTo }  with basis 'exemplar' (the row names the measured
+ *     molecule for this centre) or 'class' (an element-level default row, `classDefault: true`, standing in),
  *     targets keyed by slot-class pair ('bond-bond' for bent and pyramidal centres; 'axial-axial',
  *     'equatorial-equatorial', 'basal-apical' for trigonal-bipyramidal and octahedral ones), or
  *   { targets: null, basis: 'fallback', perPair }  when no row exists: every bonded angle closes by
@@ -167,7 +167,7 @@ export function lonePairAngleTargets(atom, neighbourEls = []) {
   const key = sig && LONE_PAIR_ANGLES[`${base}/${sig}`] ? `${base}/${sig}` : LONE_PAIR_ANGLES[base] ? base : null;
   if (!key) return { targets: null, key: null, basis: 'fallback', perPair: LONE_PAIR_COMPRESSION_PER_PAIR, exemplar: null, ref: null, appliesTo: `${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair` };
   const row = LONE_PAIR_ANGLES[key];
-  const basis = key === base ? 'class' : 'exemplar';
+  const basis = row.classDefault ? 'class' : 'exemplar';
   if (row.classes) {
     const targets = {}, refs = {};
     for (const [k, c] of Object.entries(row.classes)) { targets[k] = c.angle; refs[k] = c.ref; }

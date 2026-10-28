@@ -113,6 +113,32 @@ h1 em { color: var(--accent); font-style: normal; }
 .mol-class { margin-top: 12px; font-size: 10px; color: #789064; }
 .mol-crowding { margin-top: 12px; padding: 9px 11px; border-left: 3px solid #d2ad52; background: #fbf7ea; border-radius: 8px; font-size: 11px; line-height: 1.55; color: #5e5436; }
 .mol-crowding b { color: #8a6a1e; }
+/* Molecular shapes topic */
+.shape-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px 0 0; font-size: 11px; }
+.shape-facts dt { color: var(--muted); }
+.shape-facts dd { margin: 0; color: var(--text); font-weight: 600; text-transform: capitalize; }
+.shape-angles { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.shape-angle { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: baseline; font-size: 11px; padding: 6px 9px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.shape-angle .value { font-size: 15px; font-weight: 650; color: var(--accent); }
+.shape-angle .status { color: var(--muted); font-size: 10px; }
+.shape-angle.status-measured .status, .shape-angle.status-class .status { color: #6a7d5a; }
+.shape-angle.status-fallback .status { color: #8a6a1e; }
+.shape-sketch { width: 100%; height: 150px; margin-top: 12px; }
+.poe { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; background: var(--bg); }
+.poe-title { margin: 0 0 4px; font-size: 12px; }
+.poe-prompt { margin: 0 0 9px; font-size: 11px; color: var(--text); line-height: 1.55; }
+.poe-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.poe-option.right { border-color: var(--good); color: var(--good); font-weight: 650; }
+.poe-option.wrong { border-color: var(--bad); color: var(--bad); }
+.poe-option.reveal { border-color: var(--good); }
+.poe-reveal { margin-top: 9px; font-size: 11px; line-height: 1.55; padding: 9px 11px; border-left: 3px solid var(--good); background: #f1f5ee; border-radius: 8px; }
+.poe-reveal.wrong { border-left-color: var(--bad); }
+.poe-reveal .btn { margin: 8px 6px 0 0; }
+.webgl-fallback { position: absolute; inset: auto 4% 18% 4%; z-index: 3; padding: 14px 16px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line-2); font-size: 12px; line-height: 1.6; color: var(--text); }
+.webgl-fallback .reason { color: var(--muted); }
+body.no-webgl .viewport-hint { display: none; }
+.fallback-panel .fallback-why { font-size: 11px; color: var(--text); line-height: 1.6; }
+.fallback-panel .fallback-summary { font-size: 11px; color: var(--muted); line-height: 1.6; }
 .invariants { display: flex; flex-direction: column; gap: 7px; }
 .invariant { padding: 11px 12px; background: #f7f9f2; border: 1px solid var(--line); border-radius: 7px; text-align: left; }
 .invariant:hover, .invariant.active { background: #edf3e6; border-color: #bacdac; }

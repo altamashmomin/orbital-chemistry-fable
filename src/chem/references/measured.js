@@ -32,6 +32,8 @@ export const MEASURED_ANGLES = {
   BrF5_basalApical_FBrF: { value: 84.8, listed: 84.8, molecule: 'BrF₅', cas: '7789-30-2', atoms: 'F(basal)–Br–F(apical)', source: 'Gurvich, Veyts & Alcock, Thermodynamic Properties of Individual Substances, 4th ed. (1989), via CCCBDB' },
   BrF5_basalCis_FBrF: { value: 89.5, listed: 89.53, molecule: 'BrF₅', cas: '7789-30-2', atoms: 'F(basal)–Br–F(basal), cis', source: 'Gurvich et al. (1989), via CCCBDB' },
   // centres the model keeps idealised (register)
+  formaldehyde_HCH: { value: 116.1, listed: 116.133, molecule: 'H₂CO', cas: '50-00-0', atoms: 'H–C–H', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB' },
+  formaldehyde_HCO: { value: 121.9, listed: 121.9, molecule: 'H₂CO', cas: '50-00-0', atoms: 'H–C=O', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB ("from H–C–H by symmetry")' },
   acetone_CCC: { value: 116.0, listed: 116, molecule: '(CH₃)₂CO', cas: '67-64-1', atoms: 'C–C–C', source: 'Kuchitsu (1998), via CCCBDB (C–C=O 122°)' },
   cyclohexaneChair_CCC: { value: 111.3, listed: 111.28, molecule: 'C₆H₁₂', cas: '110-82-7', atoms: 'C–C–C', source: 'Kuchitsu (1998), via CCCBDB; Clayden, Greeves & Warren ch. 16 quotes 111.4°' },
   // amines: the range the ammonia class default stands in for (register)

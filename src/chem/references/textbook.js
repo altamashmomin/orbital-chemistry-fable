@@ -15,46 +15,47 @@ export const BOND_LENGTHS = {
 export const IDEAL_ANGLES = { tetrahedral: 109.47, trigonal: 120, linear: 180, octahedral: 90, squarePlanar: 90 };
 
 /**
- * Measured bond angles at centres with lone pairs (degrees): the targets of the embedder's lone-pair
- * angle compression (geometry.js `compressLonePairSlots`, roadmap Phase 0e). Keys are
- * `El/nBonds/nLonePairs` — lone pairs in directional slots, so a p-orbital lone pair on an sp² atom
- * (`pOrbital: 'lonePair'`) does not count and the ester / acid oxygen is O/2/1 — optionally followed by the sorted neighbour elements
- * (`/C,H`); the most specific key wins. A `[angle, source]` entry is the one bonded angle of a bent or
- * pyramidal centre. Trigonal-bipyramidal and octahedral centres name their slot classes instead:
- * `axial-axial` and `equatorial-equatorial` are the angles between the two bonds of that class,
- * `basal-apical` the angle between a basal bond and the apical one (the bond trans to the lone pair).
- * Centres not listed are compressed by LONE_PAIR_COMPRESSION_PER_PAIR degrees per lone pair.
+ * Bond-angle targets at centres with lone pairs: what the embedder's lone-pair angle compression closes
+ * the ideal slot angle to (geometry.js `compressLonePairSlots`, roadmap Phase 0e).
+ *
+ * Keys are `El/nBonds/nLonePairs[:hyb][/neighbours]`: the element, the number of bonded atoms, the
+ * atom's lone-pair count as drawn (the physical count, `atom.lonePairs`), `:sp2` when the centre is a
+ * planar sp² atom that keeps one lone pair in its p orbital (`hyb: 'sp2', pOrbital: 'lonePair'`: the
+ * ester and carboxylic-acid oxygen), and optionally the sorted neighbour elements. The most specific
+ * key wins. Each row carries one literal `angle` in degrees, the measured exemplar it was taken from
+ * (`exemplar`, with `ref` naming the row of references/measured.js that holds the citation) and, when
+ * the row stands in for a class of compounds, `appliesTo`. The embedder never reads measured.js; the
+ * conformance suite checks that `angle` still agrees with the cited measurement.
+ *
+ * Trigonal-bipyramidal and octahedral centres name their slot classes instead: `axial-axial` and
+ * `equatorial-equatorial` are the angles between the two bonds of that class, `basal-apical` the angle
+ * between a basal bond and the apical one (the bond trans to the lone pair).
+ *
+ * Centres with no row are closed by LONE_PAIR_COMPRESSION_PER_PAIR degrees per lone pair (a documented
+ * convention, not a measurement) and reported as such.
  */
 export const LONE_PAIR_ANGLES = {
-  'O/2/2/H,H': [104.5, 'CRC'],      // water H–O–H
-  'O/2/2/C,H': [108.5, 'CRC'],      // methanol C–O–H (alcohols)
-  'O/2/2/C,C': [111.7, 'CRC'],      // dimethyl ether C–O–C (ethers)
-  'O/2/2': [108.5, 'CRC'],          // any other bent sp³ oxygen: the alcohol value
-  'O/2/1/C,H': [107.0, 'CRC'],      // acetic acid C–O–H: an sp² oxygen with its second lone pair in p (carboxylic acids; phenol 109°)
-  'O/2/1/C,C': [116.4, 'CRC'],      // methyl acetate C–O–C (esters)
-  'N/3/1/H,H,H': [107.3, 'CRC'],    // ammonia H–N–H
-  'N/3/1': [107.3, 'CRC'],          // amines: measured angles vary with substitution (≈ 106–112°); the ammonia value is the teaching level (register)
-  'S/2/2/H,H': [92.1, 'CRC'],       // hydrogen sulfide H–S–H
-  'S/2/2/C,H': [96.5, 'CRC'],       // methanethiol C–S–H (thiols)
-  'S/2/2/C,C': [98.9, 'CRC'],       // dimethyl sulfide C–S–C (sulfides)
-  'S/2/2': [96.5, 'CRC'],           // any other bent sp³ sulfur: the thiol value
-  'S/4/1': { 'axial-axial': [173.1, 'CRC'], 'equatorial-equatorial': [101.6, 'CRC'] },   // SF₄ seesaw
-  'Cl/3/2': { 'axial-axial': [175.0, 'CRC'] },                                            // ClF₃ T-shape (F_ax–Cl–F_eq 87.5°)
-  'Br/5/1': { 'basal-apical': [84.8, 'CRC'] },                                            // BrF₅ square pyramid
+  'O/2/2/H,H': { angle: 104.5, ref: 'water_HOH', exemplar: 'H₂O' },
+  'O/2/2/C,H': { angle: 108.9, ref: 'methanol_COH', exemplar: 'CH₃OH', appliesTo: 'alcohols' },
+  'O/2/2/C,C': { angle: 111.2, ref: 'dimethylEther_COC', exemplar: '(CH₃)₂O', appliesTo: 'ethers' },
+  'O/2/2': { angle: 108.9, ref: 'methanol_COH', exemplar: 'CH₃OH', appliesTo: 'other bent sp³ oxygen (class default)' },
+  'O/2/2:sp2/C,H': { angle: 106.3, ref: 'formicAcid_COH', exemplar: 'HCOOH', appliesTo: 'carboxylic acids (acetic acid 107°)' },
+  'O/2/2:sp2/C,C': { angle: 114.8, ref: 'methylFormate_COC', exemplar: 'HCOOCH₃', appliesTo: 'esters (methyl acetate 116.4°)' },
+  'N/3/1/H,H,H': { angle: 106.7, ref: 'ammonia_HNH', exemplar: 'NH₃' },
+  'N/3/1': { angle: 106.7, ref: 'ammonia_HNH', exemplar: 'NH₃', appliesTo: 'amines (class default; measured 105.8–112.2° by substitution)' },
+  'P/3/1/H,H,H': { angle: 93.3, ref: 'phosphine_HPH', exemplar: 'PH₃' },
+  'S/2/2/H,H': { angle: 92.1, ref: 'hydrogenSulfide_HSH', exemplar: 'H₂S' },
+  'S/2/2/C,H': { angle: 96.5, ref: 'methanethiol_CSH', exemplar: 'CH₃SH', appliesTo: 'thiols' },
+  'S/2/2/C,C': { angle: 98.9, ref: 'dimethylSulfide_CSC', exemplar: '(CH₃)₂S', appliesTo: 'sulfides' },
+  'S/2/2': { angle: 96.5, ref: 'methanethiol_CSH', exemplar: 'CH₃SH', appliesTo: 'other bent sp³ sulfur (class default)' },
+  'S/2/1/O,O': { angle: 119.5, ref: 'sulfurDioxide_OSO', exemplar: 'SO₂' },
+  'Se/2/2/H,H': { angle: 90.9, ref: 'hydrogenSelenide_HSeH', exemplar: 'H₂Se' },
+  'S/4/1': { exemplar: 'SF₄', classes: { 'axial-axial': { angle: 173.1, ref: 'SF4_axial_FSF' }, 'equatorial-equatorial': { angle: 101.6, ref: 'SF4_equatorial_FSF' } } },
+  'Cl/3/2': { exemplar: 'ClF₃', classes: { 'axial-axial': { angle: 174.9, ref: 'ClF3_axial_FClF' } } },
+  'Br/5/1': { exemplar: 'BrF₅', classes: { 'basal-apical': { angle: 84.8, ref: 'BrF5_basalApical_FBrF' } } },
 };
-/** Fallback for lone-pair centres not in LONE_PAIR_ANGLES: each bonded angle closes by this many degrees per lone pair. */
+/** Fallback for lone-pair centres not in LONE_PAIR_ANGLES: each bonded angle closes by this many degrees per lone pair (a convention, not a measurement). */
 export const LONE_PAIR_COMPRESSION_PER_PAIR = 2.5;
-
-/**
- * Measured angles the conformance suite checks. The lone-pair ones are reproduced by the embedder
- * through LONE_PAIR_ANGLES; the carbonyl and cyclohexane values are idealised (register).
- */
-export const REAL_ANGLES = {
-  water_HOH: LONE_PAIR_ANGLES['O/2/2/H,H'], ammonia_HNH: LONE_PAIR_ANGLES['N/3/1/H,H,H'], methanol_COH: LONE_PAIR_ANGLES['O/2/2/C,H'], dimethylEther_COC: LONE_PAIR_ANGLES['O/2/2/C,C'],
-  methanethiol_CSH: LONE_PAIR_ANGLES['S/2/2/C,H'], SF4_axial_FSF: LONE_PAIR_ANGLES['S/4/1']['axial-axial'], SF4_equatorial_FSF: LONE_PAIR_ANGLES['S/4/1']['equatorial-equatorial'],
-  ClF3_axial_FClF: LONE_PAIR_ANGLES['Cl/3/2']['axial-axial'], BrF5_basal_apical_FBrF: LONE_PAIR_ANGLES['Br/5/1']['basal-apical'],
-  acetone_CCC: [116.0, 'CRC'], cyclohexaneChair_CCC: [111.4, 'CGW ch. 16'],
-};
 
 /** Pauling electronegativities. */
 export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19 }; // CRC

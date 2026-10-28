@@ -149,24 +149,31 @@ export function vseprShape(nBonds, nLonePairs = 0) {
 const clamp1 = (x) => Math.max(-1, Math.min(1, x));
 
 /**
- * Target angles for a centre with lone pairs, looked up in LONE_PAIR_ANGLES (references/textbook.js)
- * by element, number of bonded atoms, number of directional lone pairs and, when listed, the sorted
- * neighbour elements. Returns { targets, source, key } with targets keyed by slot-class pair
- * ('bond-bond' for bent and pyramidal centres; 'axial-axial', 'equatorial-equatorial', 'basal-apical'
- * for trigonal-bipyramidal and octahedral ones), or { targets: null, perPair, source } for the documented
- * fallback: every bonded angle closes by LONE_PAIR_COMPRESSION_PER_PAIR degrees per lone pair.
+ * Angle targets for a centre with lone pairs, looked up in LONE_PAIR_ANGLES (references/textbook.js) by
+ * element, number of bonded atoms, the atom's lone-pair count, its p-orbital lone pair (`:sp2`) and,
+ * when listed, the sorted neighbour elements. Returns
+ *   { targets, key, basis, exemplar, ref, appliesTo }  with basis 'exemplar' (the row was measured on a
+ *     molecule with these very neighbours) or 'class' (an element-level default standing in for a class),
+ *     targets keyed by slot-class pair ('bond-bond' for bent and pyramidal centres; 'axial-axial',
+ *     'equatorial-equatorial', 'basal-apical' for trigonal-bipyramidal and octahedral ones), or
+ *   { targets: null, basis: 'fallback', perPair }  when no row exists: every bonded angle closes by
+ *     LONE_PAIR_COMPRESSION_PER_PAIR degrees per lone pair.
+ * `atom` is the graph atom ({ el, lonePairs, hyb, pOrbital }); `neighbourEls` its bonded elements.
  */
-export function lonePairAngleTargets(el, nBonds, nLonePairs, neighbourEls = []) {
-  const base = `${el}/${nBonds}/${nLonePairs}`;
+export function lonePairAngleTargets(atom, neighbourEls = []) {
+  const planar = atom.pOrbital === 'lonePair' && atom.hyb ? `:${atom.hyb}` : '';
+  const base = `${atom.el}/${neighbourEls.length}/${atom.lonePairs || 0}${planar}`;
   const sig = [...neighbourEls].sort().join(',');
   const key = sig && LONE_PAIR_ANGLES[`${base}/${sig}`] ? `${base}/${sig}` : LONE_PAIR_ANGLES[base] ? base : null;
-  if (!key) return { targets: null, perPair: LONE_PAIR_COMPRESSION_PER_PAIR, source: `fallback (${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair)`, key: null };
-  const entry = LONE_PAIR_ANGLES[key];
-  if (Array.isArray(entry)) return { targets: { 'bond-bond': entry[0] }, source: entry[1], key };
-  const targets = {};
-  let source = null;
-  for (const [k, val] of Object.entries(entry)) { targets[k] = val[0]; source = source || val[1]; }
-  return { targets, source, key };
+  if (!key) return { targets: null, key: null, basis: 'fallback', perPair: LONE_PAIR_COMPRESSION_PER_PAIR, exemplar: null, ref: null, appliesTo: `${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair` };
+  const row = LONE_PAIR_ANGLES[key];
+  const basis = key === base ? 'class' : 'exemplar';
+  if (row.classes) {
+    const targets = {}, refs = {};
+    for (const [k, c] of Object.entries(row.classes)) { targets[k] = c.angle; refs[k] = c.ref; }
+    return { targets, key, basis, exemplar: row.exemplar, ref: refs, appliesTo: row.appliesTo || null };
+  }
+  return { targets: { 'bond-bond': row.angle }, key, basis, exemplar: row.exemplar, ref: row.ref, appliesTo: row.appliesTo || null };
 }
 
 /**
@@ -455,7 +462,7 @@ export function embed(graph, opts = {}) {
     // them. A centre whose neighbours are all pinned (mechanism frames) keeps its ideal slots.
     let dirs = slots, compression = null;
     if (lonePairAngles && lpSlots.length && assigned.length) {
-      const lookup = lonePairAngleTargets(a.el, nbrs.length, lpSlots.length, nbrs.map((n) => atoms.get(n.id).el));
+      const lookup = lonePairAngleTargets(a, nbrs.map((n) => atoms.get(n.id).el));
       const next = compressLonePairSlots(kind, slots, Object.values(slotOf), lpSlots, lookup.targets, lookup.perPair);
       if (next) { dirs = realignSlots(kind, slots, next, placedN.length ? slotOf[placedN[0].id] : 0); compression = lookup; }
     }

@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { embed, relaxTorsions, lonePairSlots, vseprShape, ringTemplate, RING_SHAPES, mirror, dihedral, v, DEG, TEMPLATES, GEOMETRY_KINDS, lonePairAngleTargets, compressLonePairSlots } from '../src/chem/geometry.js';
-import { toFrame, makeMolecule } from '../src/chem/builder.js';
+import { toFrame, makeMolecule, buildMolecule } from '../src/chem/builder.js';
 import { bondLength } from '../src/chem/elements.js';
-import { REAL_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR } from '../src/chem/references/textbook.js';
+import { LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR } from '../src/chem/references/textbook.js';
+import { MEASURED_ANGLES } from '../src/chem/references/measured.js';
 import { assertNoClashes } from './helpers.js';
 
 const angle = (a, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(a), v.norm(b))))) / DEG;
@@ -97,7 +98,7 @@ test('ammonia and water show the measured angles, the ideal slots stay one optio
   const e = embed(nh3, { root: 'N' });
   const n = pos(e, 'N');
   // 1e-3: TEMPLATES.tetrahedral is built from TETRAHEDRAL = 109.4712° (rounded), so its three slots are not a perfect C₃ set.
-  assert.ok(anglesAt(n, [1, 2, 3].map((i) => pos(e, `H${i}`))).every((x) => Math.abs(x - REAL_ANGLES.ammonia_HNH[0]) < 1e-3), 'H–N–H = 107.3°');
+  assert.ok(anglesAt(n, [1, 2, 3].map((i) => pos(e, `H${i}`))).every((x) => Math.abs(x - MEASURED_ANGLES.ammonia_HNH.value) < 1e-3), 'H–N–H = 106.7°');
   assert.equal(e.lonePairDirs.get('N').length, 1);
   const lpH = [1, 2, 3].map((i) => angle(e.lonePairDirs.get('N')[0], v.sub(pos(e, `H${i}`), n)));
   assert.ok(lpH.every((x) => Math.abs(x - lpH[0]) < 1e-3 && x > 109.47), `the lone pair stays on the C₃ axis, ${lpH[0].toFixed(2)}° from every H`);
@@ -107,10 +108,10 @@ test('ammonia and water show the measured angles, the ideal slots stay one optio
   assert.equal(ideal.frames.get('N').compression, null);
   const h2o = { atoms: [{ id: 'O', el: 'O', lonePairs: 2 }, { id: 'H1', el: 'H' }, { id: 'H2', el: 'H' }], bonds: [{ a: 'O', b: 'H1', order: 1 }, { a: 'O', b: 'H2', order: 1 }] };
   const w = embed(h2o, { root: 'H1' });
-  assert.ok(Math.abs(angle(v.sub(pos(w, 'H1'), pos(w, 'O')), v.sub(pos(w, 'H2'), pos(w, 'O'))) - REAL_ANGLES.water_HOH[0]) < 1e-6, 'H–O–H = 104.5°');
+  assert.ok(Math.abs(angle(v.sub(pos(w, 'H1'), pos(w, 'O')), v.sub(pos(w, 'H2'), pos(w, 'O'))) - MEASURED_ANGLES.water_HOH.value) < 1e-6, 'H–O–H = 104.5°');
   assert.equal(w.lonePairDirs.get('O').length, 2);
   const lpAngle = angle(...w.lonePairDirs.get('O'));
-  assert.ok(Math.abs(lpAngle - (2 * 109.4712 - REAL_ANGLES.water_HOH[0])) < 1e-3, `the lone pairs open by the bond compression (${lpAngle.toFixed(2)}°)`);
+  assert.ok(Math.abs(lpAngle - (2 * 109.4712 - MEASURED_ANGLES.water_HOH.value)) < 1e-3, `the lone pairs open by the bond compression (${lpAngle.toFixed(2)}°)`);
   const bondBis = v.norm(v.add(v.norm(v.sub(pos(w, 'H1'), pos(w, 'O'))), v.norm(v.sub(pos(w, 'H2'), pos(w, 'O')))));
   assert.ok(Math.abs(v.dot(bondBis, v.norm(v.add(...w.lonePairDirs.get('O')))) + 1) < 1e-9, 'lone-pair bisector stays anti to the bond bisector: compressed, not tilted');
   // A known explorer molecule still has every lone pair it had and no clashes.
@@ -120,7 +121,7 @@ test('ammonia and water show the measured angles, the ideal slots stay one optio
 });
 
 test('lone-pair angle compression reproduces the measured hypervalent angles whichever atom is placed first', () => {
-  const ax = REAL_ANGLES.SF4_axial_FSF[0], eq = REAL_ANGLES.SF4_equatorial_FSF[0];
+  const ax = MEASURED_ANGLES.SF4_axial_FSF.value, eq = MEASURED_ANGLES.SF4_equatorial_FSF.value;
   const axEq = Math.acos(Math.cos((ax / 2) * DEG) * Math.cos((eq / 2) * DEG)) / DEG;   // axial and equatorial bonds are 90° apart in azimuth
   for (const root of ['A', 'F1', 'F3']) {
     const sf4 = hypervalent('S', 4, 1, root);
@@ -131,10 +132,10 @@ test('lone-pair angle compression reproduces the measured hypervalent angles whi
     assertNoClashes(sf4.frame, `SF4 ${root}`);
   }
   const clf3 = hypervalent('Cl', 3, 2);
-  const clAx = REAL_ANGLES.ClF3_axial_FClF[0];
+  const clAx = MEASURED_ANGLES.ClF3_axial_FClF.value;
   assert.ok(close(clf3.angles, [clAx / 2, clAx / 2, clAx], 1e-6), `ClF3 angles ${clf3.angles}`);
   assert.ok(Math.abs(angle(clf3.lp[0], clf3.lp[1]) - (120 + 2 * (90 - clAx / 2))) < 1e-6, 'each equatorial lone pair opens by the axial compression');
-  const ba = REAL_ANGLES.BrF5_basal_apical_FBrF[0], cis = Math.acos(Math.cos(ba * DEG) ** 2) / DEG;
+  const ba = MEASURED_ANGLES.BrF5_basalApical_FBrF.value, cis = Math.acos(Math.cos(ba * DEG) ** 2) / DEG;
   for (const root of ['A', 'F2']) {
     const brf5 = hypervalent('Br', 5, 1, root);
     assert.ok(close(brf5.angles, [ba, ba, ba, ba, cis, cis, cis, cis, 2 * ba, 2 * ba], 1e-6), `BrF5 (root ${root}) angles ${brf5.angles.map((x) => x.toFixed(2))}`);
@@ -147,18 +148,31 @@ test('lone-pair angle compression reproduces the measured hypervalent angles whi
   assert.equal(hypervalent('P', 5, 0).e.frames.get('A').compression, null, 'no lone pairs: nothing to compress');
 });
 
-test('lonePairAngleTargets: the most specific key wins and unlisted centres get the documented fallback', () => {
-  assert.deepEqual(lonePairAngleTargets('O', 2, 2, ['H', 'C']), { targets: { 'bond-bond': 108.5 }, source: 'CRC', key: 'O/2/2/C,H' });
-  assert.equal(lonePairAngleTargets('O', 2, 2, ['C', 'C']).targets['bond-bond'], 111.7);
-  assert.equal(lonePairAngleTargets('O', 2, 2, ['Si', 'C']).key, 'O/2/2', 'unlisted neighbours fall back to the element entry');
-  assert.deepEqual(lonePairAngleTargets('S', 4, 1, ['F', 'F', 'F', 'F']).targets, { 'axial-axial': 173.1, 'equatorial-equatorial': 101.6 });
-  const fb = lonePairAngleTargets('Se', 2, 2, ['H', 'H']);
-  assert.equal(fb.targets, null); assert.equal(fb.perPair, LONE_PAIR_COMPRESSION_PER_PAIR); assert.equal(fb.key, null);
+test('lonePairAngleTargets: the most specific key wins, basis says what the number is, unlisted centres get the documented fallback', () => {
+  assert.deepEqual(lonePairAngleTargets({ el: 'O', lonePairs: 2 }, ['H', 'C']), { targets: { 'bond-bond': 108.9 }, key: 'O/2/2/C,H', basis: 'exemplar', exemplar: 'CH₃OH', ref: 'methanol_COH', appliesTo: 'alcohols' });
+  assert.equal(lonePairAngleTargets({ el: 'O', lonePairs: 2 }, ['C', 'C']).targets['bond-bond'], 111.2);
+  const dflt = lonePairAngleTargets({ el: 'O', lonePairs: 2 }, ['Si', 'C']);
+  assert.equal(dflt.key, 'O/2/2'); assert.equal(dflt.basis, 'class');
+  // the physical lone-pair count is the key; a planar sp² oxygen with a p lone pair is a different row
+  assert.equal(lonePairAngleTargets({ el: 'O', lonePairs: 2, hyb: 'sp2', pOrbital: 'lonePair' }, ['C', 'C']).key, 'O/2/2:sp2/C,C');
+  assert.equal(lonePairAngleTargets({ el: 'O', lonePairs: 2, hyb: 'sp2', pOrbital: 'lonePair' }, ['C', 'H']).targets['bond-bond'], 106.3);
+  assert.deepEqual(lonePairAngleTargets({ el: 'S', lonePairs: 1 }, ['F', 'F', 'F', 'F']).targets, { 'axial-axial': 173.1, 'equatorial-equatorial': 101.6 });
+  const fb = lonePairAngleTargets({ el: 'Te', lonePairs: 2 }, ['H', 'H']);
+  assert.equal(fb.targets, null); assert.equal(fb.basis, 'fallback'); assert.equal(fb.perPair, LONE_PAIR_COMPRESSION_PER_PAIR); assert.equal(fb.key, null);
+  // every table row names a measurement in the oracle and agrees with it (the oracle is never read by the embedder)
+  for (const [key, row] of Object.entries(LONE_PAIR_ANGLES)) {
+    for (const [label, c] of row.classes ? Object.entries(row.classes).map(([k, c]) => [`${key} ${k}`, c]) : [[key, row]]) {
+      const m = MEASURED_ANGLES[c.ref];
+      assert.ok(m, `${label}: ref ${c.ref} exists in measured.js`);
+      assert.ok(Math.abs(m.value - c.angle) < 0.05, `${label}: ${c.angle}° equals the cited ${m.value}°`);
+      assert.ok(m.source && m.cas && m.molecule, `${label}: citation complete`);
+    }
+  }
   // fallback: every bonded angle closes by 2.5° per lone pair
-  assert.ok(Math.abs(hypervalent('Se', 2, 2, 'A', {}, 'H').angles[0] - (109.4712 - 2 * LONE_PAIR_COMPRESSION_PER_PAIR)) < 1e-3, 'H–Se–H: two lone pairs, 5° off tetrahedral');
+  assert.ok(Math.abs(hypervalent('Te', 2, 2, 'A', {}, 'H').angles[0] - (109.4712 - 2 * LONE_PAIR_COMPRESSION_PER_PAIR)) < 1e-3, 'H–Te–H: two lone pairs, 5° off tetrahedral');
   const tecl4 = hypervalent('Te', 4, 1, 'A', {}, 'Cl');
   assert.ok(Math.abs(tecl4.angles[5] - (180 - LONE_PAIR_COMPRESSION_PER_PAIR)) < 1e-6 && Math.abs(tecl4.angles[4] - (120 - LONE_PAIR_COMPRESSION_PER_PAIR)) < 1e-6, `fallback seesaw ${tecl4.angles.map((x) => x.toFixed(1))}`);
-  assert.equal(tecl4.e.frames.get('A').compression.key, null);
+  assert.equal(tecl4.e.frames.get('A').compression.basis, 'fallback');
   // the direct API: nothing to do without lone pairs, with one bond, or with lone pairs that cancel
   assert.equal(compressLonePairSlots('tetrahedral', TEMPLATES.tetrahedral, [0, 1, 2, 3], []), null);
   assert.equal(compressLonePairSlots('tetrahedral', TEMPLATES.tetrahedral, [0], [1, 2, 3], { 'bond-bond': 100 }), null);
@@ -166,8 +180,37 @@ test('lonePairAngleTargets: the most specific key wins and unlisted centres get 
   const out = compressLonePairSlots('tetrahedral', TEMPLATES.tetrahedral, [0, 1], [2, 3], { 'bond-bond': 104.5 });
   assert.ok(Math.abs(angle(out[0], out[1]) - 104.5) < 1e-9 && out.every((d) => Math.abs(v.len(d) - 1) < 1e-12));
   assert.ok(Math.abs(angle(TEMPLATES.tetrahedral[0], TEMPLATES.tetrahedral[1]) - 109.4712) < 1e-3, 'the template itself is untouched');
-  const wide = compressLonePairSlots('tetrahedral', TEMPLATES.tetrahedral, [0, 1], [2, 3], { 'bond-bond': 111.7 });
-  assert.ok(Math.abs(angle(wide[0], wide[1]) - 111.7) < 1e-9 && angle(wide[2], wide[3]) < 109.47, 'an ether opens past tetrahedral and its lone pairs close in');
+  const wide = compressLonePairSlots('tetrahedral', TEMPLATES.tetrahedral, [0, 1], [2, 3], { 'bond-bond': 111.2 });
+  assert.ok(Math.abs(angle(wide[0], wide[1]) - 111.2) < 1e-9 && angle(wide[2], wide[3]) < 109.47, 'an ether opens past tetrahedral ("compression" is signed) and its lone pairs close in');
+});
+
+test('boundaries: the hybridisation flag, not the neighbours, separates a phenol from an acid; pinned atoms never move', () => {
+  // phenol: alcohol core with R1 = phenyl keeps an sp³ oxygen → the methanol row (measured phenol 109°)
+  const phenol = buildMolecule('alcohol', { R: { R1: 'phenyl' } });
+  const ep = embed(phenol, { root: 'O' });
+  assert.equal(ep.frames.get('O').compression.key, 'O/2/2/C,H');
+  assert.ok(Math.abs(angle(v.sub(pos(ep, 'H'), pos(ep, 'O')), v.sub(pos(ep, phenol.aliases.R1), pos(ep, 'O'))) - MEASURED_ANGLES.methanol_COH.value) < 1e-6);
+  // carboxylic acid: the O–H oxygen is sp² with a p lone pair → the formic-acid row
+  const acid = buildMolecule('carboxylicAcid');
+  const ea = embed(acid, { root: 'C' });
+  assert.equal(ea.frames.get('O2').compression.key, 'O/2/2:sp2/C,H');
+  assert.ok(Math.abs(angle(v.sub(pos(ea, 'C'), pos(ea, 'O2')), v.sub(pos(ea, 'H'), pos(ea, 'O2'))) - MEASURED_ANGLES.formicAcid_COH.value) < 1e-6);
+  assert.equal(ea.frames.get('O2').kind, 'trigonal', 'still planar: the compression happens inside the plane');
+  const ester = buildMolecule('ester');
+  const ee = embed(ester, { root: 'C' });
+  assert.equal(ee.frames.get('O2').compression.key, 'O/2/2:sp2/C,C');
+  // a centre with its first neighbour pinned: the pinned atom stays, the others close around it
+  const nh3 = { atoms: [{ id: 'N', el: 'N', lonePairs: 1 }, { id: 'H1', el: 'H' }, { id: 'H2', el: 'H' }, { id: 'H3', el: 'H' }], bonds: [1, 2, 3].map((i) => ({ a: 'N', b: `H${i}`, order: 1 })) };
+  const one = embed(nh3, { pinned: { N: [0, 0, 0], H1: [0, 0, 1.01] } });
+  assert.deepEqual(pos(one, 'H1'), [0, 0, 1.01]);
+  assert.ok(anglesAt(pos(one, 'N'), [1, 2, 3].map((i) => pos(one, `H${i}`))).every((x) => Math.abs(x - MEASURED_ANGLES.ammonia_HNH.value) < 1e-3), 'all three angles measured');
+  // two pinned neighbours at ideal positions: neither moves; only the placed hydrogen takes a compressed slot
+  const T = 109.4712 * DEG;
+  const two = embed(nh3, { pinned: { N: [0, 0, 0], H1: [0, 0, 1.01], H2: [1.01 * Math.sin(T), 0, 1.01 * Math.cos(T)] } });
+  const a12 = angle(pos(two, 'H1'), pos(two, 'H2')), a13 = angle(pos(two, 'H1'), pos(two, 'H3'));
+  assert.ok(Math.abs(a12 - 109.4712) < 1e-3, 'pinned pair keeps its authored angle');
+  assert.ok(Math.abs(a13 - MEASURED_ANGLES.ammonia_HNH.value) < 1e-3, 'the placed hydrogen sits on the compressed slot relative to the first neighbour');
+  assert.ok(two.frames.get('N').compression, 'compression is recorded even when only one neighbour was placed');
 });
 
 test('compression keeps the first placed neighbour and the torsion; fully pinned centres stay ideal; the explorer shows the table values', () => {
@@ -178,7 +221,7 @@ test('compression keeps the first placed neighbour and the torsion; fully pinned
   for (const root of ['O', 'H', 'C1', 'C2']) {
     const e = embed(ethanol, { root });
     const p = (id) => pos(e, id);
-    assert.ok(Math.abs(angle(v.sub(p('C1'), p('O')), v.sub(p('H'), p('O'))) - REAL_ANGLES.methanol_COH[0]) < 1e-6, `C–O–H = 108.5° (root ${root})`);
+    assert.ok(Math.abs(angle(v.sub(p('C1'), p('O')), v.sub(p('H'), p('O'))) - MEASURED_ANGLES.methanol_COH.value) < 1e-6, `C–O–H = 108.9° (root ${root})`);
     assert.ok(Math.abs(Math.abs(dihedral(p('C2'), p('C1'), p('O'), p('H')) / DEG) - 180) < 1e-6, `C–C–O–H stays anti (root ${root})`);
     assert.ok(anglesAt(p('C1'), [p('O'), p('H1a'), p('H1b'), p('C2')]).every((x) => Math.abs(x - 109.4712) < 1e-3), 'the carbon next door keeps ideal tetrahedral angles');
     const f = e.frames.get('O');
@@ -193,7 +236,7 @@ test('compression keeps the first placed neighbour and the torsion; fully pinned
   assert.ok(Math.abs(angle(...w.lonePairDirs.get('O')) - 109.4712) < 1e-3);
   assert.equal(w.frames.get('O').compression, null);
   // The functional-group explorer's lone-pair centres show the table values.
-  for (const [id, centre, expected] of [['alcohol', 'O', REAL_ANGLES.methanol_COH[0]], ['ether', 'O', REAL_ANGLES.dimethylEther_COC[0]], ['amine', 'N', REAL_ANGLES.ammonia_HNH[0]], ['thiol', 'S', REAL_ANGLES.methanethiol_CSH[0]]]) {
+  for (const [id, centre, expected] of [['alcohol', 'O', MEASURED_ANGLES.methanol_COH.value], ['ether', 'O', MEASURED_ANGLES.dimethylEther_COC.value], ['amine', 'N', MEASURED_ANGLES.ammonia_HNH.value], ['thiol', 'S', MEASURED_ANGLES.methanethiol_CSH.value], ['carboxylicAcid', 'O2', MEASURED_ANGLES.formicAcid_COH.value], ['ester', 'O2', MEASURED_ANGLES.methylFormate_COC.value]]) {
     const { frame } = makeMolecule(id);
     const byId = new Map(frame.atoms.map((a) => [a.id, a]));
     const nb = frame.bonds.filter((b) => b.a === centre || b.b === centre).map((b) => byId.get(b.a === centre ? b.b : b.a).pos);

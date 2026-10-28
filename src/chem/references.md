@@ -68,11 +68,21 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
   (Wiley, 1994), ch. 11; Clayden, Greeves & Warren, *Organic Chemistry* (OUP, 2nd ed.), ch. 16.
   The templates are idealised (all C–C = 1.54 Å, exact closure) for teaching, not refined structures.
 * Lone-pair angle compression (`LONE_PAIR_ANGLES` in `references/textbook.js`): the bonded angles at
-  centres with lone pairs are closed from the ideal slot angle to the gas-phase values in the CRC
-  Handbook of Chemistry and Physics, "Structure of free molecules in the gas phase" (H₂O 104.5°,
-  NH₃ 107.3°, H₂S 92.1°, CH₃OH C–O–H 108.5°, (CH₃)₂O 111.7°, CH₃SH 96.5°, (CH₃)₂S 98.9°, CH₃COOH
-  C–O–H 107.0°, CH₃COOCH₃ C–O–C 116.4°, SF₄ 173.1°/101.6°, ClF₃ 87.5° axial–equatorial, BrF₅ 84.8°
-  apical–basal). The picture behind the rule — lone pairs repel more than bonding pairs, so bonded
-  angles close and the lone pairs spread — is Gillespie & Hargittai (above); the 2.5° per lone pair
-  default for centres not in the table is a rounded version of the H₂O / NH₃ deficit and is a
-  teaching convention, not a measurement.
+  centres with lone pairs are closed from the ideal slot angle to one measured gas-phase exemplar per
+  row. The citations live in `references/measured.js`, copied by hand from the NIST Computational
+  Chemistry Comparison and Benchmark Database experimental-geometry listings
+  (`https://cccbdb.nist.gov/expgeom2x.asp?casno=<CAS>`, read 2026-10-27), which name the original
+  measurement: H₂O 104.48° rₑ (Hoy & Bunker 1979), NH₃ 106.67° (Herzberg 1966), PH₃ 93.3°, H₂S 92.11°
+  (Cook, De Lucia & Helminger 1975), H₂Se 90.9° (Kuchitsu 1998), CH₃OH C–O–H 108.87° (Venkateswarlu &
+  Gordy 1955), (CH₃)₂O 111.2° rₛ (Niide & Hayashi 2003; Landolt-Börnstein and CRC quote 111.7°),
+  (CH₃)₂S 98.9° (Pierce & Hayashi 1961), HCOOH C–O–H 106.3° (Herzberg 1966), HCOOCH₃ C–O–C 114.8°
+  (Landolt-Börnstein II/7), SO₂ 119.5°, SF₄ 173.07°/101.55° (Tolles & Gwinn 1962), ClF₃ 87.45° rₑ
+  (Müller 2001), BrF₅ 84.8° (Gurvich et al. 1989). CH₃SH C–S–H 96.5° follows the microwave structure
+  tabulated by Landolt-Börnstein II/7 and the CRC gas-phase table; the CCCBDB page quotes Herzberg's
+  1966 compilation value 100.3°, a discrepancy the register records. Where a row stands in for a class
+  (ethanol takes methanol's angle, acetic acid formic acid's) the lookup says so (`basis: 'class'` or
+  an `appliesTo` note). The picture behind the rule — lone pairs repel more than bonding pairs, so
+  bonded angles close and the lone pairs spread — is Gillespie & Hargittai (above); the 2.5° per lone
+  pair default for centres with no row is a rounded version of the H₂O / NH₃ deficit and is a teaching
+  convention, not a measurement. Idealised references the model knowingly does not reproduce (acetone
+  C–C–C 116°, cyclohexane C–C–C 111.28°, both Kuchitsu 1998 via CCCBDB) are in the same file.

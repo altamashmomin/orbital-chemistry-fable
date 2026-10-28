@@ -277,23 +277,29 @@ seesaw, `ClF₃` (two lone pairs) is T-shaped, `BrF₅` square pyramidal and `Xe
 
 **Lone-pair angles.** A centre that keeps lone pairs in directional slots does not show the ideal
 slot angle: after the slots are assigned the embedder closes its bonded directions toward each other
-(symmetrically, so the first placed neighbour and the torsion stay put) until they meet the measured
-angle in `LONE_PAIR_ANGLES` (`src/chem/references/textbook.js`), keyed `El/nBonds/nLonePairs` with an
-optional sorted-neighbour suffix: water `O/2/2/H,H` 104.5°, alcohols `O/2/2/C,H` 108.5°, ethers 111.7°,
-amines `N/3/1` 107.3°, thiols 96.5°, the ester / acid sp² oxygen `O/2/1`, and SF₄ / ClF₃ / BrF₅ by slot
-class (`axial-axial`, `equatorial-equatorial`, `basal-apical`). Centres with no entry close every
-bonded angle by `LONE_PAIR_COMPRESSION_PER_PAIR` (2.5°) per lone pair; lone-pair lobes open by the same
-amount. Pinned centres whose neighbours are all placed (mechanism frames) are left alone, and
+(symmetrically, so the first placed neighbour and the torsion stay put) until they meet the angle in
+`LONE_PAIR_ANGLES` (`src/chem/references/textbook.js`), keyed `El/nBonds/nLonePairs[:sp2][/neighbours]`
+by the lone-pair count *as drawn* (`atom.lonePairs`), with `:sp2` for a planar centre that keeps one
+lone pair in its p orbital (the ester / acid oxygen) and an optional sorted-neighbour suffix: water
+`O/2/2/H,H` 104.5°, alcohols `O/2/2/C,H` 108.9° (methanol), ethers 111.2°, amines `N/3/1` 106.7°
+(ammonia), thiols 96.5°, acids `O/2/2:sp2/C,H` 106.3° (formic acid), esters 114.8° (methyl formate),
+and SF₄ / ClF₃ / BrF₅ by slot class (`axial-axial`, `equatorial-equatorial`, `basal-apical`). Every row
+names its measured exemplar; the citation lives in `src/chem/references/measured.js`, the oracle the
+conformance suite checks against and the embedder never reads. The lookup says what the number is:
+`basis: 'exemplar'` (a molecule with these very neighbours was measured), `'class'` (an element-level
+default) or `'fallback'` (no row: every bonded angle closes by `LONE_PAIR_COMPRESSION_PER_PAIR`, 2.5°,
+per lone pair — a convention). Show that status next to any angle you display. Lone-pair lobes open by
+the mean compression. Centres whose neighbours are all pinned (mechanism frames) are left alone, and
 `embed(graph, { lonePairAngles: false })` gives the ideal slots back. Teaching a new lone-pair centre?
-Add its measured angle to the table (with a source) before the topic quotes it:
+Add a cited row to `measured.js` and a matching row to the table before the topic quotes it:
 
 ```js
 import { embed, lonePairAngleTargets, compressLonePairSlots } from '../../chem/geometry.js';
-embed(graph, { root: 'O' });                       // alcohol O: C–O–H = 108.5°
-embed(graph, { root: 'O', lonePairAngles: false }); // ideal slots: 109.47°
-lonePairAngleTargets('O', 2, 2, ['C', 'H']);        // { targets: { 'bond-bond': 108.5 }, source: 'CRC', key: 'O/2/2/C,H' }
-lonePairAngleTargets('Se', 2, 2, ['H', 'H']);       // { targets: null, perPair: 2.5, … } → the fallback
-e.frames.get('O').compression;                      // the lookup applied at that centre, or null
+embed(graph, { root: 'O' });                                  // alcohol O: C–O–H = 108.9°
+embed(graph, { root: 'O', lonePairAngles: false });            // ideal slots: 109.47°
+lonePairAngleTargets({ el: 'O', lonePairs: 2 }, ['C', 'H']);   // { targets: { 'bond-bond': 108.9 }, key: 'O/2/2/C,H', basis: 'exemplar', exemplar: 'CH₃OH', ref: 'methanol_COH', appliesTo: 'alcohols' }
+lonePairAngleTargets({ el: 'Te', lonePairs: 2 }, ['H', 'H']);  // { targets: null, basis: 'fallback', perPair: 2.5, … }
+e.frames.get('O').compression;                                 // the lookup applied at that centre, or null
 ```
 
 **Cycloalkane templates.** `ringTemplate(shape, opts)` returns a rigid fragment in the format the

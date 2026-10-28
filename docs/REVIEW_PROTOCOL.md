@@ -88,9 +88,12 @@ measurement. New idealisations are added here with a measured value, not silentl
 
 | area | model | measured / textbook | why accepted |
 | --- | --- | --- | --- |
-| Amine angles | all three angles at an amine N = 107.3° (the ammonia entry of `LONE_PAIR_ANGLES`) | measured amine angles vary with substitution, ≈ 106–112° | one entry per element / bond count / lone-pair count; substituent effects of a few degrees are below the teaching level |
-| Lone-pair centres outside the table | every bonded angle closes by 2.5° per lone pair (`LONE_PAIR_COMPRESSION_PER_PAIR`) | element-specific (H₂Se 91°, PH₃ 93.5°, TeCl₄ …) | documented default; a topic that teaches such a centre adds a `LONE_PAIR_ANGLES` row first |
-| Carbonyl angles | 120° exactly | acetone C–C–C 116°, C–C=O 122° | idealised VSEPR is the teaching level |
+| Lone-pair angles: class approximations | alcohols, ethers, thiols, sulfides, acids and esters take the angle of one measured exemplar each (methanol 108.9°, dimethyl ether 111.2°, methanethiol 96.5°, dimethyl sulfide 98.9°, formic acid 106.3°, methyl formate 114.8°); `lonePairAngleTargets().basis` reports `exemplar` or `class` | the displayed molecule is usually not the exemplar (ethanol, diethyl ether; acetic acid 107°, methyl acetate 116.4°) | substituent effects of a degree or two are below the teaching level; every number traces to `src/chem/references/measured.js`, the oracle the embedder never reads |
+| Amine angles | all three angles at an amine N = 106.7° (the ammonia row, as class default) | methylamine H–N–H 105.8° / C–N–H 111°, dimethylamine C–N–C 112.2°, trimethylamine 110.9° | a symmetric compression cannot show two different angles at one centre; the card quotes the range |
+| Lone-pair centres outside the table | every bonded angle closes by 2.5° per lone pair (`LONE_PAIR_COMPRESSION_PER_PAIR`), reported as `basis: 'fallback'` | element-specific (TeCl₄ …); H₂Se, PH₃ and SO₂ have sourced rows | a convention (a rounded H₂O / NH₃ deficit), not a measurement; a topic that teaches such a centre adds a sourced row first |
+| Methanethiol C–S–H | 96.5° (microwave structure as tabulated by Landolt-Börnstein II/7 and the CRC gas-phase table) | the NIST CCCBDB listing quotes Herzberg's 1966 compilation, 100.3° | the microwave value is kept and the discrepancy is recorded in `measured.js` |
+| Pinned reaction centres | the water, alcohol and alkoxide nucleophiles and bases of SN1/SN2/E1/E2 keep ideal 109.47° slots (their atoms are authored and pinned) | the same water shows 104.5° in the explorer | authored mechanism geometry is preserved on purpose; stated in the mechanism references |
+| Carbonyl angles | 120° exactly | acetone C–C–C 116°, C–C=O 122° (CCCBDB) | idealised VSEPR is the teaching level |
 | Energy profiles | illustrative kcal/mol shapes | measured Eₐ differ by substrate and solvent | labelled "illustrative" in the UI and data |
 | Predictor percentages | heuristic tendencies | no single measured yield exists | labelled as a teaching heuristic |
 | SN2 transition state | exactly symmetric, both partial bonds 0.5 | real TS is earlier or later (Hammond) | pedagogical symmetry |

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { embed, relaxTorsions, lonePairSlots, vseprShape, ringTemplate, RING_SHAPES, mirror, dihedral, v, DEG, TEMPLATES, GEOMETRY_KINDS, lonePairAngleTargets, compressLonePairSlots } from '../src/chem/geometry.js';
+import { embed, relaxTorsions, lonePairSlots, vseprShape, ringTemplate, RING_SHAPES, mirror, dihedral, v, DEG, TEMPLATES, GEOMETRY_KINDS, lonePairAngleTargets, compressLonePairSlots, stericContacts, HARD_CONTACT } from '../src/chem/geometry.js';
 import { toFrame, makeMolecule, buildMolecule } from '../src/chem/builder.js';
 import { bondLength } from '../src/chem/elements.js';
 import { LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR } from '../src/chem/references/textbook.js';
@@ -398,4 +398,21 @@ test('mirror() reflects every supported shape, preserves distances and inverts c
   assert.ok(Math.abs(v.dot(B.get('O').lonePairDirs[0], [1, 0, 0]) + v.dot(O.lonePairDirs[0], [1, 0, 0])) < 1e-12, 'lone-pair directions are mirrored too');
   assert.deepEqual(c, O.pos, 'input is untouched');
   assert.throws(() => mirror(42), /expected/);
+});
+
+test('stericContacts reports hard contacts and the rescue stage of relaxTorsions only runs when they exist', () => {
+  // ethane: staggered, clean, and untouched by the rescue stage (positions identical with and without it)
+  const ethane = { atoms: [{ id: 'C1', el: 'C' }, { id: 'C2', el: 'C' }, ...[1, 2, 3, 4, 5, 6].map((i) => ({ id: `H${i}`, el: 'H' }))], bonds: [{ a: 'C1', b: 'C2', order: 1 }, ...[1, 2, 3].map((i) => ({ a: 'C1', b: `H${i}`, order: 1 })), ...[4, 5, 6].map((i) => ({ a: 'C2', b: `H${i}`, order: 1 }))] };
+  const runs = [true, false].map((rescue) => { const e = embed(ethane, { root: 'C1' }); relaxTorsions(ethane, e.positions, e.lonePairDirs, e.orbitals, e.frames, { rescue }); return e.positions; });
+  for (const id of runs[0].keys()) assert.deepEqual(runs[0].get(id), runs[1].get(id), `${id}: clean molecule unchanged by the rescue stage`);
+  assert.equal(stericContacts(ethane, runs[0]), null);
+  assert.deepEqual(HARD_CONTACT, [1.8, 2.0, 2.5]);
+  // a hand-made clash: two hydrogens on different carbons 1.0 Å apart (not bonded, not 1,3)
+  const graph = { atoms: [{ id: 'C1', el: 'C' }, { id: 'C2', el: 'C' }, { id: 'C3', el: 'C' }, { id: 'Ha', el: 'H' }, { id: 'Hb', el: 'H' }], bonds: [{ a: 'C1', b: 'C2', order: 1 }, { a: 'C2', b: 'C3', order: 1 }, { a: 'C1', b: 'Ha', order: 1 }, { a: 'C3', b: 'Hb', order: 1 }] };
+  const positions = new Map([['C1', [0, 0, 0]], ['C2', [1.54, 0, 0]], ['C3', [3.08, 0, 0]], ['Ha', [1.0, 1.0, 0]], ['Hb', [2.0, 1.0, 0]]]);
+  const c = stericContacts(graph, positions);
+  assert.ok(c && c.pairs.length === 1 && c.worst.a === 'Ha' && c.worst.b === 'Hb' && Math.abs(c.worst.d - 1) < 1e-9 && c.worst.limit === 1.8, 'H···H 1.0 Å below the 1.8 Å limit');
+  assert.equal(stericContacts(graph, positions, [0.5, 0.5, 0.5]), null, 'custom limits');
+  // the 1,3 pair C1···C3 (2 × 1.54 Å, collinear) is never a contact
+  assert.ok(!c.pairs.some((p) => p.a === 'C1' && p.b === 'C3'));
 });

@@ -136,6 +136,39 @@ export function runConformance() {
     }
   }
 
+  // crowded R-group combinations: every bulky-only combination of each multi-attachment group is built; the
+  // ones the torsion relaxer cannot untangle must carry frame.crowding (the card then says so). Reported
+  // as a register note with the counts, so each sweep records how many combinations the model cannot place.
+  {
+    const bulky = ['tBu', 'isopropyl', 'phenyl'];
+    for (const id of FUNCTIONAL_GROUP_ORDER) {
+      const atts = FUNCTIONAL_GROUPS[id].attachments.map((a) => a.id);
+      if (atts.length < 2) continue;
+      let combos = 0, flagged = 0, silent = 0, worst = null;
+      const visit = (R) => {
+          combos++;
+          const { frame } = makeMolecule(id, { R });
+          if (frame.crowding) { flagged++; if (!worst || frame.crowding.worst.d < worst.d) worst = { ...frame.crowding.worst, R: atts.map((a) => R[a]).join('/') }; }
+          else {
+            const adj2 = new Map(frame.atoms.map((a) => [a.id, []]));
+            for (const b of frame.bonds) { adj2.get(b.a).push(b.b); adj2.get(b.b).push(b.a); }
+            const rel = (x, y) => adj2.get(x).includes(y) || adj2.get(x).some((n) => adj2.get(n).includes(y));
+            const atoms2 = frame.atoms.filter((a) => !a.ghost);
+            for (let i = 0; i < atoms2.length && !silent; i++) for (let j = i + 1; j < atoms2.length; j++) if (!rel(atoms2[i].id, atoms2[j].id) && v.dist(atoms2[i].pos, atoms2[j].pos) < 1.6) { silent++; break; }
+          }
+      };
+      if (atts.length <= 3) {   // every bulky-only combination
+        const rec = (k, R) => { if (k === atts.length) return visit(R); for (const r of bulky) rec(k + 1, { ...R, [atts[k]]: r }); };
+        rec(0, {});
+      } else {                  // four attachments (alkene): every pair of positions with bulky groups, plus all-tert-butyl
+        for (let i = 0; i < atts.length; i++) for (let j = i + 1; j < atts.length; j++) for (const ri of bulky) for (const rj of bulky) { const R = Object.fromEntries(atts.map((a) => [a, 'H'])); R[atts[i]] = ri; R[atts[j]] = rj; visit(R); }
+        visit(Object.fromEntries(atts.map((a) => [a, 'tBu'])));
+      }
+      add('molecules', `${id}.crowding-flagged`, pf(silent === 0), `${combos} bulky-only R combinations: overlapping atoms are always flagged as crowding, never drawn silently`, { expected: '0 silent clashes', actual: `${silent} silent; ${flagged} flagged` });
+      if (flagged) add('simplifications', `${id}.crowded-combinations`, 'note', `${FUNCTIONAL_GROUPS[id].name}: ${flagged} of ${combos} bulky-only combinations are too crowded for the model (class angles, bond rotation only) and say so on the card; worst ${worst.R} ${worst.a}/${worst.b} ${fmt(worst.d)} Å`, { expected: `≥ ${worst.limit} Å`, actual: `${fmt(worst.d)} Å`, source: 'register' });
+    }
+  }
+
   // preferred conformers that textbooks draw: Z (syn) esters and syn carboxylic acids
   for (const [id, atoms, label] of [['ester', ['O1', 'C', 'O2', 'R2'], 'ester: alkoxy group Z (syn) to the carbonyl oxygen'], ['carboxylicAcid', ['O1', 'C', 'O2', 'H'], 'carboxylic acid: O–H syn to the carbonyl oxygen']]) {
     const { frame } = makeMolecule(id);

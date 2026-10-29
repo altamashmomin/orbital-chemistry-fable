@@ -11,6 +11,18 @@ export const BOND_LENGTHS = {
   'C-I': [2.14, 0.03], 'C-S': [1.82, 0.03], 'S-H': [1.34, 0.03], 'N-O': [1.40, 0.04], 'N=O': [1.21, 0.03],
 }; // CRC Table 9 "Bond lengths in crystalline organic compounds"; CGW ch. 4
 
+/**
+ * Conjugated single bonds the element/order table gets wrong by 0.1 Å: the functional-group cores set
+ * these as per-bond `length` (embed() honours `bond.length`), each naming the measured row in
+ * references/measured.js that the conformance suite checks it against.
+ */
+export const CONJUGATED_BOND_LENGTHS = {
+  amide_CN: { length: 1.35, ref: 'formamide_CN' },          // amide C(=O)–N
+  acid_CO: { length: 1.36, ref: 'aceticAcid_CO' },           // carboxylic acid C(=O)–OH
+  ester_CO: { length: 1.33, ref: 'methylFormate_CO' },       // ester C(=O)–OR
+  nitro_NO: { length: 1.22, ref: 'nitromethane_NO' },        // both N–O of a nitro group (resonance average)
+};
+
 /** Idealised VSEPR angles (degrees) used by the embedder. */
 export const IDEAL_ANGLES = { tetrahedral: 109.47, trigonal: 120, linear: 180, octahedral: 90, squarePlanar: 90 };
 

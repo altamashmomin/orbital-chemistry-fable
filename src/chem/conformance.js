@@ -10,8 +10,8 @@ import { MECHANISMS, MECHANISM_ORDER } from './mechanisms/index.js';
 import { predict } from './mechanisms/predictor.js';
 import { orbital, radial, ORBITALS } from './orbitals.js';
 import { audienceOf, isValidAudience } from './audience.js';
-import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
-import { MEASURED_ANGLES } from './references/measured.js';
+import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR, CONJUGATED_BOND_LENGTHS, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
+import { MEASURED_ANGLES, MEASURED_BONDS } from './references/measured.js';
 import { SHAPES, buildShape } from './shapes.js';
 import { ROTORS, conformer, torsionEnergy } from './conformations.js';
 import { TORSION_ENERGIES } from './references/textbook.js';
@@ -54,6 +54,10 @@ export function runConformance() {
     const have = bondLength(m[1], m[3], order);
     add('tables', `bond.${key}`, pf(Math.abs(have - ref) <= tol), `bond-length table ${key}`, { expected: `${ref} ± ${tol} Å`, actual: fmt(have), source: 'CRC' });
   }
+  for (const [key, c] of Object.entries(CONJUGATED_BOND_LENGTHS)) {
+    const m = MEASURED_BONDS[c.ref];
+    add('tables', `conjugated-bond.${key}`, pf(!!m && Math.abs(m.value - c.length) < 0.005), `CONJUGATED_BOND_LENGTHS row equals the cited measurement${m ? ` (${m.molecule} ${m.atoms})` : ` (unknown ref ${c.ref})`}`, { expected: m && `${m.value} Å (listed ${m.listed})`, actual: `${c.length} Å`, source: m?.source });
+  }
   // The embedder's lone-pair angle table carries literal numbers; each must still equal the cited measurement
   // in references/measured.js (the oracle, which the embedder never reads).
   for (const [key, row] of Object.entries(LONE_PAIR_ANGLES)) {
@@ -72,7 +76,8 @@ export function runConformance() {
     let worstBond = { dev: 0 }, bondCount = 0;
     for (const b of frame.bonds) {
       const A = byId.get(b.a), B = byId.get(b.b);
-      const ref = refFor(A.el, B.el, b.order, b.aromatic);
+      const measured = b.length && b.ref ? MEASURED_BONDS[b.ref] : null;   // a conjugated bond drawn at its cited length
+      const ref = measured ? [measured.value, 0.02] : refFor(A.el, B.el, b.order, b.aromatic);
       const d = v.dist(A.pos, B.pos);
       const expected = ref ? ref[0] : bondLength(A.el, B.el, b.aromatic ? 1.5 : b.order);
       const tol = ref ? ref[1] : 0.03;
@@ -388,7 +393,7 @@ export function runConformance() {
     'schematic-lobes': 'lone pairs and p orbitals drawn as fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°), a drawing convention with no measured counterpart',
     'class-angles': `alcohols, ethers, thiols, sulfides, acids and esters take the angle of one measured exemplar each (methanol, dimethyl ether, methanethiol, dimethyl sulfide, formic acid, methyl formate): a class approximation, not a measurement of the displayed molecule`,
     'amine-angles': `amines use the ammonia value (${LONE_PAIR_ANGLES['N/3/1'].angle}°) for all three angles at N; measured: methylamine H–N–H ${MEASURED_ANGLES.methylamine_HNH.value}° / C–N–H ${MEASURED_ANGLES.methylamine_CNH.value}°, dimethylamine C–N–C ${MEASURED_ANGLES.dimethylamine_CNC.value}°, trimethylamine ${MEASURED_ANGLES.trimethylamine_CNC.value}°`,
-    'carbonyl-angles': `carbonyl centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°)`,
+    'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
     'pinned-centres-ideal': 'reaction frames pin their reacting centres: the water, alcohol and alkoxide nucleophiles and bases of SN1/SN2/E1/E2 keep ideal 109.47° slots while the explorer shows the measured angles',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,

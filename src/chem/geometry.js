@@ -274,8 +274,8 @@ function buildAdjacency(graph) {
   const adj = new Map();
   for (const a of graph.atoms) adj.set(a.id, []);
   for (const b of graph.bonds) {
-    adj.get(b.a).push({ id: b.b, order: b.order || 1 });
-    adj.get(b.b).push({ id: b.a, order: b.order || 1 });
+    adj.get(b.a).push({ id: b.b, order: b.order || 1, length: b.length });
+    adj.get(b.b).push({ id: b.a, order: b.order || 1, length: b.length });
   }
   return adj;
 }
@@ -349,7 +349,8 @@ function placeRigid(group, attachId, target, dirFromParent, parentKind, refVec, 
 
 /**
  * Embed a molecular graph in 3D.
- * graph: { atoms: [{id, el, lonePairs?, hyb?, pOrbital?, charge?}], bonds: [{a, b, order?}], rigid?: [...] }
+ * graph: { atoms: [{id, el, lonePairs?, hyb?, pOrbital?, charge?}], bonds: [{a, b, order?, length?}], rigid?: [...] }
+ * A bond's `length` (Å) overrides the element/order table (bondLength) for that bond.
  * opts:  { pinned: {id: [x,y,z]}, hints: {id: [x,y,z]}, root?: id, lonePairAngles = true }
  * Returns { positions: Map, lonePairDirs: Map<id, dir[]>, orbitals: Map<id, {kind, dirs}>, frames: Map }
  * frames.get(id) = { kind, slots, normal, slotOf, compression }: `compression` is the LONE_PAIR_ANGLES
@@ -468,7 +469,7 @@ export function embed(graph, opts = {}) {
     }
     for (const [n, i] of assigned) {
       const nb = atoms.get(n.id);
-      const L = bondLength(a.el, nb.el, n.order);
+      const L = n.length ?? bondLength(a.el, nb.el, n.order);   // a bond may carry its own measured length (conjugated C–N, C–O, N–O)
       const target = v.add(p, v.scale(dirs[i], L));
       const g = rigidOf.get(n.id);
       if (g && !placedRigid.has(g)) {

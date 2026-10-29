@@ -14,7 +14,7 @@ function checkFrame(frame, label) {
   for (const a of frame.atoms) assert.ok(finite(a.pos), `${label}: ${a.id} has finite position`);
   for (const b of frame.bonds) {
     const d = v.dist(byId.get(b.a).pos, byId.get(b.b).pos);
-    const expected = bondLength(byId.get(b.a).el, byId.get(b.b).el, b.aromatic ? 1.5 : b.order);
+    const expected = b.length ?? bondLength(byId.get(b.a).el, byId.get(b.b).el, b.aromatic ? 1.5 : b.order);
     assert.ok(Math.abs(d - expected) < 0.08, `${label}: bond ${b.a}-${b.b} length ${d.toFixed(2)} ≈ ${expected}`);
   }
   assertNoClashes(frame, label);

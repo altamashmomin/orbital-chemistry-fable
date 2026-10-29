@@ -61,6 +61,17 @@ export const LONE_PAIR_COMPRESSION_PER_PAIR = 2.5;
 /** Pauling electronegativities. */
 export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19 }; // CRC
 
+/**
+ * Torsional energies for the Conformations topic, kJ/mol above the lowest conformer. Textbook teaching
+ * values: the ethane barrier is the measured 12 kJ/mol (2.9 kcal/mol); the butane figures are the ones
+ * CGW ch. 16 and Klein ch. 4 teach (gauche 3.8, CH₃/H-eclipsed 16, CH₃/CH₃-eclipsed ≈ 20 kJ/mol; Klein
+ * gives 19). The curve drawn between them is an illustrative fit, not a potential-energy surface.
+ */
+export const TORSION_ENERGIES = {
+  ethane: { barrier: 12, unit: 'kJ/mol', source: 'CGW ch. 16; KLEIN ch. 4 (2.9 kcal/mol)' },
+  butane: { gauche: 3.8, eclipsedCH3H: 16, eclipsedCH3CH3: 20, unit: 'kJ/mol', source: 'CGW ch. 16 (Klein ch. 4: 0.9, 3.8 and 4.5 kcal/mol)' },
+};
+
 /** C–X bond dissociation energies, kcal/mol (rounded textbook values). */
 export const BDE_CX = { F: 115, Cl: 84, Br: 72, I: 57 }; // KLEIN Table 7.1 (approx.)
 

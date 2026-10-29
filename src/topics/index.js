@@ -5,9 +5,11 @@ import { registerTopic } from './registry.js';
 import { functionalGroups } from './functional-groups/index.js';
 import { mechanisms } from './mechanisms/index.js';
 import { molecularShapes } from './molecular-shapes/index.js';
+import { conformations } from './conformations/index.js';
 
 registerTopic(functionalGroups);
 registerTopic(mechanisms);
 registerTopic(molecularShapes);
+registerTopic(conformations);
 
 export * from './registry.js';

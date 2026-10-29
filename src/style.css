@@ -137,6 +137,13 @@ h1 em { color: var(--accent); font-style: normal; }
 .webgl-fallback { position: absolute; inset: auto 4% 18% 4%; z-index: 3; padding: 14px 16px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line-2); font-size: 12px; line-height: 1.6; color: var(--text); }
 .webgl-fallback .reason { color: var(--muted); }
 body.no-webgl .viewport-hint { display: none; }
+.landmarks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.btn.landmark { font-size: 10px; }
+.btn.active { border-color: var(--accent); color: var(--accent); font-weight: 650; }
+.newman-canvas, .torsion-canvas { width: 100%; height: 170px; }
+.periplanar .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.periplanar .bar i { display: block; height: 100%; background: var(--accent); }
+.invariant.static { cursor: default; }
 .fallback-panel .fallback-why { font-size: 11px; color: var(--text); line-height: 1.6; }
 .fallback-panel .fallback-summary { font-size: 11px; color: var(--muted); line-height: 1.6; }
 .invariants { display: flex; flex-direction: column; gap: 7px; }

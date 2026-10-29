@@ -13,6 +13,8 @@ import { audienceOf, isValidAudience } from './audience.js';
 import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER_PAIR, ELECTRONEGATIVITY, MECHANISM_MATRIX, MECHANISM_FACTS, ORBITAL_FACTS } from './references/textbook.js';
 import { MEASURED_ANGLES } from './references/measured.js';
 import { SHAPES, buildShape } from './shapes.js';
+import { ROTORS, conformer, torsionEnergy } from './conformations.js';
+import { TORSION_ENERGIES } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -250,6 +252,23 @@ export function runConformance() {
     }
     add('shapes', `gallery.${s.id}.clean`, pf(!b.frame.crowding), `${s.formula}: no steric contacts in the drawn frame`, { actual: b.frame.crowding ? 'crowded' : 'clean' });
   }
+
+  // Conformations: the energy curve passes through the textbook values, the frames sit at the requested
+  // dihedral with the embedder's bond lengths, and the E2 rotor's anti form is the Reaction lab's start.
+  add('conformations', 'ethane.barrier', pf(Math.abs(torsionEnergy('ethane', 0) - TORSION_ENERGIES.ethane.barrier) < 1e-9 && Math.abs(torsionEnergy('ethane', 60)) < 1e-9), 'ethane: eclipsed − staggered = the textbook barrier', { expected: `${TORSION_ENERGIES.ethane.barrier} kJ/mol`, actual: `${fmt(torsionEnergy('ethane', 0), 1)} kJ/mol`, source: TORSION_ENERGIES.ethane.source });
+  for (const [phi, key] of [[60, 'gauche'], [120, 'eclipsedCH3H'], [0, 'eclipsedCH3CH3']]) add('conformations', `butane.${key}`, pf(Math.abs(torsionEnergy('butane', phi) - TORSION_ENERGIES.butane[key]) < 1e-9 && Math.abs(torsionEnergy('butane', 180)) < 1e-9), `butane ${key} at ${phi}° above anti`, { expected: `${TORSION_ENERGIES.butane[key]} kJ/mol`, actual: `${fmt(torsionEnergy('butane', phi), 1)} kJ/mol`, source: TORSION_ENERGIES.butane.source });
+  for (const r of ROTORS) {
+    let worstD = 0, worstB = 0;
+    for (const phi of [0, 37, 60, 120, 180, 245, 300]) {
+      const c = conformer(r.id, phi);
+      worstD = Math.max(worstD, Math.abs(((c.dihedral - phi + 540) % 360) - 180));
+      const byId = new Map(c.frame.atoms.map((a) => [a.id, a]));
+      for (const b of c.frame.bonds) worstB = Math.max(worstB, Math.abs(v.dist(byId.get(b.a).pos, byId.get(b.b).pos) - bondLength(byId.get(b.a).el, byId.get(b.b).el, b.order)));
+    }
+    add('conformations', `${r.id}.dihedral`, pf(worstD < 1e-6), `${r.name}: the frame's ${r.reference.join('–')} dihedral equals the requested value`, { expected: 'Δ 0°', actual: `Δ ${fmt(worstD, 4)}°` });
+    add('conformations', `${r.id}.bonds`, pf(worstB < 1e-6), `${r.name}: turning the bond keeps every bond length`, { expected: 'Δ 0 Å', actual: `Δ ${fmt(worstB, 4)}` });
+  }
+  { const e2 = MECHANISMS.e2.frame(0); const p = (id) => e2.atoms.find((a) => a.id === id).pos; const d = Math.abs(dihedralDeg(p('Br'), p('C2'), p('C3'), p('Hb'))); const c = conformer('bromobutane', 180); add('conformations', 'bromobutane.matches-e2', pf(Math.abs(d - 180) < 1 && Math.abs(Math.abs(c.dihedral) - 180) < 1e-6), 'the anti-periplanar rotor and the Reaction lab E2 start share the 180° Br–C–C–H dihedral', { expected: '180°', actual: `${fmt(d, 1)}° (E2) / ${fmt(Math.abs(c.dihedral), 1)}° (rotor)`, source: 'CGW ch. 17' }); }
 
   // ------------------------------------------------------------------ E. coordination
   const lmL = (frame, metal) => {

@@ -16,4 +16,8 @@ test('conformance sweep: the model matches the textbook reference values', () =>
     assert.ok(c && c.status === 'pass', `${id} is a passing check (${c?.status})`);
   }
   assert.ok(!checks.some((c) => /water_HOH|ammonia_HNH|methanethiol_CSH|lp-fallback/.test(c.id)), 'no lone-pair angle is reported as a simplification any more');
+  // Model boundary (REVIEW_PROTOCOL §6): the line between cited geometry and invented physics is a set of checks.
+  const boundary = checks.filter((c) => c.category === 'boundary');
+  assert.ok(boundary.length >= 16 && boundary.every((c) => c.status === 'pass'), `boundary checks all pass (${boundary.length})`);
+  for (const id of ['shapes.angle-basis', 'bond-lengths.cited', 'energies.sourced', 'card-angles.stated', 'alcohol.lone-pair-basis', 'amine.lone-pair-basis', 'ester.lone-pair-basis']) assert.ok(boundary.some((c) => c.id === id), `${id} is a boundary check`);
 });

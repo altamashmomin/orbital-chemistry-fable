@@ -154,3 +154,8 @@ only share the two-line registration in `src/topics/index.js`.
 8. **Sweep after every addition.** Run `npm run sweep`, complete the manual chemistry checklist,
    log findings in `docs/reviews/`, and start no new branch while a report says *hold*
    (`docs/REVIEW_PROTOCOL.md`).
+9. **Templates, not physics.** The model places atoms from cited geometry and tables and turns
+   bonds; it never computes an energy, strain or stability, never widens an angle to make room,
+   and never shows a number it cannot cite (`docs/REVIEW_PROTOCOL.md` §6, enforced by the
+   `boundary.*` conformance checks). New physics-flavoured ideas enter as tabulated textbook
+   values or not at all.

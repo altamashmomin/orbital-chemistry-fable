@@ -38,6 +38,18 @@ test('SN2 inverts the substituent umbrella and swaps bonds', () => {
   assert.equal(stepIndexAt(m, 0.5), 1);
 });
 
+test('pinned water and alcohol centres in the mechanisms carry the measured angles of the explorer', () => {
+  const ang = (a, c, b) => { const u = a.map((x, i) => x - c[i]), w = b.map((x, i) => x - c[i]); return Math.acos((u[0] * w[0] + u[1] * w[1] + u[2] * w[2]) / (Math.hypot(...u) * Math.hypot(...w))) * 180 / Math.PI; };
+  for (const t of [0, 0.5, 1]) {
+    const f = MECHANISMS.sn1.frame(t); const p = (id) => f.atoms.find((a) => a.id === id).pos;
+    if (t < 0.8) assert.ok(Math.abs(ang(p('W.Ha'), p('W.O'), p('W.Hb')) - 104.5) < 0.1, `SN1 t=${t}: attacking water H–O–H ${ang(p('W.Ha'), p('W.O'), p('W.Hb')).toFixed(2)}`);
+    assert.ok(Math.abs(ang(p('W2.Ha'), p('W2.O'), p('W2.Hb')) - 104.5) < 0.1, `SN1 t=${t}: second water`);
+    if (t > 0.3 && t < 0.6) assert.ok(Math.abs(ang(p('G.Ha'), p('G.O'), p('G.Hb')) - 104.5) < 0.1, 'ghost water');
+  }
+  const e = MECHANISMS.e1.frame(0); const pe = (id) => e.atoms.find((a) => a.id === id).pos;
+  assert.ok(Math.abs(ang(pe('B.H'), pe('B.O'), pe('B.C1')) - 108.9) < 0.1, 'E1 ethanol base C–O–H');
+});
+
 test('SN1 carbocation is planar with an empty p orbital', () => {
   const f = MECHANISMS.sn1.frame(0.35);
   const c = f.atoms.find((a) => a.id === 'C');

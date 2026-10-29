@@ -334,6 +334,12 @@ export function runConformance() {
     const f = m.frame(0.5); const p = (id) => f.atoms.find((a) => a.id === id).pos;
     add('mechanisms', 'sn2.ts-planar', pf(planeDeviation([p('C'), p('H'), p('Me.C'), p('Et.C1')]) < 0.02), 'transition state: carbon and its three spectators coplanar, Nu–C–LG collinear', { actual: `${fmt(angleDeg(p('Nu.O'), p('C'), p('Br')), 1)}° Nu–C–Br` });
   }
+  { // pinned lone-pair centres follow the embedder's measured angles (bentCentre), like the explorer
+    const w = MECHANISMS.sn1.frame(0); const pw = (id) => w.atoms.find((a) => a.id === id).pos;
+    add('mechanisms', 'sn1.water-angle', pf(Math.abs(angleDeg(pw('W.Ha'), pw('W.O'), pw('W.Hb')) - MEASURED_ANGLES.water_HOH.value) < 0.1 && Math.abs(angleDeg(pw('W2.Ha'), pw('W2.O'), pw('W2.Hb')) - MEASURED_ANGLES.water_HOH.value) < 0.1), 'both waters of the SN1 frame have the measured H–O–H angle', { expected: `${MEASURED_ANGLES.water_HOH.value}°`, actual: `${fmt(angleDeg(pw('W.Ha'), pw('W.O'), pw('W.Hb')), 1)}° / ${fmt(angleDeg(pw('W2.Ha'), pw('W2.O'), pw('W2.Hb')), 1)}°`, source: MEASURED_ANGLES.water_HOH.source });
+    const e = MECHANISMS.e1.frame(0); const pe = (id) => e.atoms.find((a) => a.id === id).pos;
+    add('mechanisms', 'e1.base-angle', pf(Math.abs(angleDeg(pe('B.H'), pe('B.O'), pe('B.C1')) - MEASURED_ANGLES.methanol_COH.value) < 0.1), 'the ethanol base of the E1 frame has the alcohol C–O–H angle', { expected: `${MEASURED_ANGLES.methanol_COH.value}°`, actual: `${fmt(angleDeg(pe('B.H'), pe('B.O'), pe('B.C1')), 1)}°`, source: MEASURED_ANGLES.methanol_COH.source });
+  }
   { // SN1 specifics
     const f = MECHANISMS.sn1.frame(0.35); const p = (id) => f.atoms.find((a) => a.id === id).pos; const c = f.atoms.find((a) => a.id === 'C');
     const sum = angleDeg(p('Me1.C'), p('C'), p('Me2.C')) + angleDeg(p('Me2.C'), p('C'), p('Me3.C')) + angleDeg(p('Me1.C'), p('C'), p('Me3.C'));
@@ -395,7 +401,6 @@ export function runConformance() {
     'amine-angles': `amines use the ammonia value (${LONE_PAIR_ANGLES['N/3/1'].angle}°) for all three angles at N; measured: methylamine H–N–H ${MEASURED_ANGLES.methylamine_HNH.value}° / C–N–H ${MEASURED_ANGLES.methylamine_CNH.value}°, dimethylamine C–N–C ${MEASURED_ANGLES.dimethylamine_CNC.value}°, trimethylamine ${MEASURED_ANGLES.trimethylamine_CNC.value}°`,
     'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
-    'pinned-centres-ideal': 'reaction frames pin their reacting centres: the water, alcohol and alkoxide nucleophiles and bases of SN1/SN2/E1/E2 keep ideal 109.47° slots while the explorer shows the measured angles',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 

@@ -81,6 +81,28 @@ export function sidewaysDir(pos, parentPos, axis, awayFrom, theta = Math.PI - TE
   return v.add(v.scale(u, Math.cos(theta)), v.scale(w, Math.sin(theta)));
 }
 
+/**
+ * Geometry of a bent lone-pair centre exactly as the embedder draws it (measured angles, Phase 0e), seen
+ * from one of its lone pairs: { theta, dphi, angle } — theta = angle between that lone pair and each
+ * bond, dphi = azimuth separation of the two bonds about the lone pair (degrees → radians), angle = the
+ * bond angle. Mechanism frames pin their water / alcohol centres with it, so the animations show the
+ * same H–O–H (104.5°) and C–O–H (108.9°) as the explorer. Memoised per element / neighbour pair.
+ */
+const bentCache = new Map();
+export function bentCentre(el = 'O', nbrs = ['H', 'H'], lonePairs = 2) {
+  const key = `${el}/${lonePairs}/${nbrs.join(',')}`;
+  if (bentCache.has(key)) return bentCache.get(key);
+  const graph = { atoms: [{ id: 'X', el, lonePairs }, { id: 'A', el: nbrs[0] }, { id: 'B', el: nbrs[1] }], bonds: [{ a: 'X', b: 'A', order: 1 }, { a: 'X', b: 'B', order: 1 }] };
+  const e = embed(graph, { root: 'X' });
+  const x = e.positions.get('X'), a = v.norm(v.sub(e.positions.get('A'), x)), b = v.norm(v.sub(e.positions.get('B'), x));
+  const lp = e.lonePairDirs.get('X')[0];
+  const e1 = v.norm(v.perp(a, lp)), e2 = v.cross(lp, e1);
+  const az = (d) => Math.atan2(v.dot(d, e2), v.dot(d, e1));
+  const out = { theta: Math.acos(Math.max(-1, Math.min(1, v.dot(lp, a)))), dphi: Math.abs(az(b) - az(a)), angle: Math.acos(Math.max(-1, Math.min(1, v.dot(a, b)))) / DEG };
+  bentCache.set(key, out);
+  return out;
+}
+
 /** Unit direction for a tetrahedral substituent on `pos` (parent at `parentPos`) anti to `antiTo`. */
 export function antiDir(pos, parentPos, antiTo, theta = Math.PI - TETRAHEDRAL) {
   const u = v.norm(v.sub(pos, parentPos));

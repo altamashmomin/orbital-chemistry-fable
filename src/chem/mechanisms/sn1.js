@@ -1,6 +1,6 @@
 // SN1: tert-butyl bromide + water → tert-butanol (via a planar carbocation), then deprotonation.
 // Reaction axis = x. Br leaves toward −x; water attacks from +x.
-import { System, methylFrag, sched, energyProfile, polar, v, TETRAHEDRAL, DEG } from './frameUtils.js';
+import { System, methylFrag, sched, energyProfile, polar, bentCentre, v, DEG } from './frameUtils.js';
 
 const AX = [1, 0, 0];
 const UP = [0, 1, 0];
@@ -31,14 +31,16 @@ export function frame(t) {
   s.pin('Br', [-dBr, 0, 0]).hint('Br', AX);
   s.bond('C', 'Br', 1, pBr);
 
-  // Attacking water: O on +x, two H's at tetrahedral angles from the O→C direction.
+  // Attacking water: O on +x, the attacking lone pair along O→C, the two H's where the embedder's
+  // measured water puts them relative to that lone pair (H–O–H 104.5°, same as the explorer).
+  const W = bentCentre('O', ['H', 'H']);
   const oPos = [dO, 0, 0];
   s.atom({ id: 'W.O', el: 'O', autoLP: true, charge: qO1 });
   s.atom({ id: 'W.Ha', el: 'H' });
   s.atom({ id: 'W.Hb', el: 'H' });
   s.pin('W.O', oPos).hint('W.O', [-1, 0, 0]);
-  const haDir = polar([-1, 0, 0], TETRAHEDRAL, 0, 1, UP);        // unit direction O→Ha
-  const hbDir = polar([-1, 0, 0], TETRAHEDRAL, 120 * DEG, 1, UP);
+  const haDir = polar([-1, 0, 0], W.theta, 0, 1, UP);        // unit direction O→Ha
+  const hbDir = polar([-1, 0, 0], W.theta, W.dphi, 1, UP);
   s.pin('W.Hb', v.add(oPos, v.scale(hbDir, 0.96)));
   s.bond('W.O', 'W.Hb').bond('C', 'W.O', 1, pO);
 
@@ -56,8 +58,8 @@ export function frame(t) {
   s.atom({ id: 'W2.Hb', el: 'H' });
   s.pin('W2.O', o2Pos).hint('W2.O', v.neg(haDir));
   const back = v.neg(haDir);
-  s.pin('W2.Ha', v.add(o2Pos, polar(back, TETRAHEDRAL, 60 * DEG, 0.96, UP)));
-  s.pin('W2.Hb', v.add(o2Pos, polar(back, TETRAHEDRAL, 180 * DEG, 0.96, UP)));
+  s.pin('W2.Ha', v.add(o2Pos, polar(back, W.theta, 60 * DEG, 0.96, UP)));            // the lone pair that takes Ha points back along the O···H line
+  s.pin('W2.Hb', v.add(o2Pos, polar(back, W.theta, 60 * DEG + W.dphi, 0.96, UP)));
   s.bond('W2.O', 'W2.Ha').bond('W2.O', 'W2.Hb').bond('W2.O', 'W.Ha', 1, pOH2);
 
   // Ghost water on the opposite face while the cation exists: either face is equally likely.
@@ -67,8 +69,8 @@ export function frame(t) {
     s.atom({ id: 'G.Ha', el: 'H', ghost: true });
     s.atom({ id: 'G.Hb', el: 'H', ghost: true });
     s.pin('G.O', g).hint('G.O', AX);
-    s.pin('G.Ha', v.add(g, polar(AX, TETRAHEDRAL, 0, 0.96, UP)));
-    s.pin('G.Hb', v.add(g, polar(AX, TETRAHEDRAL, 120 * DEG, 0.96, UP)));
+    s.pin('G.Ha', v.add(g, polar(AX, W.theta, 0, 0.96, UP)));
+    s.pin('G.Hb', v.add(g, polar(AX, W.theta, W.dphi, 0.96, UP)));
     s.bonds.push({ a: 'G.O', b: 'G.Ha', order: 1, ghost: true }, { a: 'G.O', b: 'G.Hb', order: 1, ghost: true });
   }
 

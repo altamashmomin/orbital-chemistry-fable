@@ -1,6 +1,6 @@
 // E1: tert-butyl bromide → carbocation → 2-methylpropene (ethanol as the weak base).
 // Reaction axis = x. Br leaves toward −x; the cation plane is yz; the β-H parallel to the p orbital is removed.
-import { System, methylFrag, ethylFrag, sched, energyProfile, polar, antiDir, v, TETRAHEDRAL, DEG } from './frameUtils.js';
+import { System, methylFrag, ethylFrag, sched, energyProfile, polar, antiDir, bentCentre, v, TETRAHEDRAL, DEG } from './frameUtils.js';
 
 const AX = [1, 0, 0];
 const UP = [0, 1, 0];
@@ -52,14 +52,16 @@ export function frame(t) {
   s.atom({ id: 'Me1.Ha', el: 'H' }); s.pin('Me1.Ha', v.add(c1, polar(me1Dir, hTheta, psiA, 1.09, AX))); s.bond('Me1.C', 'Me1.Ha');
   s.atom({ id: 'Me1.Hb', el: 'H' }); s.pin('Me1.Hb', v.add(c1, polar(me1Dir, hTheta, psiB, 1.09, AX))); s.bond('Me1.C', 'Me1.Hb');
 
-  // Ethanol base approaching Hu along the C–H line.
+  // Ethanol base approaching Hu along the C–H line: the lone pair that takes Hu points at it, and the
+  // O–H and O–C bonds sit where the embedder's measured alcohol puts them (C–O–H 108.9°, as in the explorer).
+  const A = bentCentre('O', ['H', 'C']);
   const oPos = v.add(huPos, v.scale(huDir, dHO));
   s.atom({ id: 'B.O', el: 'O', autoLP: true, charge: qO });
   s.atom({ id: 'B.H', el: 'H' });
   s.pin('B.O', oPos).hint('B.O', v.neg(huDir));
-  s.pin('B.H', v.add(oPos, polar(v.neg(huDir), TETRAHEDRAL, 0, 0.96, UP)));
+  s.pin('B.H', v.add(oPos, polar(v.neg(huDir), A.theta, 0, 0.96, UP)));
   const et = s.frag(ethylFrag('B.'));
-  const etC1 = v.add(oPos, polar(v.neg(huDir), TETRAHEDRAL, 120 * DEG, 1.43, UP));
+  const etC1 = v.add(oPos, polar(v.neg(huDir), A.theta, A.dphi, 1.43, UP));
   s.pin(et, etC1);
   s.pin('B.C2', v.add(etC1, v.scale(antiDir(etC1, oPos, huPos), 1.54)));
   s.bond('B.O', 'B.H').bond('B.O', et).bond('B.O', 'Me1.Hu', 1, pOH);

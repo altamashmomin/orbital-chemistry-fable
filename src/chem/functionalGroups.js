@@ -5,10 +5,13 @@
 // Visual specs reference core atom ids, or 'R1', 'R2', ... which the builder resolves to the
 // attachment atom of that R group.
 import { benzeneTemplate } from './rGroups.js';
+import { CONJUGATED_BOND_LENGTHS } from './references/textbook.js';
 
 const bond = (a, b, order = 1) => ({ a, b, order });
 
 const sp2O = (id) => ({ id, el: 'O', hyb: 'sp2', lonePairs: 2 });
+/** A conjugated single bond drawn at its measured length (CONJUGATED_BOND_LENGTHS, cited in references/measured.js). */
+const cbond = (a, b, key, order = 1) => ({ a, b, order, length: CONJUGATED_BOND_LENGTHS[key].length, ref: CONJUGATED_BOND_LENGTHS[key].ref });
 
 export const FUNCTIONAL_GROUPS = {
   // ---------------------------------------------------------------- alcohol
@@ -112,7 +115,7 @@ export const FUNCTIONAL_GROUPS = {
     id: 'carboxylicAcid', name: 'Carboxylic acid', pattern: 'R–COOH', suffix: '-oic acid', color: '#e879f9', family: 'carbonyl',
     core: {
       atoms: [{ id: 'C', el: 'C', hyb: 'sp2' }, sp2O('O1'), { id: 'O2', el: 'O', hyb: 'sp2', lonePairs: 2, pOrbital: 'lonePair' }, { id: 'H', el: 'H' }],
-      bonds: [bond('C', 'O1', 2), bond('C', 'O2'), bond('O2', 'H')],
+      bonds: [bond('C', 'O1', 2), cbond('C', 'O2', 'acid_CO'), bond('O2', 'H')],
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R' }],
     fallbackNoun: 'carboxylic acid',
@@ -124,7 +127,7 @@ export const FUNCTIONAL_GROUPS = {
       { id: 'dimer', title: 'Hydrogen-bond donor + acceptor → dimers', detail: 'Two acids pair up head-to-head through two H-bonds. Result: high boiling points (acetic acid 118 °C) and the odd double molecular weight in the gas phase.', visuals: [{ type: 'bond', a: 'O2', b: 'H' }, { type: 'lonePairs', id: 'O1' }] },
       { id: 'electro', title: 'Electrophilic carbonyl carbon, but OH is a poor leaving group', detail: 'Nucleophilic acyl substitution needs activation: SOCl₂ → acid chloride, or acid catalyst + alcohol (Fischer esterification), or DCC for amides. Bases just deprotonate it instead of attacking.', visuals: [{ type: 'charges', map: { C: 'δ+', O1: 'δ−', O2: 'δ−' } }] },
       { id: 'red', title: 'Reduced only by strong hydride (LiAlH₄ → 1° alcohol)', detail: 'NaBH₄ does not reduce carboxylic acids; LiAlH₄ or BH₃ does.', visuals: [{ type: 'atom', id: 'C' }] },
-      { id: 'res', title: 'Resonance: the alkoxy O donates into C=O', detail: 'The lone pair on O2 sits in a p orbital overlapping the C=O π system, shortening C–O2 to 1.34 Å (vs 1.43 Å in an alcohol).', visuals: [{ type: 'orbital', id: 'O2' }, { type: 'bond', a: 'C', b: 'O2' }] },
+      { id: 'res', title: 'Resonance: the alkoxy O donates into C=O', detail: 'The lone pair on O2 sits in a p orbital overlapping the C=O π system, shortening C–O2 to 1.36 Å (acetic acid; 1.43 Å in an alcohol).', visuals: [{ type: 'orbital', id: 'O2' }, { type: 'bond', a: 'C', b: 'O2' }] },
     ],
     varies: [
       { title: 'Acidity strength', audience: 'both', detail: 'Electron-withdrawing R increases acidity (CF₃COOH pKa 0.2; ClCH₂COOH 2.9; HCOOH 3.8) while alkyl donation lowers it slightly (pivalic 5.0).' },
@@ -139,14 +142,14 @@ export const FUNCTIONAL_GROUPS = {
     id: 'ester', name: 'Ester', pattern: 'R–COO–R′', suffix: 'alkyl -oate', color: '#c084fc', family: 'carbonyl',
     core: {
       atoms: [{ id: 'C', el: 'C', hyb: 'sp2' }, sp2O('O1'), { id: 'O2', el: 'O', hyb: 'sp2', lonePairs: 2, pOrbital: 'lonePair' }],
-      bonds: [bond('C', 'O1', 2), bond('C', 'O2')],
+      bonds: [bond('C', 'O1', 2), cbond('C', 'O2', 'ester_CO')],
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R (acyl)' }, { id: 'R2', atom: 'O2', default: 'ethyl', label: 'R′ (alkoxy)' }],
     fallbackNoun: 'ester',
     nameFor: (r) => ({ 'methyl|ethyl': 'ethyl ethanoate (ethyl acetate)', 'methyl|methyl': 'methyl acetate', 'H|ethyl': 'ethyl formate', 'H|methyl': 'methyl formate', 'phenyl|methyl': 'methyl benzoate', 'phenyl|ethyl': 'ethyl benzoate', 'methyl|phenyl': 'phenyl acetate', 'methyl|isopropyl': 'isopropyl acetate', 'methyl|benzyl': 'benzyl acetate (jasmine)', 'methyl|tBu': 'tert-butyl acetate', 'vinyl|methyl': 'methyl acrylate', 'methyl|H': 'acetic acid (R′ = H makes it an ACID)' }[r.join('|')]),
     classify: ({ R, attach }) => (R.R2 === 'H' ? 'R′ = H: that is a carboxylic acid, not an ester.' : attach.R2.aromatic ? 'aryl ester (phenoxide is a better leaving group: more reactive)' : attach.R1.el === 'H' ? 'formate ester' : 'alkyl ester'),
     invariants: [
-      { id: 'two', title: 'Two different C–O bonds on one sp² carbon', detail: 'C=O (1.21 Å) and C–O–R′ (1.34 Å, shortened by resonance). The ester carbon, both oxygens and both attachment atoms are coplanar; R′ sits Z (cis) to the C=O.', visuals: [{ type: 'bond', a: 'C', b: 'O1' }, { type: 'bond', a: 'C', b: 'O2' }, { type: 'plane', atoms: ['C', 'O1', 'O2', 'R1', 'R2'] }] },
+      { id: 'two', title: 'Two different C–O bonds on one sp² carbon', detail: 'C=O (1.21 Å) and C–O–R′ (1.33 Å, shortened by resonance; 1.43 Å in an ether). The ester carbon, both oxygens and both attachment atoms are coplanar; R′ sits Z (cis) to the C=O.', visuals: [{ type: 'bond', a: 'C', b: 'O1' }, { type: 'bond', a: 'C', b: 'O2' }, { type: 'plane', atoms: ['C', 'O1', 'O2', 'R1', 'R2'] }] },
       { id: 'noacid', title: 'No acidic O–H', detail: 'Neutral: no fizz with bicarbonate, no H-bond donation (so low boiling points and fruity volatility).', visuals: [{ type: 'atom', id: 'O2' }] },
       { id: 'res', title: 'Alkoxy lone pair donates into C=O', detail: 'The p-type lone pair on O2 conjugates with the carbonyl, making esters LESS electrophilic than acid chlorides and anhydrides but MORE than amides.', visuals: [{ type: 'orbital', id: 'O2' }, { type: 'charges', map: { C: 'δ+', O1: 'δ−' } }] },
       { id: 'hydro', title: 'Hydrolysed by acid (reversible) or base (saponification, irreversible)', detail: 'Nucleophilic acyl substitution: the C(=O)–O bond breaks and alkoxide leaves (then gets protonated). Base gives carboxylate + alcohol; the carboxylate cannot go back.', visuals: [{ type: 'bond', a: 'C', b: 'O2' }] },
@@ -166,14 +169,14 @@ export const FUNCTIONAL_GROUPS = {
     id: 'amide', name: 'Amide', pattern: 'R–CONR′₂', suffix: '-amide', color: '#38bdf8', family: 'carbonyl',
     core: {
       atoms: [{ id: 'C', el: 'C', hyb: 'sp2' }, sp2O('O'), { id: 'N', el: 'N', hyb: 'sp2', lonePairs: 1, pOrbital: 'lonePair' }],
-      bonds: [bond('C', 'O', 2), bond('C', 'N')],
+      bonds: [bond('C', 'O', 2), cbond('C', 'N', 'amide_CN')],
     },
     attachments: [{ id: 'R1', atom: 'C', default: 'methyl', label: 'R (acyl)' }, { id: 'R2', atom: 'N', default: 'H', label: 'R′ on N' }, { id: 'R3', atom: 'N', default: 'H', label: 'R″ on N' }],
     fallbackNoun: 'amide',
     nameFor: (r) => ({ 'methyl|H|H': 'ethanamide (acetamide)', 'H|H|H': 'methanamide (formamide)', 'H|methyl|methyl': 'N,N-dimethylformamide (DMF)', 'methyl|methyl|methyl': 'N,N-dimethylacetamide (DMAc)', 'methyl|methyl|H': 'N-methylacetamide', 'methyl|H|methyl': 'N-methylacetamide', 'phenyl|H|H': 'benzamide', 'methyl|phenyl|H': 'acetanilide', 'methyl|H|phenyl': 'acetanilide' }[r.join('|')]),
     classify: ({ R }) => { const n = [R.R2, R.R3].filter((x) => x !== 'H').length; return ['primary amide (–NH₂, two N–H)', 'secondary amide (one N–H; E/Z about C–N)', 'tertiary amide (no N–H)'][n]; },
     invariants: [
-      { id: 'planar', links: [{ label: 'Resonance', href: '#glossary/resonance' }], title: 'Planar C(=O)–N with partial double-bond character', detail: 'The N lone pair delocalises into C=O (resonance form C(–O⁻)=N⁺). C–N is short (1.32 Å vs 1.47 in amines), rotation about it costs 15–20 kcal/mol, and the N is trigonal planar, not pyramidal. This is the geometry that locks peptide backbones.', visuals: [{ type: 'plane', atoms: ['C', 'O', 'N', 'R1', 'R2', 'R3'] }, { type: 'bond', a: 'C', b: 'N' }, { type: 'orbital', id: 'N' }] },
+      { id: 'planar', links: [{ label: 'Resonance', href: '#glossary/resonance' }], title: 'Planar C(=O)–N with partial double-bond character', detail: 'The N lone pair delocalises into C=O (resonance form C(–O⁻)=N⁺). C–N is short (1.35 Å in formamide vs 1.47 Å in amines), rotation about it costs 15–20 kcal/mol, and the N is trigonal planar, not pyramidal. This is the geometry that locks peptide backbones.', visuals: [{ type: 'plane', atoms: ['C', 'O', 'N', 'R1', 'R2', 'R3'] }, { type: 'bond', a: 'C', b: 'N' }, { type: 'orbital', id: 'N' }] },
       { id: 'notbasic', title: 'Nitrogen is NOT basic or nucleophilic', detail: 'Because the lone pair is tied up in resonance: pKaH ≈ −1 (an amine is +10). Protonation happens on the carbonyl oxygen instead.', visuals: [{ type: 'orbital', id: 'N' }, { type: 'lonePairs', id: 'O' }] },
       { id: 'least', title: 'Least reactive carboxylic acid derivative', detail: 'Strong donation from N makes the carbonyl carbon only weakly electrophilic: hydrolysis needs strong acid or base plus heat for hours. Order: acid chloride > anhydride > ester > amide.', visuals: [{ type: 'charges', map: { C: 'δ+', O: 'δ−' } }] },
       { id: 'hb', title: 'Carbonyl O is a strong H-bond acceptor', detail: 'The resonance puts extra negative charge on O, so amides H-bond strongly: high melting points, and α-helices/β-sheets in proteins.', visuals: [{ type: 'lonePairs', id: 'O' }] },
@@ -197,7 +200,7 @@ export const FUNCTIONAL_GROUPS = {
     nameFor: (r) => ({ 'H|H|H': 'ammonia (the parent)', 'H|H|methyl': 'methanamine (methylamine)', 'H|H|ethyl': 'ethanamine (ethylamine)', 'H|H|isopropyl': 'propan-2-amine (isopropylamine)', 'H|H|tBu': '2-methylpropan-2-amine (tert-butylamine)', 'H|H|phenyl': 'aniline (an aryl amine)', 'H|H|benzyl': 'benzylamine', 'H|methyl|methyl': 'dimethylamine', 'methyl|methyl|methyl': 'trimethylamine', 'H|ethyl|ethyl': 'diethylamine', 'ethyl|ethyl|ethyl': 'triethylamine (Et₃N)', 'H|isopropyl|isopropyl': 'diisopropylamine', 'ethyl|isopropyl|isopropyl': 'Hünig′s base (DIPEA)', 'H|allyl|allyl': 'diallylamine' }[r.slice().sort((a, b) => (a === 'H' ? -1 : b === 'H' ? 1 : a.localeCompare(b))).join('|')]),
     classify: ({ R, attach }) => { const subs = ['R1', 'R2', 'R3'].filter((k) => R[k] !== 'H'); const n = subs.length; const aryl = subs.some((k) => attach[k].aromatic); return (['ammonia', 'primary amine (1°)', 'secondary amine (2°)', 'tertiary amine (3°, no N–H)'][n]) + (aryl ? ' — ARYL amine: lone pair delocalised into the ring, pKaH ≈ 4.6, far less basic' : ''); },
     invariants: [
-      { id: 'pyr', title: 'Pyramidal sp³ nitrogen with ONE lone pair', detail: 'Bond angles ≈ 107–108°. The lone pair is in an sp³ orbital pointing out of the pyramid: it is available, so every amine is a base and a nucleophile.', visuals: [{ type: 'lonePairs', id: 'N' }, { type: 'angle', center: 'N', a: 'R1', b: 'R2', text: '≈ 107°' }] },
+      { id: 'pyr', title: 'Pyramidal sp³ nitrogen with ONE lone pair', detail: 'Bond angles ≈ 107° (drawn at the ammonia value, 106.7°). The lone pair is in an sp³ orbital pointing out of the pyramid: it is available, so every amine is a base and a nucleophile.', visuals: [{ type: 'lonePairs', id: 'N' }, { type: 'angle', center: 'N', a: 'R1', b: 'R2', text: '≈ 107°' }] },
       { id: 'base', links: [{ label: 'Basicity', href: '#glossary/basicity' }], title: 'Basic: pKaH ≈ 9–11', detail: 'Protonated at physiological pH and dissolves in dilute HCl as the ammonium salt (the extraction test). Alkyl amines are stronger bases than ammonia (9.25) because alkyl groups donate.', visuals: [{ type: 'lonePairs', id: 'N' }, { type: 'label', id: 'N', text: 'pKaH ≈ 10' }] },
       { id: 'nuc', title: 'Nucleophilic nitrogen', detail: 'Alkylation (SN2 on halides, over-alkylates), acylation (→ amides), addition to carbonyls (→ imines/enamines), reaction with HNO₂.', visuals: [{ type: 'atom', id: 'N' }] },
       { id: 'inv', title: 'Rapid pyramidal inversion', detail: 'The nitrogen flips through a planar transition state ~10¹¹ times per second (barrier ≈ 6 kcal/mol). So an amine with three different groups is NOT a resolvable stereocentre.', visuals: [{ type: 'atom', id: 'N' }, { type: 'plane', atoms: ['R1', 'R2', 'R3'] }] },
@@ -364,7 +367,7 @@ export const FUNCTIONAL_GROUPS = {
     id: 'nitro', name: 'Nitro', pattern: 'R–NO₂', suffix: 'nitro-', color: '#f472b6', family: 'nitrogen',
     core: {
       atoms: [{ id: 'N', el: 'N', hyb: 'sp2', charge: 1 }, sp2O('O1'), { id: 'O2', el: 'O', hyb: 'sp2', lonePairs: 3, charge: -1 }],
-      bonds: [bond('N', 'O1', 2), bond('N', 'O2')],
+      bonds: [cbond('N', 'O1', 'nitro_NO', 2), cbond('N', 'O2', 'nitro_NO')],
     },
     attachments: [{ id: 'R1', atom: 'N', default: 'methyl', label: 'R' }],
     fallbackNoun: 'nitro compound',
@@ -373,7 +376,7 @@ export const FUNCTIONAL_GROUPS = {
     invariants: [
       { id: 'fc', links: [{ label: 'Formal charge', href: '#glossary/formal-charge' }], title: 'Formal charges: N is +1, one O is −1, overall neutral', detail: 'Nitrogen can only make four bonds, so one N–O must be a single bond to O⁻ while the other is N=O. This is the standard formal-charge exercise: N has 4 bonds and 0 lone pairs → +1.', visuals: [{ type: 'charges', map: { N: '+', O2: '−' } }, { type: 'atom', id: 'N' }] },
       { id: 'res', title: 'Two equivalent N–O bonds by resonance (1.22 Å)', detail: 'Swap which O carries the double bond and you get the second resonance form. The real molecule is the average: both N–O bonds identical, −½ charge on each O.', visuals: [{ type: 'bond', a: 'N', b: 'O1' }, { type: 'bond', a: 'N', b: 'O2' }, { type: 'plane', atoms: ['N', 'O1', 'O2', 'R1'] }] },
-      { id: 'planar', title: 'Trigonal planar nitrogen, O–N–O ≈ 125°', detail: 'sp² N with the π system spread over O–N–O. No lone pair is left on N, so nitro compounds are not basic at all.', visuals: [{ type: 'angle', center: 'N', a: 'O1', b: 'O2', text: '≈ 125°' }] },
+      { id: 'planar', title: 'Trigonal planar nitrogen, O–N–O ≈ 125°', detail: 'sp² N with the π system spread over O–N–O. No lone pair is left on N, so nitro compounds are not basic at all. Measured 125.3° in nitromethane: the two N–O domains are fatter than the N–C one. The model draws the ideal 120° (like carbonyl angles).', visuals: [{ type: 'angle', center: 'N', a: 'O1', b: 'O2', text: '≈ 125° (drawn 120°)' }] },
       { id: 'ewg', title: 'Powerful electron-withdrawing group (−I and −M)', detail: 'Acidifies α-C–H (nitromethane pKa 10.2, usable in Henry reactions), deactivates arenes ~10⁷-fold and directs meta, and activates aryl halides toward SNAr.', visuals: [{ type: 'charges', map: { R1: 'δ+' } }, { type: 'dipole', from: 'R1', to: 'N' }] },
       { id: 'red', title: 'Reduced to an amine (R–NH₂)', detail: 'Fe/HCl, Sn/HCl, SnCl₂, H₂/Pd or Zn all take NO₂ → NH₂. The standard route to anilines.', visuals: [{ type: 'atom', id: 'N' }] },
     ],

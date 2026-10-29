@@ -99,7 +99,7 @@ export function toFrame(mol, positions, lonePairDirs, orbitals, extra = {}) {
     orbital: orbitals.get(a.id) || null,
     ghost: !!a.ghost, label: a.label || null, aromatic: !!a.aromatic,
   }));
-  const bonds = mol.bonds.map((b) => ({ a: b.a, b: b.b, order: b.order || 1, partial: b.partial ?? 1, aromatic: !!b.aromatic, ring: b.ring || null, ghost: !!b.ghost, piOnly: !!b.piOnly }));
+  const bonds = mol.bonds.map((b) => ({ a: b.a, b: b.b, order: b.order || 1, partial: b.partial ?? 1, aromatic: !!b.aromatic, ring: b.ring || null, ghost: !!b.ghost, piOnly: !!b.piOnly, ...(b.length ? { length: b.length, ref: b.ref || null } : {}) }));
   return { atoms, bonds, aliases: mol.aliases || {}, ...extra };
 }
 

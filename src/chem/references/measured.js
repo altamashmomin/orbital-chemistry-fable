@@ -9,6 +9,14 @@
 // numbers and names the row here each one was taken from; tests/sweep and the conformance suite check
 // that the two agree, so a change to either side is caught instead of silently propagating.
 
+/** Measured bond lengths (Å) the model draws where the element/order table would be wrong: conjugated single bonds. */
+export const MEASURED_BONDS = {
+  formamide_CN: { value: 1.35, listed: 1.350, molecule: 'HCONH₂', cas: '75-12-7', atoms: 'C–N (amide)', source: 'Hirota & Sugisaki, J. Mol. Spectrosc. 49, 251 (1974), via CCCBDB; N-methylacetamide is not on CCCBDB' },
+  aceticAcid_CO: { value: 1.36, listed: 1.361, molecule: 'CH₃COOH', cas: '64-19-7', atoms: 'C–O(H)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
+  methylFormate_CO: { value: 1.33, listed: 1.334, molecule: 'HCOOCH₃', cas: '107-31-3', atoms: 'C(=O)–O (ester)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB; O–CH₃ is 1.437' },
+  nitromethane_NO: { value: 1.22, listed: 1.224, molecule: 'CH₃NO₂', cas: '75-52-5', atoms: 'N–O (both)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
+};
+
 export const MEASURED_ANGLES = {
   // bent and pyramidal centres (one measured exemplar per table row)
   water_HOH: { value: 104.5, listed: 104.48, molecule: 'H₂O', cas: '7732-18-5', atoms: 'H–O–H', type: 'rₑ', source: 'Hoy & Bunker, J. Mol. Spectrosc. 74, 1 (1979), via CCCBDB' },
@@ -34,6 +42,7 @@ export const MEASURED_ANGLES = {
   // centres the model keeps idealised (register)
   formaldehyde_HCH: { value: 116.1, listed: 116.133, molecule: 'H₂CO', cas: '50-00-0', atoms: 'H–C–H', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB' },
   formaldehyde_HCO: { value: 121.9, listed: 121.9, molecule: 'H₂CO', cas: '50-00-0', atoms: 'H–C=O', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB ("from H–C–H by symmetry")' },
+  nitromethane_ONO: { value: 125.3, listed: 125.3, molecule: 'CH₃NO₂', cas: '75-52-5', atoms: 'O–N–O', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
   acetone_CCC: { value: 116.0, listed: 116, molecule: '(CH₃)₂CO', cas: '67-64-1', atoms: 'C–C–C', source: 'Kuchitsu (1998), via CCCBDB (C–C=O 122°)' },
   cyclohexaneChair_CCC: { value: 111.3, listed: 111.28, molecule: 'C₆H₁₂', cas: '110-82-7', atoms: 'C–C–C', source: 'Kuchitsu (1998), via CCCBDB; Clayden, Greeves & Warren ch. 16 quotes 111.4°' },
   // amines: the range the ammonia class default stands in for (register)

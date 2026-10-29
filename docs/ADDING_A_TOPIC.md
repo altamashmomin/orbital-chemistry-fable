@@ -411,3 +411,15 @@ search entries, three glossary terms) and `references.md`. The rules it follows 
 lone-pair counts shown to a learner come from `atom.lonePairs`, never from display slots; every angle
 on screen says whether it is ideal, measured (and on which molecule), a class value or the fallback;
 and activities stay local to the topic rather than becoming a quiz engine.
+
+### A custom-panel topic: Conformations (`src/topics/conformations/`)
+
+Not every lesson is a collection. Conformations keeps one continuous control (a dihedral slider) and
+three views of the same number, so it is a plain panel class rather than a `CollectionExplorer`:
+`src/chem/conformations.js` (`ROTORS`, `conformer(id, phi)` → a frame with the back side of the bond
+turned rigidly, `torsionEnergy(id, phi)` through `TORSION_ENERGIES`, `conformationName`,
+`periplanarity`), `panel.js` (`ConformationsPanel` with chips, slider, landmark buttons, a Newman canvas
+via `drawNewman`, a torsion-energy canvas, facts, activities; deep links `#conformations/<rotor>/<landmark|degrees>`),
+`activities.js`, `index.js`, `references.md`. Rules carried over: quoted energies come from the
+reference table and say they are textbook values, the reveal text reads the same functions the canvas
+plots, and the Reaction lab's E2 start is checked equal to the anti-periplanar rotor in the sweep.

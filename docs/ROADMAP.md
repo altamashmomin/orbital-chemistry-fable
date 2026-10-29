@@ -25,7 +25,8 @@ conceptual link (a deep link or a sentence in a card), not code.
 | --- | --- | --- |
 | **Functional groups** 👁 | `CollectionExplorer`, builder + R groups, embedder (lone-pair angles, crowding flag), `MoleculeView` highlights, search / glossary | Molecular shapes explain its bent and pyramidal centres; the Reaction lab shows its halides and alcohols reacting |
 | **Molecular shapes** 👁 | `src/chem/shapes.js` on the embedder, `CollectionExplorer`, `MoleculeView` angle / plane / lone-pair highlights, wedge-dash overlay (readable without WebGL), `measured.js` citations | Functional-group geometry cards; SN2 inversion and the planar SN1 cation; Conformations next |
-| **Reaction lab** 👁 | mechanism families, `frame(t)` with pinned atoms, Cinematic animator, `EnergyDiagram`, predictor | the tetrahedral centre and planar carbon of Molecular shapes; E2's anti-periplanar geometry wants Conformations |
+| **Conformations** 👁 | `src/chem/conformations.js` on the embedder (rigid turn of one side of a bond), Newman overlay, a torsion-energy canvas, `TORSION_ENERGIES` | the E2 anti-periplanar start of the Reaction lab (checked equal in the sweep); steric strain → the cyclohexane chair (next) |
+| **Reaction lab** 👁 | mechanism families, `frame(t)` with pinned atoms, Cinematic animator, `EnergyDiagram`, predictor | the tetrahedral centre and planar carbon of Molecular shapes; E2's anti-periplanar geometry explained in Conformations |
 | Shared support ✅ (merged, no tab yet) | orbitals + isosurfaces + `OrbitalView` (#1), coordination frames, `LevelDiagram`, ring templates / `mirror()` / dihedrals (#4), Newman projection (#5), lone-pair angle table + oracle (#7), steric rescue + `frame.crowding` (#8), WebGL fallback | Conformations (Newman, chair), Hybridisation / orbitals, Transition metals |
 | Planned | `_template` topic as the starting point | see the learning sequence below |
 
@@ -37,8 +38,9 @@ dependency, which is a different question.
 1. **Functional groups** — recognise the pattern, separate what never changes from what R tunes. 👁
 2. **Molecular shapes** — why those centres are bent, pyramidal or flat; measured angles next to the
    ideal ones; predict-observe-explain. 👁
-3. **Conformations** (next) — ethane and butane with synchronized 3D and Newman views, then a direct
-   explanation of E2's anti-periplanar requirement; the cyclohexane chair after that small lesson is solid.
+3. **Conformations** — ethane and butane with synchronized 3D and Newman views and the torsional
+   energy curve, then the E2 anti-periplanar geometry on 2-bromobutane. 👁 The cyclohexane chair
+   (ring templates exist) is the next lesson once this one has been used.
 4. **Reaction lab: substitution and elimination** — now explained by 2 and 3 (inversion through the
    tetrahedron, the planar cation, anti-periplanar E2). 👁
 5. Addition and carbonyl chemistry, then stereochemistry and acids / bases (Phase 1 below).
@@ -76,7 +78,7 @@ unit tests. These also stress the architecture while it is still easy to adjust.
 | 2 | `topic/carbonyl-chemistry` — nucleophilic addition (hydride, Grignard, cyanohydrin, hemiacetal) and nucleophilic acyl substitution (tetrahedral intermediate; Cl > anhydride > ester > amide) | same as 1; links from aldehyde/ketone/ester cards | mechanism data; reactivity-order predictor | low |
 | 2b | `topic/aromatic-substitution` — nitration, bromination, Friedel–Crafts alkylation/acylation via the arenium (Wheland) intermediate; ortho/para vs meta directing effects as a predictor | benzene rigid template, `frame(t)`, `EnergyDiagram` (aromaticity lost then regained), links from the arene cards | mechanism data; directing-effects predictor | low–medium |
 | 3 | `topic/stereochemistry` — chirality, R/S, enantiomers vs diastereomers, meso; ties to SN1 racemisation and SN2 inversion | builder, `MoleculeView`, `CollectionExplorer`, `mirror()`, wedge/dash overlay | CIP priority algorithm (graph-based, exhaustively testable) | low–medium |
-| 4 | `topic/conformations` — ethane/butane Newman, torsional energy, cyclohexane chair ↔ boat, axial/equatorial, A-values | torsion-driven `frame(t)`, `EnergyDiagram` as a torsional profile, ring templates, Newman overlay | conformer energy table | medium (chair authoring, but geometry tests catch it) |
+| 4 | 👁 `topic/conformations` — ethane/butane Newman + torsional energy + the E2 anti-periplanar rotor (PR #10); cyclohexane chair ↔ boat, axial/equatorial and A-values still to come | rigid bond turn on the embedder, Newman overlay, a torsion canvas, ring templates (chair, later) | `TORSION_ENERGIES` (textbook values) | medium (chair authoring, but geometry tests catch it) |
 | 5 | `topic/acids-bases` — pKa ladder, conjugate pairs, "which way does the equilibrium go", the five factors (element, resonance, induction, hybridisation, size) | FG pKa data already in cards, `LevelDiagram` as a pKa ladder, a proton-transfer `frame(t)`, glossary | pKa table + comparison helper | low |
 
 ## Phase 2 — primitive-backed topics (orbitals, diagrams, coordination)

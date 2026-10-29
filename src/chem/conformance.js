@@ -14,7 +14,8 @@ import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER
 import { MEASURED_ANGLES, MEASURED_BONDS } from './references/measured.js';
 import { SHAPES, buildShape } from './shapes.js';
 import { ROTORS, conformer, torsionEnergy } from './conformations.js';
-import { TORSION_ENERGIES } from './references/textbook.js';
+import { CHAIR_SUBSTITUENTS, RING_FORMS, cyclohexaneFrame, chairEnergy, equatorialFraction, KCAL } from './cyclohexane.js';
+import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -273,6 +274,32 @@ export function runConformance() {
     add('conformations', `${r.id}.dihedral`, pf(worstD < 1e-6), `${r.name}: the frame's ${r.reference.join('–')} dihedral equals the requested value`, { expected: 'Δ 0°', actual: `Δ ${fmt(worstD, 4)}°` });
     add('conformations', `${r.id}.bonds`, pf(worstB < 1e-6), `${r.name}: turning the bond keeps every bond length`, { expected: 'Δ 0 Å', actual: `Δ ${fmt(worstB, 4)}` });
   }
+  // cyclohexane chair lesson: A-values are a cited table (kJ = kcal × 4.184); the drawn chairs keep the
+  // template ring; X sits axial in one chair, equatorial after the flip, flagpole in the boat; the energy
+  // on the card is always the table value; crowding is flagged where the template cannot place X.
+  {
+    const badA = [];
+    for (const s of CHAIR_SUBSTITUENTS) { const a = A_VALUES.values[s.id]; if (!a || Math.abs(a.kJ - a.kcal * KCAL) > 0.06) badA.push(s.id); }
+    add('conformations', 'chair.a-values', pf(!badA.length && !!A_VALUES.source && A_VALUES.unit === 'kJ/mol'), `every chair substituent has an A-value row; kJ/mol = tabulated kcal/mol × 4.184 (rounded)`, { expected: 'all rows consistent', actual: badA.length ? badA.join(', ') : `${CHAIR_SUBSTITUENTS.length} rows`, source: A_VALUES.source });
+    add('conformations', 'chair.methyl-vs-gauche', pf(Math.abs(2 * TORSION_ENERGIES.butane.gauche - A_VALUES.values.methyl.kJ) < 0.5), 'the methyl A-value equals two gauche-butane interactions within 0.5 kJ/mol (the textbook account, both numbers from the tables)', { expected: `${A_VALUES.values.methyl.kJ} kJ/mol`, actual: `2 × ${TORSION_ENERGIES.butane.gauche} = ${(2 * TORSION_ENERGIES.butane.gauche).toFixed(1)} kJ/mol`, source: 'CGW ch. 16; KLEIN ch. 4' });
+    add('conformations', 'chair.methyl-equatorial-share', pf(Math.abs(equatorialFraction(A_VALUES.values.methyl.kJ) - 0.95) < 0.01), 'methylcyclohexane: K = e^(A/RT) at 298 K puts 95 % in the equatorial chair', { expected: '95 %', actual: `${(equatorialFraction(A_VALUES.values.methyl.kJ) * 100).toFixed(1)} %`, source: 'KLEIN ch. 4' });
+    const badSite = [], badBond = [], badEnergy = []; let worstBond = 0, n = 0; const crowded = [];
+    for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) {
+      const r = cyclohexaneFrame(s.id, f.id); n++;
+      const expect = { axial: 'axial', equatorial: 'equatorial', boat: 'flagpole' }[f.id];
+      if (r.site !== expect || (f.id === 'axial' && r.tilt > 5) || (f.id === 'equatorial' && (r.tilt < 60 || r.tilt > 80))) badSite.push(`${s.id}/${f.id}: ${r.site} ${fmt(r.tilt, 1)}°`);
+      const byId = new Map(r.frame.atoms.map((x) => [x.id, x]));
+      for (const bd of r.frame.bonds) { const d = v.dist(byId.get(bd.a).pos, byId.get(bd.b).pos); const L = bd.length ?? bondLength(byId.get(bd.a).el, byId.get(bd.b).el, bd.aromatic ? 1.5 : bd.order); const dev = Math.abs(d - L); if (dev > worstBond) worstBond = dev; if (dev > 0.011) badBond.push(`${s.id}/${f.id} ${bd.a}–${bd.b}`); }
+      if (r.energy.value !== chairEnergy(s.id, f.id).value || r.energy.basis !== 'table') badEnergy.push(`${s.id}/${f.id}`);
+      if (r.crowding) crowded.push(`${s.id} ${f.id} (${fmt(r.crowding.worst.d)} Å)`);
+    }
+    add('conformations', 'chair.sites', pf(!badSite.length), `${n} substituent × form frames: X is axial (≤ 5° from the axis) in chair A, equatorial (60–80°) after the flip, flagpole in the boat`, { expected: 'axial / equatorial / flagpole', actual: badSite.length ? badSite.join('; ') : 'all as expected' });
+    add('conformations', 'chair.bonds', pf(!badBond.length), 'every bond of every chair frame has its table length (benzene C–H 1.08 is the template\'s)', { expected: 'Δ ≤ 0.011 Å', actual: `worst Δ ${fmt(worstBond, 3)} Å` });
+    add('conformations', 'chair.energies-from-table', pf(!badEnergy.length), 'the energy on every chair card is the tabulated value (A-value, 0, or the parent boat), never computed', { expected: 'table', actual: badEnergy.length ? badEnergy.join(', ') : `${n} lookups` });
+    const meAx = cyclohexaneFrame('methyl', 'axial');
+    add('conformations', 'chair.methyl-diaxial', pf(meAx.diaxial.length === 2 && meAx.contact && meAx.contact.d > 1.8 && meAx.contact.d < 2.0 && !meAx.crowding && !cyclohexaneFrame('methyl', 'equatorial').crowding), 'axial methyl faces the C3 and C5 axial hydrogens with a close but drawable contact; equatorial methyl faces none', { expected: '2 partners, 1.8–2.0 Å, no flag', actual: `${meAx.diaxial.length} partners, ${meAx.contact ? fmt(meAx.contact.d) : '-'} Å` });
+    add('simplifications', 'chair.crowded-forms', 'note', `chair frames the template cannot place without overlap are flagged on the card, never relieved by bending the ring: ${crowded.join(', ') || 'none'}`, { source: 'register' });
+  }
   { const e2 = MECHANISMS.e2.frame(0); const p = (id) => e2.atoms.find((a) => a.id === id).pos; const d = Math.abs(dihedralDeg(p('Br'), p('C2'), p('C3'), p('Hb'))); const c = conformer('bromobutane', 180); add('conformations', 'bromobutane.matches-e2', pf(Math.abs(d - 180) < 1 && Math.abs(Math.abs(c.dihedral) - 180) < 1e-6), 'the anti-periplanar rotor and the Reaction lab E2 start share the 180° Br–C–C–H dihedral', { expected: '180°', actual: `${fmt(d, 1)}° (E2) / ${fmt(Math.abs(c.dihedral), 1)}° (rotor)`, source: 'CGW ch. 17' }); }
 
   // ------------------------------------------------------------------ E. coordination
@@ -401,6 +428,7 @@ export function runConformance() {
     'amine-angles': `amines use the ammonia value (${LONE_PAIR_ANGLES['N/3/1'].angle}°) for all three angles at N; measured: methylamine H–N–H ${MEASURED_ANGLES.methylamine_HNH.value}° / C–N–H ${MEASURED_ANGLES.methylamine_CNH.value}°, dimethylamine C–N–C ${MEASURED_ANGLES.dimethylamine_CNC.value}°, trimethylamine ${MEASURED_ANGLES.trimethylamine_CNC.value}°`,
     'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
+    'chair-energies': `A-values and ring-form energies are textbook compilation values (Eliel & Wilen 1994 as taught by Klein and CGW; compilations differ by 0.1–0.3 kcal/mol, OH is solvent dependent, tert-butyl is an estimate); the boat figure is cyclohexane's own; the equatorial share follows from K = e^(A/RT) at 298 K; the chair ring is the 110° template against the measured ${MEASURED_ANGLES.cyclohexaneChair_CCC.value}°`,
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 
@@ -461,12 +489,15 @@ export function runConformance() {
     {
       const bad = [];
       for (const [k, row] of Object.entries(TORSION_ENERGIES)) if (!row.unit || !row.source) bad.push(`TORSION_ENERGIES.${k} lacks unit/source`);
+      for (const [k, row] of Object.entries(RING_CONFORMER_ENERGIES)) if (!row.unit || !row.source) bad.push(`RING_CONFORMER_ENERGIES.${k} lacks unit/source`);
+      if (!A_VALUES.unit || !A_VALUES.source) bad.push('A_VALUES lacks unit/source');
+      for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
         if (r.energy && !TORSION_ENERGIES[r.energy]) bad.push(`${r.id} names a missing energy table`);
         if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
       }
       for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
-      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length} tables, ${ROTORS.length} rotors, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 1} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
     //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").

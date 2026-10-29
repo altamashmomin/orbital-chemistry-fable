@@ -15,5 +15,18 @@
 * E2 anti-periplanar requirement and its stereochemical consequence: Clayden, Greeves & Warren ch. 17;
   Klein ch. 7. The "alignment" bar is |cos φ| of the Br–C–C–H dihedral, a teaching cartoon of the
   σ(C–H) / σ*(C–Br) overlap, not an overlap integral.
+* Cyclohexane chair, ring flip, axial/equatorial, 1,3-diaxial interactions and A-values: Clayden,
+  Greeves & Warren ch. 16; Klein ch. 4; Eliel & Wilen ch. 11. The A-values shown (`A_VALUES` in
+  `src/chem/references/textbook.js`) are the compilation values as tabulated in Eliel & Wilen (1994)
+  Table 11.7 and taught from in Klein and CGW, stored in kcal/mol as printed and converted to kJ/mol
+  (× 4.184, rounded to 0.1); compilations differ by 0.1–0.3 kcal/mol between solvents and methods, the
+  OH value depends on the solvent, and the tert-butyl value is an estimate ("> 4.5"). The share of
+  molecules in the equatorial chair is K = e^(A/RT) at 298 K, a thermodynamic identity applied to the
+  tabulated value. Ring-form energies (`RING_CONFORMER_ENERGIES`: twist-boat 23, boat 29, half-chair
+  45 kJ/mol above the chair) are the textbook teaching values; only the chair and boat are drawn, from
+  the rigid ring templates in `src/chem/geometry.js` (chair C–C–C 110° against the measured 111.3°,
+  register row). The substituent is embedded and torsion-relaxed as any R group; the ring keeps its
+  template angles, so a crowded axial group (tert-butyl) is flagged, not relieved. Nothing on the card
+  is computed from the drawn geometry except the drawn distance it quotes as such.
 * Why eclipsing costs energy (bonding-pair repulsion vs σ → σ* hyperconjugation): Pophristic & Goodman,
   *Nature* 411, 565 (2001), summarised at teaching level as "textbooks give two reasons".

@@ -511,8 +511,8 @@ export function embed(graph, opts = {}) {
 export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, { steps = 12, passes = 2, rescue = true } = {}) {
   const adj = buildAdjacency(graph);
   const atoms = new Map(graph.atoms.map((a) => [a.id, a]));
-  const inRigid = new Set();
-  for (const g of graph.rigid || []) for (const id of g.atoms) inRigid.add(id);
+  const rigidOf = new Map();
+  for (const g of graph.rigid || []) for (const id of g.atoms) rigidOf.set(id, g);
   const ids = graph.atoms.map((a) => a.id);
   // Atoms on the `b` side of bond a–b, or null when a–b is in a ring.
   const sideOf = (a, b) => {
@@ -530,7 +530,7 @@ export function relaxTorsions(graph, positions, lonePairDirs, orbitals, frames, 
   const rotatable = [];
   for (const bd of graph.bonds) {
     if ((bd.order || 1) !== 1 || bd.aromatic) continue;
-    if (inRigid.has(bd.a) && inRigid.has(bd.b)) continue;
+    if (rigidOf.has(bd.a) && rigidOf.get(bd.a) === rigidOf.get(bd.b)) continue;   // inside one template; a bond between two templates (ring–aryl) may turn
     if (adj.get(bd.a).length < 2 || adj.get(bd.b).length < 2) continue;
     // Planar–planar single bonds (amide C–N, aryl–vinyl) only move when they actually clash: the
     // zero-penalty default below keeps conjugated systems coplanar otherwise.
@@ -864,13 +864,15 @@ function ringSites(coords) {
  *   substituents = { C1: { axial: 'Me' } | { up: { id: 'Cl', el: 'Cl', length? } } },  // replaces that site's H
  *   attachAt = null,             // 'C1' makes the fragment an R group: that carbon's `attachSite` H is dropped
  *   attachSite = null,           // 'equatorial' (default when defined) | 'axial' | 'up' | 'down'
+ *   flip = false,                // mirror the ring through its mean plane (z → −z): the ring-flipped chair, so a
+ *                                // carbon's 'up' site changes from axial to equatorial (or back)
  * }
  * Returns { shape, label, atoms, bonds, rigid: { atoms, coords, attach, attachDir, planeAxis }, ring, sites, attach, substituted }.
  */
-export function ringTemplate(shape, { prefix = '', ccLength = RING_L, chLength = 1.09, substituents = {}, attachAt = null, attachSite = null } = {}) {
+export function ringTemplate(shape, { prefix = '', ccLength = RING_L, chLength = 1.09, substituents = {}, attachAt = null, attachSite = null, flip = false } = {}) {
   const make = RING_COORDS[shape];
   if (!make) throw new Error(`ringTemplate(): unknown ring shape ${shape}; expected one of ${RING_SHAPES.join(', ')}`);
-  const coords0 = make().map((p) => v.scale(p, ccLength / RING_L));
+  const coords0 = make().map((p) => v.scale(flip ? [p[0], p[1], -p[2]] : p, ccLength / RING_L));
   const n = coords0.length;
   const siteList = ringSites(coords0);
   const atoms = [], bonds = [], coords = {}, sites = {}, substituted = {};

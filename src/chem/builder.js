@@ -14,7 +14,8 @@ export function defaultChoice(fg) {
   return { variant: fg.variants ? fg.defaultVariant || fg.variants[0].id : null, R };
 }
 
-function prefixGroup(rg, prefix) {
+/** Copy an R-group fragment with every atom id prefixed (the builder's attachment convention). */
+export function prefixGroup(rg, prefix) {
   const atoms = rg.atoms.map((a) => ({ ...clone(a), id: prefix + a.id }));
   const bonds = rg.bonds.map((b) => ({ ...clone(b), a: prefix + b.a, b: prefix + b.b, ring: b.ring ? b.ring.map((id) => prefix + id) : undefined }));
   let rigid = null;

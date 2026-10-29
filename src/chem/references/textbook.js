@@ -84,6 +84,37 @@ export const TORSION_ENERGIES = {
   butane: { gauche: 3.8, eclipsedCH3H: 16, eclipsedCH3CH3: 20, unit: 'kJ/mol', source: 'CGW ch. 16 (Klein ch. 4: 0.9, 3.8 and 4.5 kcal/mol)' },
 };
 
+/**
+ * A-values for the Conformations topic: ΔG° (kJ/mol) by which the equatorial chair of a monosubstituted
+ * cyclohexane lies below the axial one. `kcal` is the figure as the compilations tabulate it (Eliel &
+ * Wilen 1994, Table 11.7, the source Klein ch. 4 and CGW ch. 16 teach from); `kJ` is that figure ×
+ * 4.184 rounded to 0.1, the number the app shows. Compilations differ by 0.1–0.3 kcal/mol (solvent,
+ * temperature, method); OH depends on the solvent. Table values only: never computed from the model.
+ */
+export const A_VALUES = {
+  unit: 'kJ/mol', source: 'Eliel & Wilen, Stereochemistry of Organic Compounds (1994) Table 11.7; KLEIN ch. 4; CGW ch. 16',
+  values: {
+    H: { kcal: 0, kJ: 0 },
+    methyl: { kcal: 1.74, kJ: 7.3 },
+    ethyl: { kcal: 1.79, kJ: 7.5 },
+    isopropyl: { kcal: 2.15, kJ: 9.0 },
+    tBu: { kcal: 4.9, kJ: 20.5, note: 'often quoted as "> 4.5" or "≈ 5 kcal/mol"; too large to measure directly' },
+    phenyl: { kcal: 2.8, kJ: 11.7 },
+    CF3: { kcal: 2.4, kJ: 10.0 },
+    OH: { kcal: 0.87, kJ: 3.6, note: 'protic solvent; ≈ 0.6 kcal/mol in aprotic solvents' },
+    F: { kcal: 0.25, kJ: 1.0 },
+    Cl: { kcal: 0.53, kJ: 2.2 },
+    Br: { kcal: 0.48, kJ: 2.0 },
+    I: { kcal: 0.47, kJ: 2.0 },
+    CN: { kcal: 0.17, kJ: 0.7 },
+  },
+};
+
+/** Cyclohexane ring conformers, kJ/mol above the chair: the textbook teaching values. Only the chair and boat are drawn. */
+export const RING_CONFORMER_ENERGIES = {
+  cyclohexane: { chair: 0, twistBoat: 23, boat: 29, halfChair: 45, unit: 'kJ/mol', source: 'CGW ch. 16; KLEIN ch. 4 (5.5, 6.9 and 10.8 kcal/mol)' },
+};
+
 /** C–X bond dissociation energies, kcal/mol (rounded textbook values). */
 export const BDE_CX = { F: 115, Cl: 84, Br: 72, I: 57 }; // KLEIN Table 7.1 (approx.)
 

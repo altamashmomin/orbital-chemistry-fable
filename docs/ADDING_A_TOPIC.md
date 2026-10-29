@@ -428,3 +428,7 @@ via `drawNewman`, a torsion-energy canvas, facts, activities; deep links `#confo
 `activities.js`, `index.js`, `references.md`. Rules carried over: quoted energies come from the
 reference table and say they are textbook values, the reveal text reads the same functions the canvas
 plots, and the Reaction lab's E2 start is checked equal to the anti-periplanar rotor in the sweep.
+The same panel hosts the cyclohexane chair (`src/chem/cyclohexane.js`: `cyclohexaneFrame(sub, form)`
+from the rigid ring templates with the substituent embedded as an R group, `chairEnergy()` a pure
+table lookup into `A_VALUES` / `RING_CONFORMER_ENERGIES`), the worked example of the one energy
+exception the model boundary allows (`docs/REVIEW_PROTOCOL.md` §6).

@@ -97,6 +97,7 @@ measurement. New idealisations are added here with a measured value, not silentl
 | Conjugated single bonds | amide C–N 1.35, acid C–O(H) 1.36, ester C(=O)–O 1.33, nitro N–O 1.22 Å drawn from `CONJUGATED_BOND_LENGTHS` (per-bond `length`), each cited in `measured.js` | formamide / acetic acid / methyl formate / nitromethane values stand in for the whole class (N-methylacetamide is not on CCCBDB) | the element/order table was 0.1 Å off for these and the cards already quoted the short values; everything else keeps the table |
 | Shape gallery angles | CH₄, CO₂, BF₃, PF₅, SF₆ and XeF₄ at the ideal VSEPR values; formaldehyde at 120° with the measured 116.1° / 121.9° stated beside it; H₂O, NH₃, H₂S, SO₂, SF₄ at their measured values | the first six are exact by symmetry; carbonyl angles differ from 120° | every angle on the card carries its status (ideal / measured / class / fallback) and the `gallery.*` conformance checks hold each one to the oracle |
 | Torsional energy curves | ethane and butane E(φ) are three-term cosine fits through the textbook values (ethane 12; butane 3.8 / 16 / 20 kJ/mol) | the textbook values themselves are rounded teaching numbers (Klein gives 19 for CH₃/CH₃); real curves have slightly different shapes and the bond angles relax along the way | labelled "textbook values, curve illustrative" on the card; the frames turn one side rigidly, so bond lengths and angles are the embedder's at every dihedral |
+| Cyclohexane chair energies | A-values (methyl 7.3, isopropyl 9.0, tert-butyl 20.5 kJ/mol …) and ring forms (twist-boat 23, boat 29, half-chair 45) from `A_VALUES` / `RING_CONFORMER_ENERGIES`; % equatorial = K/(1+K) with K = e^(A/RT) at 298 K; the chair ring is the 110° template | compilations differ by 0.1–0.3 kcal/mol (solvent, method); OH is solvent dependent; tert-butyl is an estimate; the boat value is cyclohexane's own; measured chair C–C–C 111.3° | the model's one planned exception under §6: tabulated values with unit and source, displayed as such, never computed from the drawn sterics; the substituent is embedded as any R group and crowding (axial tert-butyl) is flagged, not relieved |
 | E2 σ/σ* alignment bar | \|cos φ\| of the Br–C–C–H dihedral | an overlap integral is not computed | a teaching cartoon, labelled as such on the card |
 | Crowded R combinations | bulky substituents on one centre keep the class bond angle; the relaxer rotates bonds (greedy passes, then a joint two-bond rescue search) and never widens angles. Combinations it cannot untangle keep overlapping atoms, are flagged as `frame.crowding` (hard contacts: H···H < 1.8, H···X < 2.0, X···X < 2.5 Å) and the molecule card says so and suggests a lighter group | real molecules open their bond angles and twist (di-tert-butyl ether, di-tert-butylamine, cis-di-tert-butylethene) | no force field in this model; the notice states that the overlap is the model's limit, not the molecule's impossibility; sweep reports list the flagged counts per group |
 | Energy profiles | illustrative kcal/mol shapes | measured Eₐ differ by substrate and solvent | labelled "illustrative" in the UI and data |
@@ -151,8 +152,9 @@ it looks like on screen.
   groups the templates draw cleanly, or the flag stays.
 
 **The one planned exception.** The cyclohexane chair lesson needs A-values. They enter as a
-tabulated textbook table (value, unit, source) and are displayed as such; the axial/equatorial
-energy difference is never computed from the sterics of the drawn model.
+tabulated textbook table (`A_VALUES`: value, unit, source) and are displayed as such; the
+axial/equatorial energy difference is never computed from the sterics of the drawn model. (Done:
+`src/chem/cyclohexane.js`, checked by `conformations/chair.*` and `boundary/energies.sourced`.)
 
 **Mechanical checks** (`boundary.*` in `src/chem/conformance.js`, all must pass):
 

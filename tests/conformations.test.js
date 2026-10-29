@@ -11,6 +11,8 @@ import { GLOSSARY } from '../src/nexus/glossary.js';
 import { FUNCTIONAL_GROUPS } from '../src/chem/functionalGroups.js';
 import { MECHANISMS } from '../src/chem/mechanisms/index.js';
 import { shapeById } from '../src/chem/shapes.js';
+import { CHAIR, formById, substituentById } from '../src/chem/cyclohexane.js';
+import { molecularShapes as molecularShapesTopic } from '../src/topics/molecular-shapes/index.js';
 import { bondLength } from '../src/chem/elements.js';
 import { v } from '../src/chem/geometry.js';
 import { assertNoClashes } from './helpers.js';
@@ -60,12 +62,15 @@ test('conformer frames sit at the requested dihedral with the embedder bond leng
 
 function resolves(href) {
   const [head, a, b] = href.replace(/^#/, '').split('/');
-  const terms = new Set([...GLOSSARY.map((t) => t.id), ...conformations.glossary.map((t) => t.id)]);
+  const terms = new Set([...GLOSSARY.map((t) => t.id), ...conformations.glossary.map((t) => t.id), ...molecularShapesTopic.glossary.map((t) => t.id)]);
   if (head === 'glossary') return !a || terms.has(a);
   if (head === 'functional-groups') return (!a || !!FUNCTIONAL_GROUPS[a]) && (!b || FUNCTIONAL_GROUPS[a].invariants.some((x) => x.id === b));
   if (head === 'mechanisms') return (!a || !!MECHANISMS[a]) && (!b || MECHANISMS[a].steps.some((x) => x.id === b));
   if (head === 'molecular-shapes') return (!a || !!shapeById(a)) && (!b || shapeById(a).invariants.some((x) => x.id === b));
-  if (head === 'conformations') return (!a || !!rotorById(a)) && (!b || rotorById(a).landmarks.some((l) => l.id === b));
+  if (head === 'conformations') {
+    if (a === CHAIR.id) { const [, , , c] = href.replace(/^#/, '').split('/'); return (!b || !!formById(b)) && (!c || !!substituentById(c)); }
+    return (!a || !!rotorById(a)) && (!b || rotorById(a).landmarks.some((l) => l.id === b));
+  }
   return false;
 }
 
@@ -76,10 +81,12 @@ test('the topic, its search entries, glossary, links and activities satisfy the 
   const core = new Set(GLOSSARY.map((t) => t.id));
   for (const t of conformations.glossary) { assert.ok(!core.has(t.id), `${t.id} is new`); for (const l of t.links) assert.ok(resolves(l.href), l.href); }
   for (const r of ROTORS) for (const l of r.links) assert.ok(resolves(l.href), `${r.id}: ${l.href}`);
+  for (const l of CHAIR.links) assert.ok(resolves(l.href), `chair: ${l.href}`);
   for (const act of ACTIVITIES) {
-    assert.equal(act.options.filter((o) => o.correct).length, 1); assert.ok(correctOption(act)); assert.ok(rotorById(act.rotor));
+    assert.equal(act.options.filter((o) => o.correct).length, 1); assert.ok(correctOption(act)); assert.ok(rotorById(act.rotor) || act.rotor === CHAIR.id);
     assert.ok(act.reveal().length > 80);
-    assert.ok(rotorById(act.show.rotor).landmarks.some((l) => l.id === act.show.landmark), `${act.id}: show landmark`);
+    if (act.rotor !== CHAIR.id) assert.ok(rotorById(act.show.rotor).landmarks.some((l) => l.id === act.show.landmark), `${act.id}: show landmark`);
+    else assert.ok(formById(act.show.form) && substituentById(act.show.substituent), `${act.id}: show form`);
   }
   assert.match(ACTIVITIES[0].reveal(), /12 kJ\/mol/);
   assert.match(ACTIVITIES[1].reveal(), /3\.8 kJ\/mol.*20 kJ\/mol.*16 kJ\/mol/);

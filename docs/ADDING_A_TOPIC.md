@@ -84,6 +84,11 @@ worked reasoning and hints are `learn`.
 * Add a data test in `tests/` (see `tests/builder.test.js` for the pattern): every entry has
   the fields it needs, numbers are finite, nothing overlaps in 3D.
 * Mark anything illustrative (energies, percentages) as such in the UI text.
+* Stay inside the model boundary (`docs/REVIEW_PROTOCOL.md` §6): geometry from cited tables and
+  templates, energies only as tabulated textbook values with a source, no quantity computed from
+  the drawn model. A lone-pair centre your topic shows needs a sourced `LONE_PAIR_ANGLES` row,
+  never the fallback; a bond drawn off the table needs a `MEASURED_BONDS` row; an angle printed
+  on a card must match the drawn one or say what is drawn. The `boundary.*` checks fail otherwise.
 
 ## 6. Branch workflow
 

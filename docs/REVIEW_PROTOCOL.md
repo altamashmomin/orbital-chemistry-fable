@@ -26,7 +26,8 @@ npm run build
      anti-periplanar start and planar E product); energy-profile topology (number of maxima,
      rate-determining step, exergonic examples); the predictor against the textbook decision
      table; orbital normalisation and node counts; electronegativity and bond tables;
-     cross-links and audience tags.
+     cross-links and audience tags; and the **model boundary** checks of §6 (every displayed
+     angle, length and energy carries a basis; no visible item reaches a convention).
    * `npm run build`.
 2. **The sweep report** (`scripts/sweep.mjs --write` → `docs/reviews/<date>-sweep-NN.md`):
    every check with status *pass / fail / note*, plus the **known-simplifications register**
@@ -58,7 +59,7 @@ For each new molecule, mechanism, diagram or data item:
       from Refresher.
 - [ ] **Rendering honesty**: nothing on screen implies more than the model knows (e.g. a dashed
       partial bond is a cartoon of bond order, lone-pair lobes are schematic, isosurfaces use a
-      stated |ψ| threshold).
+      stated |ψ| threshold), and nothing crosses the model boundary of §6.
 - [ ] **Links and glossary**: new terms added; cross-links resolve; deep links tested.
 
 ## 3. Severity and status
@@ -105,3 +106,60 @@ measurement. New idealisations are added here with a measured value, not silentl
 | Partial bonds and charges | linear interpolation of order and charge | nonlinear along the true reaction path | smooth animation |
 | Lone pairs and p lobes | fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°) | diffuse densities; no single measured lone-pair direction | schematic, as in textbooks |
 | Orbital isosurfaces | one |ψ| threshold, 48³ grid | 90 % probability surfaces | performance; threshold is stated |
+
+## 6. Model boundary
+
+Orbital is a **cited-geometry template engine**, not a simulator. Every number on screen is a
+published measurement, an ideal value fixed by symmetry, or a tabulated textbook value, and the
+conformance suite enforces that line mechanically (the `boundary.*` checks). Sterics, bond
+strengths and bond lengths are where a model like this starts inventing numbers; this section
+fixes where it stops. A change that crosses the line is a *blocker* by the table in §3, whatever
+it looks like on screen.
+
+**The model may**
+
+* place atoms from VSEPR slot templates, the cited exemplar angles in `LONE_PAIR_ANGLES`, the
+  element/order bond-length table and the per-bond lengths in `CONJUGATED_BOND_LENGTHS`;
+* turn rigid pieces about single bonds (the torsion relaxer, the Conformations rotors). It
+  rotates only: it never opens an angle or stretches a bond to make room;
+* flag steric overlap as a yes/no condition (`frame.crowding`) with the contact distances stated;
+* show an energy that is a tabulated textbook value with a unit and a source
+  (`TORSION_ENERGIES`), or draw a profile labelled *illustrative*.
+
+**The model never**
+
+* computes an energy, force, strain or stability from the drawn geometry: no force field, no
+  "steric energy", no derived barrier, no stability ordering read off distances;
+* uses a bond strength, bond length or pKa to calculate anything else. BDEs and pKas are card
+  facts, never inputs to a rate, a selectivity or a geometry;
+* derives one geometry number from another except by stated symmetry or a stated idealisation
+  (the ideal 120° at a carbonyl, the class value of an exemplar);
+* shows a quantity it cannot cite. A number without a basis fails the sweep, it is not a note.
+
+**Three limits, fixed after sweep 08**
+
+* *Fallback compression* (2.5° per lone pair) is a convention, not a measurement. It is tolerated
+  only in the explorer's R-combination space, where nothing claims accuracy, and the
+  `boundary.<group>.lone-pair-basis` checks prove that no functional group reaches it at any
+  attachment-element combination. A shape card or lesson that would reach it adds a sourced
+  oracle row first or does not ship.
+* *Per-bond length overrides* stop at the four conjugated bonds the cards already quoted. A new
+  override is added only when a topic teaches that exact molecule, with a `MEASURED_BONDS` row;
+  `boundary.bond-lengths.cited` fails otherwise.
+* *Crowded R combinations* keep the flag. The remaining overlaps are not closed by widening
+  angles, which would be an unparametrised force field by another name; the R menu is capped to
+  groups the templates draw cleanly, or the flag stays.
+
+**The one planned exception.** The cyclohexane chair lesson needs A-values. They enter as a
+tabulated textbook table (value, unit, source) and are displayed as such; the axial/equatorial
+energy difference is never computed from the sterics of the drawn model.
+
+**Mechanical checks** (`boundary.*` in `src/chem/conformance.js`, all must pass):
+
+| check | holds |
+| --- | --- |
+| `<group>.lone-pair-basis` | every lone-pair centre of the group has a sourced `LONE_PAIR_ANGLES` row (exemplar or class) at every attachment-element combination of its R menu |
+| `shapes.angle-basis` | every gallery angle is ideal, measured or class, each with its oracle source |
+| `bond-lengths.cited` | every bond drawn off the element/order table cites a `MEASURED_BONDS` row |
+| `energies.sourced` | every energy is a table value with unit and source, or a profile labelled illustrative; a rotor without a table row reports none |
+| `card-angles.stated` | every angle printed on a card equals the drawn angle to the label's precision, or says what is drawn |

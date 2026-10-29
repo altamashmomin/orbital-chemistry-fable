@@ -3,7 +3,7 @@
 // Each check: { category, id, status: 'pass' | 'fail' | 'note', detail, expected?, actual?, source? }.
 // 'note' marks a known, accepted idealisation (see the register in docs/REVIEW_PROTOCOL.md).
 import { FUNCTIONAL_GROUPS, FUNCTIONAL_GROUP_ORDER } from './functionalGroups.js';
-import { makeMolecule } from './builder.js';
+import { makeMolecule, resolveId } from './builder.js';
 import { bondLength, ELEMENTS } from './elements.js';
 import { v, DEG, embed, geometryKind, ringTemplate, complexFrame, directionalLonePairs, lonePairAngleTargets } from './geometry.js';
 import { MECHANISMS, MECHANISM_ORDER } from './mechanisms/index.js';
@@ -403,6 +403,96 @@ export function runConformance() {
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
+
+  // ------------------------------------------------------------------ K. model boundary (docs/REVIEW_PROTOCOL.md §6)
+  // The model is a cited-geometry template engine, never a physics engine. These checks hold that line
+  // mechanically: every displayed angle, length and energy carries a basis, and no visible item reaches the
+  // lone-pair fallback convention.
+  {
+    // 1. Lone-pair centres of every functional group, at every attachment-element combination the R menu can
+    //    produce (H or carbon at each site: every non-H R group attaches through carbon), have a sourced row.
+    const reps = ['H', 'methyl'];
+    for (const id of FUNCTIONAL_GROUP_ORDER) {
+      const fg = FUNCTIONAL_GROUPS[id];
+      const atts = fg.attachments.map((a) => a.id);
+      const variants = fg.variants ? fg.variants.map((x) => x.id) : [null];
+      const bad = new Set(); let centres = 0, builds = 0;
+      const rec = (k, R) => {
+        if (k < atts.length) { for (const r of reps) rec(k + 1, { ...R, [atts[k]]: r }); return; }
+        for (const variant of variants) {
+          const { mol, frame } = makeMolecule(id, { variant, R });
+          builds++;
+          const byId = new Map(frame.atoms.map((a) => [a.id, a]));
+          const adj = new Map(frame.atoms.map((a) => [a.id, []]));
+          for (const b of frame.bonds) { adj.get(b.a).push(b.b); adj.get(b.b).push(b.a); }
+          for (const def of mol.atoms) {
+            const nb = adj.get(def.id) || [];
+            if (nb.length < 2 || !directionalLonePairs(def)) continue;
+            centres++;
+            const els = nb.map((n) => byId.get(n).el);
+            if (lonePairAngleTargets(def, els).basis === 'fallback') bad.add(`${def.el}/${nb.length}/${def.lonePairs}/${[...els].sort().join(',')}`);
+          }
+        }
+      };
+      rec(0, {});
+      add('boundary', `${id}.lone-pair-basis`, pf(!bad.size), `${fg.name}: every lone-pair centre has a sourced LONE_PAIR_ANGLES row (exemplar or class) at all ${builds} attachment-element combinations; the fallback convention is never shown`, { expected: 'no fallback', actual: bad.size ? [...bad].join(' ') : `${centres} centres sourced`, source: 'REVIEW_PROTOCOL §6' });
+    }
+    // 2. Shape gallery: every displayed angle is ideal (by symmetry), measured or class, and a measured or
+    //    class angle cites an oracle row that has a source.
+    {
+      const bad = []; let n = 0;
+      for (const s of SHAPES) for (const a of buildShape(s.id).angles) {
+        n++;
+        const ok = a.status === 'ideal' || ((a.status === 'measured' || a.status === 'class') && !!a.ref && !!MEASURED_ANGLES[a.ref]?.source);
+        if (!ok) bad.push(`${s.formula} ${a.label}: ${a.status}`);
+      }
+      add('boundary', 'shapes.angle-basis', pf(!bad.length), 'every angle in the Molecular shapes gallery is ideal, measured or class, each with its oracle source; none is drawn on the fallback convention', { expected: 'ideal / measured / class', actual: bad.length ? bad.join('; ') : `${n} angles`, source: 'REVIEW_PROTOCOL §6' });
+    }
+    // 3. Bond-length overrides: every bond drawn off the element/order table cites a measured row.
+    {
+      const bad = []; let n = 0;
+      const scan = (where, frame) => { for (const b of frame.bonds) if (b.length != null) { n++; if (!b.ref || !MEASURED_BONDS[b.ref]) bad.push(`${where} ${b.a}–${b.b}`); } };
+      for (const id of FUNCTIONAL_GROUP_ORDER) scan(id, makeMolecule(id).frame);
+      for (const s of SHAPES) scan(s.id, buildShape(s.id).frame);
+      add('boundary', 'bond-lengths.cited', pf(!bad.length), 'every bond drawn at a length other than the element/order table cites a MEASURED_BONDS row', { expected: 'all cited', actual: bad.length ? bad.join(', ') : `${n} overrides, all cited`, source: 'REVIEW_PROTOCOL §6' });
+    }
+    // 4. Energies: only tabulated textbook values with a unit and a source are shown; a rotor without a table
+    //    row reports no energy; mechanism profiles are labelled illustrative. Nothing is computed from geometry.
+    {
+      const bad = [];
+      for (const [k, row] of Object.entries(TORSION_ENERGIES)) if (!row.unit || !row.source) bad.push(`TORSION_ENERGIES.${k} lacks unit/source`);
+      for (const r of ROTORS) {
+        if (r.energy && !TORSION_ENERGIES[r.energy]) bad.push(`${r.id} names a missing energy table`);
+        if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
+      }
+      for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length} tables, ${ROTORS.length} rotors, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+    }
+    // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
+    //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").
+    {
+      const bad = []; let n = 0;
+      const nums = (t) => (t.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+      const walk = (frame, items, where) => {
+        for (const it of items || []) for (const vis of it.visuals || []) {
+          if (vis.type !== 'angle' || !vis.text) continue;
+          n++;
+          const P = (ref) => frame.atoms.find((a) => a.id === resolveId(frame, ref))?.pos;
+          const a = P(vis.a), c = P(vis.center), b = P(vis.b);
+          if (!a || !b || !c) { bad.push(`${where}/${it.id}: atoms not found`); continue; }
+          const got = angleDeg(a, c, b);
+          const drawn = vis.text.match(/drawn\s+(\d+(?:\.\d+)?)/);
+          let ok;
+          if (drawn) ok = Math.abs(got - Number(drawn[1])) <= 0.5;
+          else { const xs = nums(vis.text); const tol = /≈|~|about/.test(vis.text) ? 2 : 0.5; ok = xs.length > 0 && got >= Math.min(...xs) - tol && got <= Math.max(...xs) + tol; }
+          if (!ok) bad.push(`${where}/${it.id}: "${vis.text}" vs ${fmt(got, 1)}°`);
+        }
+      };
+      for (const id of FUNCTIONAL_GROUP_ORDER) { const g = FUNCTIONAL_GROUPS[id]; walk(makeMolecule(id).frame, [...(g.invariants || []), ...(g.varies || []), ...(g.identify || [])], id); }
+      for (const s of SHAPES) walk(buildShape(s.id).frame, s.invariants, s.id);
+      add('boundary', 'card-angles.stated', pf(!bad.length), "every angle printed on a card is the drawn angle at default R (to the label's precision) or states the drawn value", { expected: 'label = model, or "drawn …"', actual: bad.length ? bad.join('; ') : `${n} labels`, source: 'REVIEW_PROTOCOL §6' });
+    }
+  }
 
   const summary = { pass: 0, fail: 0, note: 0 };
   for (const c of checks) summary[c.status]++;

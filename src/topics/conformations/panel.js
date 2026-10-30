@@ -6,8 +6,8 @@
 import { h, clear, fill, section, aud, toggle, select } from '../../ui/dom.js';
 import { drawNewman } from '../../ui/overlays.js';
 import { ROTORS, rotorById, conformer, torsionEnergy, periplanarity } from '../../chem/conformations.js';
-import { CHAIR, CHAIR_SUBSTITUENTS, RING_FORMS, substituentById, formById, cyclohexaneFrame, equatorialFraction, KCAL } from '../../chem/cyclohexane.js';
-import { TORSION_ENERGIES, RING_CONFORMER_ENERGIES, A_VALUES } from '../../chem/references/textbook.js';
+import { CHAIR, CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, substituentById, formById, cyclohexaneFrame, normaliseSecond } from '../../chem/cyclohexane.js';
+import { TORSION_ENERGIES, RING_CONFORMER_ENERGIES } from '../../chem/references/textbook.js';
 import { ACTIVITIES, correctOption } from './activities.js';
 
 const THEME = { text: '#2d3b32', muted: '#727e70', accent: '#48725c', amber: '#9c743e', line: '#e2e7dd', fill: 'rgba(81,119,96,0.08)' };
@@ -48,14 +48,14 @@ export function drawTorsionDiagram(canvas, rotor, phi) {
 }
 
 const kJ = (x, d = 1) => `${x.toFixed(x % 1 ? d : 0)} kJ/mol`;
-const pct = (f) => (f >= 0.9995 ? '> 99.9 %' : `${(f * 100).toFixed(f > 0.99 ? 1 : 0)} %`);
+const pct = (f) => (f >= 0.9995 ? '> 99.9 %' : f <= 0.0005 ? '< 0.1 %' : `${(f * 100).toFixed(f > 0.99 || f < 0.01 ? 1 : 0)} %`);
 
 export class ConformationsPanel {
   constructor({ view, viewport, level = 'learn', navigate = null }) {
     this.view = view; this.viewport = viewport; this.level = level; this.nav = navigate;
     this.rotorId = ROTORS[0].id;
     this.phi = ROTORS[0].landmarks.find((l) => l.id === 'staggered')?.phi ?? 60;
-    this.chair = { sub: 'methyl', form: 'axial' };
+    this.chair = { sub: 'methyl', form: 'axial', second: null };   // second: { sub, position, rel } | null
     this.answers = {};
     this.spin = null;
     this.opts = { hydrogens: true, labels: true };
@@ -67,7 +67,7 @@ export class ConformationsPanel {
 
   get isChair() { return this.rotorId === CHAIR.id; }
   get rotor() { return rotorById(this.rotorId); }
-  get built() { return this.isChair ? cyclohexaneFrame(this.chair.sub, this.chair.form) : conformer(this.rotorId, this.phi); }
+  get built() { return this.isChair ? cyclohexaneFrame(this.chair.sub, this.chair.form, this.chair.second) : conformer(this.rotorId, this.phi); }
 
   activate() {
     this.view.setOptions({ lonePairs: true, hydrogens: this.opts.hydrogens, labels: this.opts.labels, orbitals: false, arrows: false, highlights: true });
@@ -76,14 +76,18 @@ export class ConformationsPanel {
   }
   deactivate() { this.stopSpin(); }
   setLevel(level) { this.level = level; }
-  /** Deep link: '<rotor>' or '<rotor>/<landmark>' (or '<rotor>/<degrees>'); 'cyclohexane/<form>/<substituent>'. */
+  /** Deep link: '<rotor>' or '<rotor>/<landmark>' (or '<rotor>/<degrees>'); 'cyclohexane/<form>/<X>[/<position>-<cis|trans>-<Y>]'. */
   navigate(sub = '') {
-    const [rid = '', mark = '', extra = ''] = String(sub).split('/');
+    const [rid = '', mark = '', extra = '', more = ''] = String(sub).split('/');
     if (rid && (rotorById(rid) || rid === CHAIR.id) && rid !== this.rotorId) this.setRotor(rid, false);
     if (this.isChair) {
       const s = extra && substituentById(extra) ? extra : this.chair.sub;
       const f = mark && formById(mark) ? mark : this.chair.form;
-      this.setChair(s, f, false);
+      let second = this.chair.second;
+      const m = /^([234])-(cis|trans)-([A-Za-z0-9]+)$/.exec(more);
+      if (m && substituentById(m[3])) second = { sub: m[3], position: Number(m[1]), rel: m[2] };
+      else if (extra) second = null;
+      this.setChair(s, f, false, second);
       return;
     }
     if (mark) {
@@ -92,7 +96,7 @@ export class ConformationsPanel {
     }
   }
   syncHash() {
-    if (this.isChair) { this.nav?.(`conformations/${CHAIR.id}/${this.chair.form}/${this.chair.sub}`); return; }
+    if (this.isChair) { const y = this.chair.second; this.nav?.(`conformations/${CHAIR.id}/${this.chair.form}/${this.chair.sub}${y ? `/${y.position}-${y.rel}-${y.sub}` : ''}`); return; }
     const l = this.rotor.landmarks.find((x) => x.phi === this.phi);
     this.nav?.(`conformations/${this.rotorId}${l ? `/${l.id}` : `/${Math.round(this.phi)}`}`);
   }
@@ -108,15 +112,30 @@ export class ConformationsPanel {
     if (sync) this.syncHash();
   }
   setPhi(phi, sync = true) { if (this.isChair) return; this.phi = ((phi % 360) + 360) % 360; if (this.refs.slider) this.refs.slider.value = String(Math.round(this.phi)); this.update(false); if (sync) this.syncHash(); }
-  /** Chair lesson: choose the substituent and the ring form; the view refits because the shape changes. */
-  setChair(sub, form, sync = true) {
+  /** Chair lesson: choose the substituents and the ring form; the view refits because the shape changes. */
+  setChair(sub, form, sync = true, second = this.chair.second) {
     if (!substituentById(sub) || !formById(form)) return;
-    const changed = sub !== this.chair.sub || form !== this.chair.form;
-    this.chair = { sub, form };
+    let sec = null;
+    try { sec = normaliseSecond(second); } catch { sec = null; }
+    if (sec && form === 'boat') form = 'axial';           // the boat is drawn for one substituent only
+    const key = (c) => `${c.sub}/${c.form}/${c.second ? `${c.second.sub}/${c.second.position}/${c.second.rel}` : '-'}`;
+    const next = { sub, form, second: sec };
+    const changed = key(next) !== key(this.chair);
+    this.chair = next;
     if (this.refs.subSelect) this.refs.subSelect.value = sub;
-    for (const b of this.refs.formBtns || []) b.classList.toggle('active', b.dataset.mark === form);
+    if (this.refs.ySelect) this.refs.ySelect.value = sec ? sec.sub : 'H';
+    if (this.refs.posSelect) this.refs.posSelect.value = String(sec ? sec.position : 3);
+    for (const b of this.refs.relBtns || []) b.classList.toggle('active', !!sec && b.dataset.rel === sec.rel);
+    for (const b of this.refs.formBtns || []) { b.classList.toggle('active', b.dataset.mark === form); if (b.dataset.mark === 'boat') b.hidden = !!sec; }
+    for (const el of this.refs.yControls || []) el.classList.toggle('disabled', !sec);
     this.update(changed);
     if (sync) this.syncHash();
+  }
+  /** Change the second substituent: Y 'H' removes it. */
+  setSecond(patch) {
+    const cur = this.chair.second || { sub: 'methyl', position: 3, rel: 'cis' };
+    const sec = { ...cur, ...patch };
+    this.setChair(this.chair.sub, this.chair.form, true, sec.sub === 'H' ? null : sec);
   }
   flipRing() { this.setChair(this.chair.sub, this.chair.form === 'equatorial' ? 'axial' : 'equatorial'); }
   /** Jump to what an activity wants to show: a rotor landmark or a chair form (and substituent). */
@@ -124,7 +143,7 @@ export class ConformationsPanel {
     this.stopSpin();
     const target = show.rotor || CHAIR.id;
     if (target !== this.rotorId) this.setRotor(target);
-    if (this.isChair) { this.setChair(show.substituent || this.chair.sub, show.form || this.chair.form); return; }
+    if (this.isChair) { this.setChair(show.substituent || this.chair.sub, show.form || this.chair.form, true, 'second' in show ? show.second : this.chair.second); return; }
     const l = this.rotor.landmarks.find((x) => x.id === show.landmark); if (l) this.setPhi(l.phi);
   }
   startSpin() { if (this.spin || this.isChair) return; this.spin = setInterval(() => this.setPhi(this.phi + 2, false), 40); this.refs.spinBtn?.classList.add('active'); }
@@ -172,9 +191,16 @@ export class ConformationsPanel {
   renderChair(chips, viewSec) {
     this.refs.slider = null; this.refs.spinBtn = null; this.refs.newman = null; this.refs.diagram = null; this.refs.periplanar = null;
     this.refs.subSelect = select(CHAIR_SUBSTITUENTS.map((s) => ({ value: s.id, label: `${s.label} (${s.formula})` })), this.chair.sub, (id) => this.setChair(id, this.chair.form), { 'aria-label': 'Substituent on C1' });
-    this.refs.formBtns = RING_FORMS.map((f) => h('button', { class: `btn landmark ${f.id === this.chair.form ? 'active' : ''}`, dataset: { mark: f.id }, onClick: () => this.setChair(this.chair.sub, f.id) }, f.label));
+    this.refs.formBtns = RING_FORMS.map((f) => h('button', { class: `btn landmark ${f.id === this.chair.form ? 'active' : ''}`, dataset: { mark: f.id }, hidden: f.id === 'boat' && !!this.chair.second, onClick: () => this.setChair(this.chair.sub, f.id) }, f.label));
+    const sec = this.chair.second;
+    this.refs.ySelect = select([{ value: 'H', label: 'none (H)' }, ...CHAIR_SUBSTITUENTS.filter((s) => s.id !== 'H').map((s) => ({ value: s.id, label: `${s.label} (${s.formula})` }))], sec ? sec.sub : 'H', (id) => this.setSecond({ sub: id }), { 'aria-label': 'Second substituent Y' });
+    this.refs.posSelect = select(POSITIONS.map((p) => ({ value: String(p.id), label: `${p.label} (C${p.id})` })), String(sec ? sec.position : 3), (p) => this.setSecond({ position: Number(p) }), { 'aria-label': 'Position of Y', class: 'select small' });
+    this.refs.relBtns = RELATIONS.map((r) => h('button', { class: `btn landmark ${sec && sec.rel === r ? 'active' : ''}`, dataset: { rel: r }, onClick: () => this.setSecond({ rel: r }) }, r));
+    this.refs.yControls = [h('div', { class: `row ${sec ? '' : 'disabled'}` }, h('label', {}, 'Position and face'), h('div', { class: 'landmarks' }, this.refs.posSelect, ...this.refs.relBtns))];
     const controls = section('Flip the ring',
       h('div', { class: 'row' }, h('label', {}, 'Substituent X on C1'), this.refs.subSelect),
+      h('div', { class: 'row' }, h('label', {}, 'Second substituent Y'), this.refs.ySelect),
+      ...this.refs.yControls,
       h('div', { class: 'landmarks' }, this.refs.formBtns),
       h('div', { class: 'toggles' }, h('button', { class: 'btn', onClick: () => this.flipRing() }, 'Flip chair ⇄')),
       aud(h('div', { class: 'hint' }, 'The flip is a rotation about the ring bonds, not a bond breaking: every axial position becomes equatorial and back. The model draws the two chairs and the boat as rigid templates; it does not animate the path between them.'), 'learn'),
@@ -224,26 +250,31 @@ export class ConformationsPanel {
 
   updateChair(refit = false) {
     const b = this.built, s = b.sub, f = b.form, isH = s.id === 'H';
-    const hl = [{ type: 'bond', a: 'ring.C1', b: b.attach }, { type: 'atom', id: b.attach }, ...b.diaxial.map((id) => ({ type: 'atom', id })), { type: 'label', id: b.attach, text: isH ? `H ${b.site}` : `${s.formula} ${b.site}` }];
+    const hl = b.groups.flatMap((g) => [{ type: 'bond', a: g.carbon, b: g.attach }, { type: 'atom', id: g.attach }, ...g.partners.map((id) => ({ type: 'atom', id })), { type: 'label', id: g.attach, text: `${g.sub.id === 'H' ? 'H' : g.sub.formula} ${g.site}` }]);
     this.view.setFrame(b.frame); this.view.setArrows?.([]); this.view.setHighlights(hl);
     if (refit) this.viewport?.fitTo(this.view.bounds(), 1.1, true);
     const heading = typeof document !== 'undefined' ? document.getElementById?.('workspace-name') : null;
-    if (heading) heading.textContent = `${s.name} · ${f.short} · X ${b.site}`;
+    if (heading) heading.textContent = `${b.name} · ${f.short} · ${b.groups.map((g) => `${g.role} ${g.site}`).join(', ')}`;
     const E = b.energy;
     const chairForm = f.shape === 'cyclohexaneChair';
-    const frac = chairForm && !isH ? equatorialFraction(A_VALUES.values[s.id].kJ) : null;
+    const frac = chairForm && !(isH && !b.second) ? b.fraction : null;
+    const Y = b.groups[1] || null;
     const siteText = { axial: 'parallel to the ring axis', equatorial: 'pointing out along the rim', flagpole: 'the bow of the boat, facing the stern hydrogen', bowsprit: 'pointing out from the bow' }[b.site];
+    const ySiteText = Y ? ({ axial: 'parallel to the ring axis', equatorial: 'pointing out along the rim' })[Y.site] : '';
+    const contactRow = (g, label) => (g.contact ? h('div', { class: 'shape-angle' }, h('b', {}, label), h('span', { class: 'value' }, `${g.contact.d.toFixed(2)} Å`), h('span', { class: 'status' }, `closest ${g.role}···${g.contact.b.startsWith('ring.') ? 'H' : 'Y'} contact in the model (${g.contact.b.replace(/^(ring|X|Y)\./, '')}); the ring keeps its template angles, so the crowding is drawn, not relieved`)) : null);
     fill(this.refs.card,
-      h('div', { class: 'mol-pattern' }, isH ? CHAIR.formula : `C₆H₁₁–${s.formula}`),
-      h('div', { class: 'mol-name' }, s.name),
+      h('div', { class: 'mol-pattern' }, isH && !b.second ? CHAIR.formula : b.second ? `C₆H₁₀(${s.formula})(${Y.sub.formula})` : `C₆H₁₁–${s.formula}`),
+      h('div', { class: 'mol-name' }, b.name),
       h('div', { class: 'shape-angles' },
-        h('div', { class: 'shape-angle' }, h('b', {}, 'Form'), h('span', { class: 'value' }, f.short), h('span', { class: 'status' }, f.label)),
+        h('div', { class: 'shape-angle' }, h('b', {}, 'Form'), h('span', { class: 'value' }, f.short), h('span', { class: 'status' }, b.second ? `${f.short === 'Chair A' ? 'X axial' : 'X equatorial (ring flipped)'}; ${b.second.rel}-1,${b.second.position}` : f.label)),
         h('div', { class: 'shape-angle status-measured' }, h('b', {}, isH ? 'H on C1' : 'X on C1'), h('span', { class: 'value' }, b.site), h('span', { class: 'status' }, `${siteText}; C1–X is ${b.tilt.toFixed(1)}° from the ring axis in the model`)),
+        Y ? h('div', { class: 'shape-angle status-measured' }, h('b', {}, `Y on C${b.second.position}`), h('span', { class: 'value' }, Y.site), h('span', { class: 'status' }, `${ySiteText}; ${b.second.rel} to X (${b.second.rel === 'cis' ? 'same face' : 'opposite face'}); C${b.second.position}–Y is ${Y.tilt.toFixed(1)}° from the axis in the model`)) : null,
         h('div', { class: 'shape-angle status-class' }, h('b', {}, 'Energy'), h('span', { class: 'value' }, `${kJ(E.value)}`), h('span', { class: 'status' }, `${E.kcal ? `${E.kcal} kcal/mol; ` : ''}${E.note}. Textbook table (${E.source})`)),
-        frac != null ? h('div', { class: 'shape-angle status-class' }, h('b', {}, 'Equatorial'), h('span', { class: 'value' }, pct(frac)), h('span', { class: 'status' }, `of the molecules at 25 °C, from the A-value: K = e^(A/RT)`)) : null,
-        b.contact ? h('div', { class: 'shape-angle' }, h('b', {}, chairForm ? '1,3-diaxial' : 'Flagpole'), h('span', { class: 'value' }, `${b.contact.d.toFixed(2)} Å`), h('span', { class: 'status' }, `closest X···H contact in the model (${b.contact.b.replace('ring.', '')}); the ring keeps its template angles, so the crowding is drawn, not relieved`)) : null,
+        frac != null ? h('div', { class: 'shape-angle status-class' }, h('b', {}, 'This chair'), h('span', { class: 'value' }, pct(frac)), h('span', { class: 'status' }, `of the molecules at 25 °C; the other chair lies at ${kJ(b.other.value)}, so ΔG = ${kJ(b.other.value - E.value)} and K = e^(ΔG/RT)`)) : null,
+        contactRow(b.groups[0], chairForm ? (Y ? 'X 1,3-diaxial' : '1,3-diaxial') : 'Flagpole'),
+        Y ? contactRow(Y, 'Y 1,3-diaxial') : null,
       ),
-      b.crowding ? h('div', { class: 'mol-crowding' }, h('b', {}, 'Too crowded for the model. '), `${s.name} with X ${b.site}: atoms overlap (closest ${b.crowding.worst.a.replace(/^(ring|X)\./, '')}···${b.crowding.worst.b.replace(/^(ring|X)\./, '')} ${b.crowding.worst.d.toFixed(2)} Å). A real molecule bends its angles and twists to make room, which this model never does, so the overlap is the model's limit; the A-value says how costly the position really is.`) : null,
+      b.crowding ? h('div', { class: 'mol-crowding' }, h('b', {}, 'Too crowded for the model. '), `${b.name}, ${b.groups.map((g) => `${g.role} ${g.site}`).join(' and ')}: atoms overlap (closest ${b.crowding.worst.a.replace(/^(ring|X)\./, '')}···${b.crowding.worst.b.replace(/^(ring|X)\./, '')} ${b.crowding.worst.d.toFixed(2)} Å). A real molecule bends its angles and twists to make room, which this model never does, so the overlap is the model's limit; the A-value says how costly the position really is.`) : null,
     );
     fill(this.refs.facts, CHAIR.facts.map((x) => aud(h('div', { class: 'invariant static' }, h('div', { class: 'inv-title' }, x.title), h('p', { class: 'inv-detail' }, x.detail)), x.audience || 'both')));
   }

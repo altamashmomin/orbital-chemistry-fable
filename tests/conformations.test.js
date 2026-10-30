@@ -68,7 +68,7 @@ function resolves(href) {
   if (head === 'mechanisms') return (!a || !!MECHANISMS[a]) && (!b || MECHANISMS[a].steps.some((x) => x.id === b));
   if (head === 'molecular-shapes') return (!a || !!shapeById(a)) && (!b || shapeById(a).invariants.some((x) => x.id === b));
   if (head === 'conformations') {
-    if (a === CHAIR.id) { const [, , , c] = href.replace(/^#/, '').split('/'); return (!b || !!formById(b)) && (!c || !!substituentById(c)); }
+    if (a === CHAIR.id) { const [, , , c, d] = href.replace(/^#/, '').split('/'); const m = d ? /^([234])-(cis|trans)-([A-Za-z0-9]+)$/.exec(d) : null; return (!b || !!formById(b)) && (!c || !!substituentById(c)) && (!d || (!!m && !!substituentById(m[3]))); }
     return (!a || !!rotorById(a)) && (!b || rotorById(a).landmarks.some((l) => l.id === b));
   }
   return false;

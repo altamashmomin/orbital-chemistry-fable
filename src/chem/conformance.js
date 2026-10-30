@@ -14,8 +14,8 @@ import { BOND_LENGTHS, IDEAL_ANGLES, LONE_PAIR_ANGLES, LONE_PAIR_COMPRESSION_PER
 import { MEASURED_ANGLES, MEASURED_BONDS } from './references/measured.js';
 import { SHAPES, buildShape } from './shapes.js';
 import { ROTORS, conformer, torsionEnergy } from './conformations.js';
-import { CHAIR_SUBSTITUENTS, RING_FORMS, cyclohexaneFrame, chairEnergy, equatorialFraction, KCAL } from './cyclohexane.js';
-import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES } from './references/textbook.js';
+import { CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, cyclohexaneFrame, chairEnergy, equatorialFraction, chairSiteRule, KCAL } from './cyclohexane.js';
+import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES, DIAXIAL_PAIRS } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -298,6 +298,32 @@ export function runConformance() {
     add('conformations', 'chair.energies-from-table', pf(!badEnergy.length), 'the energy on every chair card is the tabulated value (A-value, 0, or the parent boat), never computed', { expected: 'table', actual: badEnergy.length ? badEnergy.join(', ') : `${n} lookups` });
     const meAx = cyclohexaneFrame('methyl', 'axial');
     add('conformations', 'chair.methyl-diaxial', pf(meAx.diaxial.length === 2 && meAx.contact && meAx.contact.d > 1.8 && meAx.contact.d < 2.0 && !meAx.crowding && !cyclohexaneFrame('methyl', 'equatorial').crowding), 'axial methyl faces the C3 and C5 axial hydrogens with a close but drawable contact; equatorial methyl faces none', { expected: '2 partners, 1.8–2.0 Å, no flag', actual: `${meAx.diaxial.length} partners, ${meAx.contact ? fmt(meAx.contact.d) : '-'} Å` });
+    // disubstituted rings: the drawn sites follow the template rule for every position × face × chair, the
+    // energies are the additive A-value estimate (pair value for diaxial cis-1,3 methyls), and the textbook
+    // rule about which isomers have a diequatorial chair comes out of the frames.
+    {
+      const badSite = [], badE = []; let frames = 0; const dieq = [];
+      for (const p of POSITIONS) for (const rel of RELATIONS) {
+        const sites = [];
+        for (const f of ['axial', 'equatorial']) {
+          const r = cyclohexaneFrame('methyl', f, { sub: 'methyl', position: p.id, rel }); frames++;
+          const flip = f === 'equatorial';
+          const want = [chairSiteRule(flip, 1, 'up'), chairSiteRule(flip, p.id, rel === 'cis' ? 'up' : 'down')];
+          if (r.groups[0].site !== want[0] || r.groups[1].site !== want[1]) badSite.push(`${rel}-1,${p.id} ${f}: ${r.groups.map((g) => g.site).join('/')}`);
+          const axial = r.groups.filter((g) => g.site === 'axial').length;
+          const expect = axial === 2 && p.id === 3 ? DIAXIAL_PAIRS.values['methyl/methyl'].kJ : axial * A_VALUES.values.methyl.kJ;
+          if (Math.abs(r.energy.value - expect) > 1e-9 || r.energy.basis !== 'table') badE.push(`${rel}-1,${p.id} ${f}: ${r.energy.value} vs ${expect}`);
+          sites.push(r.groups.map((g) => g.site).join('/'));
+        }
+        if (sites.includes('equatorial/equatorial')) dieq.push(`${rel}-1,${p.id}`);
+      }
+      add('conformations', 'chair.disubstituted-sites', pf(!badSite.length), `${frames} dimethyl frames (3 positions × cis/trans × 2 chairs): X and Y sit where the chair rule says (odd carbons: up site axial on the unflipped chair)`, { expected: 'rule = drawn', actual: badSite.length ? badSite.join('; ') : 'all 12 agree' });
+      add('conformations', 'chair.disubstituted-energies', pf(!badE.length), 'each dimethyl chair carries the sum of the A-values of its axial methyls, or the tabulated 1,3-diaxial CH₃/CH₃ value when both are axial 1,3', { expected: 'additive (pair for diaxial cis-1,3)', actual: badE.length ? badE.join('; ') : '12 chairs from the tables', source: `${A_VALUES.source}; ${DIAXIAL_PAIRS.source}` });
+      add('conformations', 'chair.diequatorial-isomers', pf(dieq.join(' ') === 'trans-1,2 cis-1,3 trans-1,4'), 'the isomers with a diequatorial chair are trans-1,2, cis-1,3 and trans-1,4', { expected: 'trans-1,2 cis-1,3 trans-1,4', actual: dieq.join(' '), source: 'CGW ch. 16; KLEIN ch. 4' });
+      const pair = DIAXIAL_PAIRS.values['methyl/methyl'];
+      add('tables', 'diaxial-pair.methyl', pf(Math.abs(pair.kJ - pair.kcal * KCAL) <= 0.06 && pair.kJ > 2 * A_VALUES.values.methyl.kJ), 'the 1,3-diaxial CH₃/CH₃ value is kcal × 4.184 and exceeds two methyl A-values', { expected: `${pair.kcal} kcal/mol × 4.184`, actual: `${pair.kJ} kJ/mol`, source: DIAXIAL_PAIRS.source });
+    }
+    add('simplifications', 'chair.additive-estimate', 'note', 'disubstituted chair energies are the textbook additive estimate (sum of A-values of the axial groups; the 1,3-diaxial CH₃/CH₃ pair value where it applies); gauche interactions between adjacent equatorial groups and other diaxial pairs are not tabulated and are neglected or flagged as a lower estimate', { source: 'register' });
     add('simplifications', 'chair.crowded-forms', 'note', `chair frames the template cannot place without overlap are flagged on the card, never relieved by bending the ring: ${crowded.join(', ') || 'none'}`, { source: 'register' });
   }
   { const e2 = MECHANISMS.e2.frame(0); const p = (id) => e2.atoms.find((a) => a.id === id).pos; const d = Math.abs(dihedralDeg(p('Br'), p('C2'), p('C3'), p('Hb'))); const c = conformer('bromobutane', 180); add('conformations', 'bromobutane.matches-e2', pf(Math.abs(d - 180) < 1 && Math.abs(Math.abs(c.dihedral) - 180) < 1e-6), 'the anti-periplanar rotor and the Reaction lab E2 start share the 180° Br–C–C–H dihedral', { expected: '180°', actual: `${fmt(d, 1)}° (E2) / ${fmt(Math.abs(c.dihedral), 1)}° (rotor)`, source: 'CGW ch. 17' }); }
@@ -491,13 +517,15 @@ export function runConformance() {
       for (const [k, row] of Object.entries(TORSION_ENERGIES)) if (!row.unit || !row.source) bad.push(`TORSION_ENERGIES.${k} lacks unit/source`);
       for (const [k, row] of Object.entries(RING_CONFORMER_ENERGIES)) if (!row.unit || !row.source) bad.push(`RING_CONFORMER_ENERGIES.${k} lacks unit/source`);
       if (!A_VALUES.unit || !A_VALUES.source) bad.push('A_VALUES lacks unit/source');
+      if (!DIAXIAL_PAIRS.unit || !DIAXIAL_PAIRS.source) bad.push('DIAXIAL_PAIRS lacks unit/source');
+      for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
         if (r.energy && !TORSION_ENERGIES[r.energy]) bad.push(`${r.id} names a missing energy table`);
         if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
       }
       for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
-      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 1} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 2} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
     //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").

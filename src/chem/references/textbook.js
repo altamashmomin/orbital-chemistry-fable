@@ -110,6 +110,16 @@ export const A_VALUES = {
   },
 };
 
+/**
+ * 1,3-Diaxial interactions between two substituents (kJ/mol), used in place of the sum of A-values when
+ * both are axial and 1,3 to each other (cis-1,3 isomers). Only the methyl/methyl pair is a standard
+ * textbook figure (3.7 kcal/mol); other pairs fall back to the additive estimate and say so.
+ */
+export const DIAXIAL_PAIRS = {
+  unit: 'kJ/mol', source: 'CGW ch. 16; KLEIN ch. 4 (1,3-diaxial CH₃/CH₃ 3.7 kcal/mol)',
+  values: { 'methyl/methyl': { kcal: 3.7, kJ: 15.5 } },
+};
+
 /** Cyclohexane ring conformers, kJ/mol above the chair: the textbook teaching values. Only the chair and boat are drawn. */
 export const RING_CONFORMER_ENERGIES = {
   cyclohexane: { chair: 0, twistBoat: 23, boat: 29, halfChair: 45, unit: 'kJ/mol', source: 'CGW ch. 16; KLEIN ch. 4 (5.5, 6.9 and 10.8 kcal/mol)' },

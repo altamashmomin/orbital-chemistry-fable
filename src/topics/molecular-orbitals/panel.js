@@ -59,7 +59,7 @@ export function makeMOCollection(panel) {
       ];
     },
     invariants: (it) => INVARIANTS[it.id] || [],
-    highlights: (inv) => inv.show || null,
+    highlights: () => [],            // cards adjust the view through `show` in afterUpdate, not through MoleculeView highlights
     guide: (it, api) => [
       section('Predict, then look', ...ACTIVITIES.filter((a) => a.item === it.id).map((act) => panel.activityBlock(act, api))),
       aud(section('Where the numbers come from', h('ul', { class: 'identify' },

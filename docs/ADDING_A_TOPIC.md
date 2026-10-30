@@ -429,6 +429,16 @@ the card draws a radial-distribution canvas and, for configurations, `LevelDiagr
 without WebGL. Rules carried over: every number is exact for the stated function or a cited table value,
 and the sweep reads angles and nodes off the functions rather than trusting the labels.
 
+### A ladder you click: Acids and bases (`src/topics/acids-bases/`)
+
+A `CollectionExplorer` whose card carries a `LevelDiagram` of every item (the pKa ladder) with
+`onHighlight` on click calling `api.select(level.id)`, so the diagram is a second set of chips. The 3D
+frame is the Functional groups molecule rebuilt with a departing proton (`acidFrame(id, t)`: the H slides
+along its bond, the bond's `partial` falls to 0 and becomes a ghost, charges move linearly; cationic acids
+get their proton added on the first lone-pair direction at the table X–H length). The equilibrium row is
+`equilibrium(acidId, baseOfId)`: one identity on two tabulated values. The five factors live as ordered
+comparisons (`FACTORS`) so the sweep can hold the table to the textbook order.
+
 ### Orbitals over a molecule: Molecular orbitals (`src/topics/molecular-orbitals/`)
 
 The same explorer with both a molecule and an orbital: pass `view` so the explorer sets the frame, and

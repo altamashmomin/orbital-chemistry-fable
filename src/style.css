@@ -336,3 +336,6 @@ body.drawer-open { overflow: hidden; }
 
 /* Molecular orbitals: the MO diagram canvas */
 .mo-canvas { height: 240px; margin-top: 12px; }
+
+/* Acids and bases: the pKa ladder */
+.pka-ladder { height: 440px; margin-top: 12px; }

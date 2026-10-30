@@ -15,7 +15,8 @@ import { MEASURED_ANGLES, MEASURED_BONDS } from './references/measured.js';
 import { SHAPES, buildShape } from './shapes.js';
 import { ROTORS, conformer, torsionEnergy } from './conformations.js';
 import { CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, cyclohexaneFrame, chairEnergy, equatorialFraction, chairSiteRule, KCAL } from './cyclohexane.js';
-import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES, DIAXIAL_PAIRS } from './references/textbook.js';
+import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES, DIAXIAL_PAIRS, HYDROGEN_ENERGY, GROUND_STATE_CONFIGURATIONS, AUFBAU_EXCEPTIONS } from './references/textbook.js';
+import { ORBITAL_ITEMS, buildItem, hybridChecks, PERIODIC, electronConfiguration, configurationAscii } from './atomicOrbitals.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -434,6 +435,27 @@ export function runConformance() {
     add('orbitals', `${name}.normalised`, pf(Math.abs(integral - 1) < 0.03), `∫ψ² dV over the sampling box`, { expected: '1.00 ± 0.03', actual: fmt(integral, 3), source: 'ATKINS ch. 8' });
   }
   { const o = orbital('2pz'); add('orbitals', '2pz.antisymmetric', pf(Math.abs(o.psi(0, 0, 2) + o.psi(0, 0, -2)) < 1e-12 && o.psi(0, 0, 2) > 0), 'p orbital changes sign through its nodal plane', { expected: 'ψ(z) = −ψ(−z)', actual: `${o.psi(0, 0, 2).toExponential(2)} / ${o.psi(0, 0, -2).toExponential(2)}` }); }
+  // Atomic orbitals topic: the gallery's nodes and most probable radii against the closed forms, the hybrid
+  // lobe angles read off the drawn functions, and every configuration 1–36 against the NIST table.
+  {
+    const closed = { '2s': { nodes: [2], rmp: 3 + Math.sqrt(5) }, '2p': { nodes: [], rmp: 4 }, '3s': { nodes: [(9 - 3 * Math.sqrt(3)) / 2, (9 + 3 * Math.sqrt(3)) / 2] }, '3p': { nodes: [6], rmp: 12 }, '3dz2': { nodes: [], rmp: 9 }, '3dxy': { nodes: [], rmp: 9 }, '1s': { nodes: [], rmp: 1 } };
+    for (const it of ORBITAL_ITEMS.filter((x) => x.kind === 'atomic')) {
+      const b = buildItem(it.id), c = closed[it.id];
+      const nodesOk = b.rdf.nodes.length === c.nodes.length && b.rdf.nodes.every((x, i) => Math.abs(x - c.nodes[i]) < 1e-3) && b.rdf.nodes.length === b.radialNodes;
+      const rmpOk = c.rmp == null || Math.abs(b.rdf.rMostProbable - c.rmp) < 1e-3;
+      add('orbitals', `gallery.${it.id}`, pf(nodesOk && rmpOk), `${b.label}: radial nodes found on R_nl match the closed-form roots (${c.nodes.map((x) => x.toFixed(3)).join(', ') || 'none'}) and n − l − 1; most probable radius ${c.rmp != null ? `= ${typeof c.rmp === 'number' ? c.rmp.toFixed(3) : c.rmp} a₀` : 'reported'}`, { expected: `${c.nodes.length} node(s)${c.rmp != null ? `, r = ${c.rmp.toFixed(3)} a₀` : ''}`, actual: `${b.rdf.nodes.map((x) => x.toFixed(3)).join(', ') || 'none'}; r = ${fmt(b.rdf.rMostProbable, 3)} a₀`, source: 'ATKINS ch. 8' });
+    }
+    add('tables', 'hydrogen-energy', pf(Math.abs(HYDROGEN_ENERGY.rydbergEV - HYDROGEN_ENERGY.listed) < 0.01 && !!HYDROGEN_ENERGY.source), 'the Rydberg energy shown equals the CODATA value to 0.01 eV', { expected: `${HYDROGEN_ENERGY.listed} eV`, actual: `${HYDROGEN_ENERGY.rydbergEV} eV`, source: HYDROGEN_ENERGY.source });
+    for (const kind of ['sp', 'sp2', 'sp3']) {
+      const c = hybridChecks(kind, { size: 32 });
+      add('orbitals', `hybrid.${kind}`, pf(c.angles.every((a) => Math.abs(a - c.expected) < 0.5) && Math.abs(c.probability - 1) < 0.02), `${kind}: the main lobes read off the drawn hybrids are ${c.expected}° apart and the hybrid is normalised on the grid`, { expected: `${c.expected}°, ∫ψ² = 1`, actual: `${c.angles.map((a) => fmt(a, 2)).join(' / ')}°, ${fmt(c.probability, 3)}`, source: 'CGW ch. 4' });
+    }
+    {
+      const bad = [];
+      for (const e of PERIODIC) { const got = configurationAscii(electronConfiguration(e.Z)); if (got !== GROUND_STATE_CONFIGURATIONS.values[e.Z]) bad.push(`${e.symbol}: ${got}`); }
+      add('orbitals', 'configurations.1-36', pf(!bad.length), `aufbau order + the tabulated exceptions (${Object.keys(AUFBAU_EXCEPTIONS.values).map((z) => PERIODIC[z - 1].symbol).join(', ')}) reproduce the NIST ground-state configuration of every element 1–36`, { expected: 'all 36 match', actual: bad.length ? bad.join('; ') : '36 / 36', source: GROUND_STATE_CONFIGURATIONS.source });
+    }
+  }
   { const o = orbital('3dz2'); add('orbitals', '3dz2.symmetry', pf(Math.abs(o.psi(0, 0, 3) - o.psi(0, 0, -3)) < 1e-12 && o.psi(3, 0, 0) < 0 && o.psi(0, 0, 3) > 0), 'd_z² positive along z, negative torus in the xy plane', { actual: `z: ${o.psi(0, 0, 3).toExponential(2)}, x: ${o.psi(3, 0, 0).toExponential(2)}` }); }
 
   // ------------------------------------------------------------------ I. content integrity
@@ -455,6 +477,7 @@ export function runConformance() {
     'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
     'chair-energies': `A-values and ring-form energies are textbook compilation values (Eliel & Wilen 1994 as taught by Klein and CGW; compilations differ by 0.1–0.3 kcal/mol, OH is solvent dependent, tert-butyl is an estimate); the boat figure is cyclohexane's own; the equatorial share follows from K = e^(A/RT) at 298 K; the chair ring is the 110° template against the measured ${MEASURED_ANGLES.cyclohexaneChair_CCC.value}°`,
+    'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 
@@ -518,6 +541,8 @@ export function runConformance() {
       for (const [k, row] of Object.entries(RING_CONFORMER_ENERGIES)) if (!row.unit || !row.source) bad.push(`RING_CONFORMER_ENERGIES.${k} lacks unit/source`);
       if (!A_VALUES.unit || !A_VALUES.source) bad.push('A_VALUES lacks unit/source');
       if (!DIAXIAL_PAIRS.unit || !DIAXIAL_PAIRS.source) bad.push('DIAXIAL_PAIRS lacks unit/source');
+      if (!HYDROGEN_ENERGY.unit || !HYDROGEN_ENERGY.source) bad.push('HYDROGEN_ENERGY lacks unit/source');
+      if (!GROUND_STATE_CONFIGURATIONS.source || !AUFBAU_EXCEPTIONS.source) bad.push('configuration tables lack a source');
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
@@ -525,7 +550,7 @@ export function runConformance() {
         if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
       }
       for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
-      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 2} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 3} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
     //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").

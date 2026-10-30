@@ -107,6 +107,7 @@ measurement. New idealisations are added here with a measured value, not silentl
 | Partial bonds and charges | linear interpolation of order and charge | nonlinear along the true reaction path | smooth animation |
 | Lone pairs and p lobes | fixed-size schematic lobes; lone-pair lobes open by the mean bond compression at their centre (water LP–O–LP 114.4°) | diffuse densities; no single measured lone-pair direction | schematic, as in textbooks |
 | Orbital isosurfaces | one |ψ| threshold, 48³ grid | 90 % probability surfaces | performance; threshold is stated |
+| Atomic orbitals topic | hydrogen-like functions at Z = 1 for every picture (gallery and sp / sp² / sp³ hybrids); hydrogen energies only (E_n = −13.6/n² eV); a schematic, unnumbered ladder for many-electron configurations | real atoms contract the orbitals (Z_eff) and split s/p/d by penetration; hybrid pictures in textbooks use node-less Slater functions | the shapes, nodes and angles are exact for the stated functions and the sweep reads them off the functions (`orbitals/gallery.*`, `orbitals/hybrid.*`); configurations are tabulated (NIST) and the generator is checked against all 36 (`orbitals/configurations.1-36`) |
 
 ## 6. Model boundary
 

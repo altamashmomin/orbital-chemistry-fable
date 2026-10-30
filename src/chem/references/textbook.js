@@ -166,6 +166,34 @@ export const MECHANISM_FACTS = {
   e1: { steps: 2, maxima: 2, rateDeterminingIsFirst: true },
 }; // CGW ch. 15, 17
 
+/** Hydrogen energy levels E_n = −R_H / n²: the Rydberg energy (CODATA 2018: 13.605693 eV), rounded as textbooks quote it. */
+export const HYDROGEN_ENERGY = { rydbergEV: 13.6, listed: 13.605693, unit: 'eV', source: 'CODATA 2018 (hc R∞); ATKINS ch. 8 (13.6 eV)' };
+
+/**
+ * Ground-state electron configurations of the elements 1–36, as listed by the NIST Atomic Spectra
+ * Database (ground levels) and reproduced in every general-chemistry text; the oracle the aufbau
+ * generator is checked against. Plain ASCII: '1s2 2s2 2p6 3s2 3p6 3d5 4s1'.
+ */
+export const GROUND_STATE_CONFIGURATIONS = {
+  source: 'NIST Atomic Spectra Database, ground levels and ionization energies (2023); ATKINS ch. 8; CRC Handbook, "Electron configuration of neutral atoms"',
+  values: {
+    1: '1s1', 2: '1s2', 3: '1s2 2s1', 4: '1s2 2s2', 5: '1s2 2s2 2p1', 6: '1s2 2s2 2p2', 7: '1s2 2s2 2p3', 8: '1s2 2s2 2p4', 9: '1s2 2s2 2p5', 10: '1s2 2s2 2p6',
+    11: '1s2 2s2 2p6 3s1', 12: '1s2 2s2 2p6 3s2', 13: '1s2 2s2 2p6 3s2 3p1', 14: '1s2 2s2 2p6 3s2 3p2', 15: '1s2 2s2 2p6 3s2 3p3', 16: '1s2 2s2 2p6 3s2 3p4', 17: '1s2 2s2 2p6 3s2 3p5', 18: '1s2 2s2 2p6 3s2 3p6',
+    19: '1s2 2s2 2p6 3s2 3p6 4s1', 20: '1s2 2s2 2p6 3s2 3p6 4s2', 21: '1s2 2s2 2p6 3s2 3p6 3d1 4s2', 22: '1s2 2s2 2p6 3s2 3p6 3d2 4s2', 23: '1s2 2s2 2p6 3s2 3p6 3d3 4s2',
+    24: '1s2 2s2 2p6 3s2 3p6 3d5 4s1', 25: '1s2 2s2 2p6 3s2 3p6 3d5 4s2', 26: '1s2 2s2 2p6 3s2 3p6 3d6 4s2', 27: '1s2 2s2 2p6 3s2 3p6 3d7 4s2', 28: '1s2 2s2 2p6 3s2 3p6 3d8 4s2',
+    29: '1s2 2s2 2p6 3s2 3p6 3d10 4s1', 30: '1s2 2s2 2p6 3s2 3p6 3d10 4s2', 31: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p1', 32: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p2', 33: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p3',
+    34: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p4', 35: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p5', 36: '1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p6',
+  },
+};
+/** The aufbau exceptions up to Z = 36: a half-filled or filled d subshell takes one 4s electron. */
+export const AUFBAU_EXCEPTIONS = {
+  source: 'NIST ASD ground levels; ATKINS ch. 8',
+  values: {
+    24: { subshells: { '3d': 5, '4s': 1 }, note: 'chromium is [Ar] 3d⁵ 4s¹, not 3d⁴ 4s²: the half-filled d subshell is favoured' },
+    29: { subshells: { '3d': 10, '4s': 1 }, note: 'copper is [Ar] 3d¹⁰ 4s¹, not 3d⁹ 4s²: the filled d subshell is favoured' },
+  },
+};
+
 /** Hydrogen-like orbital facts: nodes and symmetry. */
 export const ORBITAL_FACTS = {
   radialNodes: { '1s': 0, '2s': 1, '2pz': 0, '3s': 2, '3pz': 1, '3dz2': 0 },

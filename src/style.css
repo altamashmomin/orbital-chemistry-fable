@@ -329,3 +329,7 @@ body.drawer-open { overflow: hidden; }
 .row.disabled { opacity: 0.45; }
 .row.disabled .landmarks { pointer-events: none; }
 .landmarks .select.small { margin: 0; }
+
+/* Atomic orbitals: radial distribution and configuration box canvases */
+.rdf-canvas { height: 150px; margin-top: 12px; }
+.config-canvas { height: 230px; margin-top: 12px; }

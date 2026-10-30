@@ -417,6 +417,18 @@ lone-pair counts shown to a learner come from `atom.lonePairs`, never from displ
 on screen says whether it is ideal, measured (and on which molecule), a class value or the fallback;
 and activities stay local to the topic rather than becoming a quiz engine.
 
+### An explorer without a molecule: Atomic orbitals (`src/topics/atomic-orbitals/`)
+
+A `CollectionExplorer` can drive something other than `MoleculeView`: pass no `view`, handle `onChange`
+yourself and draw with `OrbitalView` (one per lobe set; `lobe(i)` creates them on demand, `deactivate()`
+disposes them, nothing is created without WebGL). `src/chem/atomicOrbitals.js` is the pure half (gallery
+items, radial distribution with nodes found on R_nl, hybrids as coefficient tables over 2s/2p, the aufbau
+generator checked against `GROUND_STATE_CONFIGURATIONS`); `content.js` holds the invariant cards, whose
+optional `show` adjusts the lobes while selected (`{ probability, negative, wireframe, orbitals, all }`);
+the card draws a radial-distribution canvas and, for configurations, `LevelDiagram` boxes, so it reads
+without WebGL. Rules carried over: every number is exact for the stated function or a cited table value,
+and the sweep reads angles and nodes off the functions rather than trusting the labels.
+
 ### A custom-panel topic: Conformations (`src/topics/conformations/`)
 
 Not every lesson is a collection. Conformations keeps one continuous control (a dihedral slider) and

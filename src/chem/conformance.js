@@ -18,6 +18,8 @@ import { CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, cyclohexaneFrame,
 import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES, DIAXIAL_PAIRS, HYDROGEN_ENERGY, GROUND_STATE_CONFIGURATIONS, AUFBAU_EXCEPTIONS } from './references/textbook.js';
 import { ORBITAL_ITEMS, buildItem, hybridChecks, PERIODIC, electronConfiguration, configurationAscii } from './atomicOrbitals.js';
 import { MO_ITEMS, buildMO, huckel, fillDiatomic, moProbe } from './molecularOrbitals.js';
+import { PAIRS, FACTORS, pkaOf, equilibrium, acidFrame } from './acidsBases.js';
+import { PKA, PKA_TABLE, RT_LN10_KJ } from './references/textbook.js';
 import { DIATOMIC_MO, HUCKEL_PARAMETERS, SLATER_ZEFF } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
@@ -458,6 +460,23 @@ export function runConformance() {
       add('orbitals', 'configurations.1-36', pf(!bad.length), `aufbau order + the tabulated exceptions (${Object.keys(AUFBAU_EXCEPTIONS.values).map((z) => PERIODIC[z - 1].symbol).join(', ')}) reproduce the NIST ground-state configuration of every element 1–36`, { expected: 'all 36 match', actual: bad.length ? bad.join('; ') : '36 / 36', source: GROUND_STATE_CONFIGURATIONS.source });
     }
   }
+  // Acids and bases topic: every pKa is the table's, the five factors order as the textbooks say, the proton
+  // frames conserve charge and atoms, and the equilibrium helper is the stated identity.
+  {
+    const badP = []; for (const p of PAIRS) if (!(p.pka in PKA) || pkaOf(p.id) !== PKA[p.pka]) badP.push(p.id);
+    add('acids', 'pka.table', pf(!badP.length && PAIRS.every((p, i) => !i || pkaOf(p.id) >= pkaOf(PAIRS[i - 1].id))), `every conjugate pair carries its tabulated pKa and the ladder is sorted (${PAIRS.length} pairs)`, { expected: 'all from PKA, ascending', actual: badP.length ? badP.join(', ') : `${PAIRS.length} pairs`, source: PKA_TABLE.source });
+    for (const [id, f] of Object.entries(FACTORS)) {
+      const bad = f.orders.filter((o) => { const vals = o.map(pkaOf); return !vals.every((x, i) => !i || x > vals[i - 1]); });
+      add('acids', `factor.${id}`, pf(!bad.length), `${f.label}: ${f.orders.map((o) => o.map((x) => `${x} ${pkaOf(x)}`).join(' < ')).join('; ')}`, { expected: 'pKa rises along each comparison', actual: bad.length ? bad.map((o) => o.join(' < ')).join('; ') : 'all ordered', source: 'CGW ch. 8; BRUICE ch. 2' });
+    }
+    {
+      const bad = [];
+      for (const p of PAIRS) { const a0 = acidFrame(p.id, 0), a1 = acidFrame(p.id, 1); const q = (f) => f.frame.atoms.reduce((s, a) => s + (a.charge || 0), 0); const at = (f, id) => f.frame.atoms.find((a) => a.id === id); const d0 = v.dist(at(a0, a0.acidH).pos, at(a0, a0.donor).pos), d1 = v.dist(at(a1, a1.acidH).pos, at(a1, a1.donor).pos); if (Math.abs(q(a0) - p.charge) > 1e-9 || Math.abs(q(a1) - p.charge) > 1e-9 || a0.frame.atoms.length !== a1.frame.atoms.length || Math.abs(d1 - d0 - 1.4) > 1e-9) bad.push(p.id); }
+      add('acids', 'proton-frames', pf(!bad.length), 'sending the proton off conserves charge and atom count and moves the H 1.4 Å along its bond', { expected: 'conserved', actual: bad.length ? bad.join(', ') : `${PAIRS.length} frames` });
+    }
+    const e = equilibrium('aceticAcid', 'water');
+    add('acids', 'equilibrium.identity', pf(Math.abs(e.logK - (PKA.water - PKA.aceticAcid)) < 1e-9 && Math.abs(e.deltaG + RT_LN10_KJ * e.logK) < 1e-9 && e.favoured === 'products' && equilibrium('acetylene', 'water').favoured === 'reactants' && Math.abs(RT_LN10_KJ - Math.LN10 * 8.314 * 298.15 / 1000) < 0.002), 'K = 10^(pKa(HB) − pKa(HA)) and ΔG° = −2.303RT log K with 2.303RT = 5.708 kJ/mol; acetate + water → products, acetylide + water ← reactants', { expected: 'log K = 10.94, ΔG° = −62.5 kJ/mol', actual: `log K = ${fmt(e.logK, 2)}, ΔG° = ${fmt(e.deltaG, 1)} kJ/mol`, source: 'thermodynamic identity on the tabulated values' });
+  }
   // Molecular orbitals topic: fillings against the textbook bond orders, Hückel against the closed forms, the
   // drawn functions against their nodal structure, every frame at a cited measured length.
   {
@@ -508,6 +527,7 @@ export function runConformance() {
     'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
     'chair-energies': `A-values and ring-form energies are textbook compilation values (Eliel & Wilen 1994 as taught by Klein and CGW; compilations differ by 0.1–0.3 kcal/mol, OH is solvent dependent, tert-butyl is an estimate); the boat figure is cyclohexane's own; the equatorial share follows from K = e^(A/RT) at 298 K; the chair ring is the 110° template against the measured ${MEASURED_ANGLES.cyclohexaneChair_CCC.value}°`,
+    'pka-estimates': 'pKa values below −2 (HCl, HBr, HI) and above ≈ 30 (ethene, ethane) are textbook estimates: water levels them, so the figures come from other solvents and extrapolation; the cards say so. The proton-departure frames move the H along its bond and shift formal charges linearly; the conjugate base is not re-optimised',
     'mo-pictures': 'molecular orbitals are ±1/√2 (diatomics) or Hückel combinations of hydrogen-like orbitals with Clementi–Raimondi exponents, overlap neglected; the 2s-based σ of N₂ / O₂ use the 2p exponent and the C–Cl σ / σ* equal weights (shapes and phases only); diatomic ladders are schematic and carry no energies; β is never given a number',
     'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
@@ -578,6 +598,7 @@ export function runConformance() {
       if (!GROUND_STATE_CONFIGURATIONS.source || !AUFBAU_EXCEPTIONS.source) bad.push('configuration tables lack a source');
       if (!DIATOMIC_MO.unit || !DIATOMIC_MO.source) bad.push('DIATOMIC_MO lacks unit/source');
       if (!HUCKEL_PARAMETERS.source) bad.push('HUCKEL_PARAMETERS lacks a source');
+      if (!PKA_TABLE.unit || !PKA_TABLE.source) bad.push('PKA_TABLE lacks unit/source');
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
@@ -585,7 +606,7 @@ export function runConformance() {
         if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
       }
       for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
-      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 5} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 6} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
     //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").

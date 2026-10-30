@@ -128,13 +128,21 @@ export const RING_CONFORMER_ENERGIES = {
 /** C–X bond dissociation energies, kcal/mol (rounded textbook values). */
 export const BDE_CX = { F: 115, Cl: 84, Br: 72, I: 57 }; // KLEIN Table 7.1 (approx.)
 
-/** pKa values quoted in the app (water, 25 °C). */
+/**
+ * pKa values quoted in the app (water, 25 °C): the Bruice appendix table and CGW ch. 8 teaching values.
+ * The hydrogen halides, ethene and ethane are the usual textbook estimates (the very strong and very weak
+ * acids cannot be measured in water): CGW gives HCl −7, HBr −9, HI −10, ethene ≈ 44, ethane ≈ 50.
+ */
 export const PKA = {
   water: 15.7, methanol: 15.5, ethanol: 16.0, tertButanol: 18.0, phenol: 10.0, aceticAcid: 4.76, formicAcid: 3.75,
   trifluoroaceticAcid: 0.23, chloroaceticAcid: 2.86, pivalicAcid: 5.03, thiophenol: 6.6, ethanethiol: 10.6, nitromethane: 10.2,
   acetylene: 25, ammonium: 9.25, ethylammonium: 10.7, anilinium: 4.6, acetamideH: -0.5, acetoneAlphaH: 19.3, acetaldehydeAlphaH: 16.7,
   acetonitrileAlphaH: 25, hydroniumIon: -1.7, protonatedAlcohol: -2.4,
+  hydrogenFluoride: 3.2, hydrogenChloride: -7, hydrogenBromide: -9, hydrogenIodide: -10, ethene: 44, ethane: 50,
 }; // BRUICE Appendix pKa table; CGW ch. 8
+export const PKA_TABLE = { unit: 'pKa (water, 25 °C)', source: 'BRUICE Appendix (pKa values); CGW ch. 8 (HX, ethene and ethane estimates)', values: PKA };
+/** 2.303 RT at 298.15 K: the free-energy change per pKa unit, kJ/mol (R = 8.314 J/mol·K). */
+export const RT_LN10_KJ = 5.708;
 
 /**
  * The substitution/elimination decision table a textbook teaches (polar protic solvent, good

@@ -243,3 +243,88 @@ export const ORBITAL_FACTS = {
   radialNodes: { '1s': 0, '2s': 1, '2pz': 0, '3s': 2, '3pz': 1, '3dz2': 0 },
   angularNodes: { s: 0, p: 1, d: 2 },
 }; // ATKINS ch. 8
+
+// ---- Transition metals topic ----------------------------------------------------------------------
+
+/**
+ * Crystal-field splitting patterns: the barycentre rule in units of Δ. Octahedral: t₂g at −0.4 Δo, e_g at
+ * +0.6 Δo; tetrahedral: e at −0.6 Δt, t₂ at +0.4 Δt with Δt ≈ 4/9 Δo for the same metal and ligands; square
+ * planar: the textbook order d(x²−y²) > d(xy) > d(z²) > d(xz), d(yz) drawn schematically (no numbers shown).
+ */
+export const CRYSTAL_FIELD = {
+  source: 'Housecroft & Sharpe, Inorganic Chemistry 5e, ch. 20 (crystal field theory); Miessler, Fischer & Tarr, Inorganic Chemistry 5e, ch. 10',
+  octahedral: { t2g: -0.4, eg: 0.6, orbitals: { t2g: ['dxy', 'dxz', 'dyz'], eg: ['dz2', 'dx2y2'] } },
+  tetrahedral: { e: -0.6, t2: 0.4, ratio: 4 / 9, orbitals: { e: ['dz2', 'dx2y2'], t2: ['dxy', 'dxz', 'dyz'] } },
+  squarePlanar: { order: ['dx2y2', 'dxy', 'dz2', 'dxz', 'dyz'], note: 'schematic order only; the gaps carry no numbers' },
+};
+
+/**
+ * Octahedral splitting energies Δo (cm⁻¹) from electronic spectra: Housecroft & Sharpe 5e Table 20.2 (the
+ * values most textbooks reproduce). Compilations differ by a few hundred cm⁻¹ for some entries (e.g. the
+ * MIT 5.03 (Nocera) notes list [Cr(H₂O)₆]³⁺ at 17,000 and [Co(NH₃)₆]³⁺ at 22,870; one lecture compilation
+ * gives [Fe(CN)₆]⁴⁻ as 32,200), which the card says. Keys are the complex ids of transitionMetals.js.
+ */
+export const DELTA_O = {
+  unit: 'cm⁻¹',
+  source: 'Housecroft & Sharpe 5e Table 20.2 (Δoct from electronic spectra); cross-checked against the MIT 5.03 (Nocera) and IIT Delhi (CYL120) lecture tables',
+  values: {
+    tiAqua: 20300, crAqua: 17400, crAmmine: 21600, crCyano: 26600,
+    feAqua: 9400, feCyano: 33800, ferriCyano: 35000,
+    coAqua: 9300, coFluoro: 13100, coAmmine: 22900, coCyano: 33500,
+    niAqua: 8500, niAmmine: 10800,
+  },
+};
+
+/**
+ * The spectrochemical series, weak field (small Δ) to strong field (large Δ): the textbook ordering.
+ * Positions are a ranking, not numbers; Δo for a given metal ion rises along the list.
+ */
+export const SPECTROCHEMICAL_SERIES = {
+  source: 'Housecroft & Sharpe 5e ch. 20 (the spectrochemical series, §20.3); Miessler, Fischer & Tarr ch. 10',
+  order: ['I⁻', 'Br⁻', 'S²⁻', 'SCN⁻', 'Cl⁻', 'NO₃⁻', 'F⁻', 'OH⁻', 'C₂O₄²⁻', 'H₂O', 'NCS⁻', 'CH₃CN', 'py', 'NH₃', 'en', 'bipy', 'phen', 'NO₂⁻', 'PPh₃', 'CN⁻', 'CO'],
+};
+
+/**
+ * Spin states and unpaired-electron counts of the complexes in the Transition metals topic, as the
+ * textbooks report them from magnetic moments (the model's filling is checked against this table, never
+ * the other way round). d⁴–d⁷ octahedral complexes are the only ones with a high / low choice.
+ */
+export const COMPLEX_MAGNETISM = {
+  source: 'Housecroft & Sharpe 5e ch. 20 (Tables 20.2, 20.8 and the worked examples); Miessler, Fischer & Tarr ch. 10',
+  values: {
+    tiAqua: { unpaired: 1 }, crAqua: { unpaired: 3 }, crAmmine: { unpaired: 3 }, crCyano: { unpaired: 3 },
+    mnAqua: { spin: 'high', unpaired: 5 },
+    feAqua: { spin: 'high', unpaired: 4 }, feCyano: { spin: 'low', unpaired: 0 }, ferriCyano: { spin: 'low', unpaired: 1 },
+    coAqua: { spin: 'high', unpaired: 3 }, coFluoro: { spin: 'high', unpaired: 4 }, coAmmine: { spin: 'low', unpaired: 0 }, coCyano: { spin: 'low', unpaired: 0 },
+    coAmmineChloro: { spin: 'low', unpaired: 0 }, coAmmineTrichloro: { spin: 'low', unpaired: 0 },
+    niAqua: { unpaired: 2 }, niAmmine: { unpaired: 2 }, niCyano: { unpaired: 0 }, niChloro: { unpaired: 2 },
+    cuAqua: { unpaired: 1 }, znAqua: { unpaired: 0 }, cisplatin: { unpaired: 0 },
+  },
+};
+
+/**
+ * Colours of the complexes as the textbooks describe them (solutions or the common salts). A colour is a
+ * card fact; only for the d¹ ion is the one d–d band turned into a wavelength (λ = 10⁷ / Δo), and the
+ * observed colour is still quoted, never computed from a colour wheel.
+ */
+export const COMPLEX_COLOURS = {
+  source: 'Housecroft & Sharpe 5e ch. 20–21; Miessler, Fischer & Tarr ch. 10–11; Greenwood & Earnshaw for the halide salts',
+  values: {
+    tiAqua: 'purple', crAqua: 'violet', crAmmine: 'yellow', crCyano: 'yellow', mnAqua: 'very pale pink', feAqua: 'pale green', feCyano: 'yellow', ferriCyano: 'red-orange',
+    coAqua: 'pink', coFluoro: 'blue', coAmmine: 'orange-yellow', coCyano: 'pale yellow', coAmmineChloro: { cis: 'violet', trans: 'green' }, coAmmineTrichloro: null,
+    niAqua: 'green', niAmmine: 'blue-violet', niCyano: 'yellow', niChloro: 'blue', cuAqua: 'blue', znAqua: 'colourless', cisplatin: { cis: 'yellow', trans: 'pale yellow' },
+  },
+};
+
+/**
+ * Effective nuclear charge used to draw the metal 3d orbitals: Slater's rules for a 3d electron of iron
+ * (σ = 18 × 1.00 for the inner shells + 5 × 0.35 for the other 3d electrons = 19.75; Z_eff = 26 − 19.75).
+ * It sets the size of the picture only; no energy is computed from it.
+ */
+export const D_ORBITAL_ZEFF = { value: 6.25, metal: 'Fe', basis: "Slater's rules: Z_eff(3d, Fe) = 26 − (18 × 1.00 + 5 × 0.35) = 6.25", source: 'Housecroft & Sharpe 5e Box 1.6 (Slater\'s rules); Slater, Phys. Rev. 36, 57 (1930)' };
+
+/** Group numbers of the metals the topic uses: d-electron count = group − oxidation state. */
+export const METAL_GROUPS = { source: 'IUPAC periodic table (groups 3–12)', values: { Ti: 4, V: 5, Cr: 6, Mn: 7, Fe: 8, Co: 9, Ni: 10, Cu: 11, Zn: 12, Pd: 10, Pt: 10 } };
+
+/** Spin-only magnetic moment μ = √(n(n+2)) μ_B for n unpaired electrons: the formula applied to a count. */
+export const SPIN_ONLY_MOMENT = { formula: 'μ = √(n(n+2)) μ_B', source: 'Housecroft & Sharpe 5e ch. 20 (eq. 20.10); ATKINS ch. 8' };

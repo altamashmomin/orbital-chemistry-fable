@@ -21,6 +21,8 @@ import { MO_ITEMS, buildMO, huckel, fillDiatomic, moProbe } from './molecularOrb
 import { PAIRS, FACTORS, pkaOf, equilibrium, acidFrame } from './acidsBases.js';
 import { PKA, PKA_TABLE, RT_LN10_KJ } from './references/textbook.js';
 import { DIATOMIC_MO, HUCKEL_PARAMETERS, SLATER_ZEFF } from './references/textbook.js';
+import { COMPLEXES, buildComplex, complexFrame as metalComplexFrame, levelPattern, seriesComparisons, SLOTS as METAL_SLOTS, KJ_PER_WAVENUMBER } from './transitionMetals.js';
+import { CRYSTAL_FIELD, DELTA_O, SPECTROCHEMICAL_SERIES, COMPLEX_MAGNETISM, COMPLEX_COLOURS, D_ORBITAL_ZEFF, METAL_GROUPS } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -508,6 +510,52 @@ export function runConformance() {
   }
   { const o = orbital('3dz2'); add('orbitals', '3dz2.symmetry', pf(Math.abs(o.psi(0, 0, 3) - o.psi(0, 0, -3)) < 1e-12 && o.psi(3, 0, 0) < 0 && o.psi(0, 0, 3) > 0), 'd_z² positive along z, negative torus in the xy plane', { actual: `z: ${o.psi(0, 0, 3).toExponential(2)}, x: ${o.psi(3, 0, 0).toExponential(2)}` }); }
 
+  // Transition metals topic: oxidation states and d counts by arithmetic, every filling against the tabulated
+  // magnetism, Δo rising along the spectrochemical series for every same-ion pair, the barycentre rule, frames
+  // on the templates with the isomer angles, and the d¹ band of [Ti(H₂O)₆]³⁺ in the visible.
+  {
+    const SUPN = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰'];
+    for (const c of COMPLEXES) {
+      const b = buildComplex(c.id), mag = COMPLEX_MAGNETISM.values[c.id];
+      add('complexes', `d-count.${c.id}`, pf(b.oxidation === c.oxidation && b.d >= 0 && b.d <= 10), `${c.formula}: oxidation state = charge − ligand charges = ${c.oxidation}; d count = group − oxidation state`, { expected: `${c.metal}(${c.oxidation}), group ${METAL_GROUPS.values[c.metal]}`, actual: `${b.oxidationText}, d${SUPN[b.d]}`, source: METAL_GROUPS.source });
+      add('complexes', `filling.${c.id}`, pf(!!mag && b.unpaired === mag.unpaired && (!mag.spin || b.spin === mag.spin)), `${c.formula}: filling the ${b.geometryLabel} pattern${b.spinChoice ? ` as ${b.spin} spin (tabulated)` : ''} gives the unpaired count the magnetic moment reports`, { expected: `${mag?.unpaired} unpaired${mag?.spin ? ` (${mag.spin} spin)` : ''}`, actual: `${b.unpaired} unpaired (${b.filling.levels.map((l) => `${l.id}${SUPN[l.electrons]}`).join(' ')})`, source: COMPLEX_MAGNETISM.source.split(';')[0] });
+    }
+    {
+      const oct = levelPattern('octahedral'), tet = levelPattern('tetrahedral');
+      const so = oct.reduce((s, l) => s + l.E, 0), st = tet.reduce((s, l) => s + l.E, 0);
+      add('complexes', 'barycentre', pf(Math.abs(so) < 1e-9 && Math.abs(st) < 1e-9 && Math.abs(CRYSTAL_FIELD.tetrahedral.ratio - 4 / 9) < 1e-12 && oct.filter((l) => l.set === 't2g').length === 3 && tet.filter((l) => l.set === 'e').length === 2), 'octahedral t₂g −0.4 / e_g +0.6 and tetrahedral e −0.6 / t₂ +0.4 average to zero; Δt = 4/9 Δo', { expected: '0 and 0; 4/9', actual: `${fmt(so, 2)} and ${fmt(st, 2)}; ${fmt(CRYSTAL_FIELD.tetrahedral.ratio, 4)}`, source: CRYSTAL_FIELD.source.split(';')[0] });
+    }
+    {
+      const cmp = seriesComparisons(); const bad = cmp.filter((x) => !x.ok);
+      add('complexes', 'spectrochemical', pf(cmp.length >= 6 && !bad.length), `Δo rises along the spectrochemical series for every same-metal, same-oxidation pair in the table (${cmp.map((x) => `${x.weaker} ${x.deltaWeaker} < ${x.stronger} ${x.deltaStronger}`).join('; ')})`, { expected: 'weaker-field ligand → smaller Δo', actual: bad.length ? bad.map((x) => `${x.weaker} ${x.deltaWeaker} ≥ ${x.stronger} ${x.deltaStronger}`).join('; ') : `${cmp.length} pairs ordered`, source: `${DELTA_O.source.split(';')[0]}; ${SPECTROCHEMICAL_SERIES.source.split(';')[0]}` });
+    }
+    {
+      const bad = []; let n = 0, closest = 99;
+      for (const c of COMPLEXES) for (const iso of c.isomers || [null]) {
+        const { frame, donors, metalId } = metalComplexFrame(c.id, iso); n++;
+        const at = (id) => frame.atoms.find((a) => a.id === id); const M = at(metalId).pos;
+        const label = `${iso ? `${iso}-` : ''}${c.formula}`;
+        for (const d of donors) { const p = at(d.id).pos; if (Math.abs(v.dist(p, M) - bondLength(c.metal, d.el, 1)) > 1e-9 || v.dist(v.norm(v.sub(p, M)), METAL_SLOTS[c.geometry][d.slot]) > 1e-9) bad.push(`${label} ${d.id} off its slot`); }
+        const ideal = c.geometry === 'tetrahedral' ? [IDEAL_ANGLES.tetrahedral] : [90, 180];
+        for (let i = 0; i < donors.length; i++) for (let j = i + 1; j < donors.length; j++) { const a = angleDeg(at(donors[i].id).pos, M, at(donors[j].id).pos); if (!ideal.some((x) => Math.abs(a - x) < 0.01)) bad.push(`${label} ${fmt(a, 1)}°`); }
+        const adj = new Map(frame.atoms.map((a) => [a.id, new Set()])); for (const b of frame.bonds) { adj.get(b.a).add(b.b); adj.get(b.b).add(b.a); }
+        const rel = (x, y) => adj.get(x).has(y) || [...adj.get(x)].some((k) => adj.get(k).has(y));
+        for (let i = 0; i < frame.atoms.length; i++) for (let j = i + 1; j < frame.atoms.length; j++) { const a = frame.atoms[i], b = frame.atoms[j]; if (rel(a.id, b.id)) continue; const d = v.dist(a.pos, b.pos); closest = Math.min(closest, d); if (d < 1.9) bad.push(`${label} ${a.id}/${b.id} ${fmt(d)} Å`); }
+        if (iso) {
+          const sec = donors.filter((d) => d.lig === c.ligands[1].lig).map((d) => at(d.id).pos);
+          const angs = []; for (let i = 0; i < sec.length; i++) for (let j = i + 1; j < sec.length; j++) angs.push(angleDeg(sec[i], M, sec[j]));
+          const want = { cis: (a) => a.length === 1 && Math.abs(a[0] - 90) < 1e-6, trans: (a) => a.length === 1 && Math.abs(a[0] - 180) < 1e-6, fac: (a) => a.length === 3 && a.every((x) => Math.abs(x - 90) < 1e-6), mer: (a) => a.length === 3 && a.filter((x) => Math.abs(x - 180) < 1e-6).length === 1 }[iso];
+          if (!want(angs)) bad.push(`${label} B–M–B ${angs.map((a) => fmt(a, 0)).join('/')}°`);
+        }
+      }
+      add('complexes', 'frames', pf(!bad.length), `every complex frame has its donors on the template at the table M–L length, ideal donor angles, no non-bonded contact under 1.9 Å, and cis / trans / fac / mer B–M–B angles as named (${n} frames)`, { expected: 'all on template', actual: bad.length ? bad.join('; ') : `${n} frames; closest non-bonded contact ${fmt(closest)} Å`, source: 'crystal field geometry; Cordero covalent radii' });
+    }
+    {
+      const ti = buildComplex('tiAqua');
+      add('complexes', 'd1-band', pf(ti.d === 1 && Math.abs(ti.lambdaNm - 1e7 / DELTA_O.values.tiAqua) < 1e-9 && ti.lambdaNm > 400 && ti.lambdaNm < 700 && Math.abs(KJ_PER_WAVENUMBER - 0.011963) < 1e-6), '[Ti(H₂O)₆]³⁺ is d¹ and its one d–d band, Δo as a wavelength, falls in the visible', { expected: '493 nm (20,300 cm⁻¹)', actual: `${fmt(ti.lambdaNm, 1)} nm, ${fmt(ti.deltaKJ, 0)} kJ/mol`, source: DELTA_O.source.split(';')[0] });
+    }
+  }
+
   // ------------------------------------------------------------------ I. content integrity
   let badAud = [];
   for (const id of FUNCTIONAL_GROUP_ORDER) { const g = FUNCTIONAL_GROUPS[id]; for (const [coll, items] of [['invariants', g.invariants], ['varies', g.varies], ['identify', g.identify]]) for (const it of items) if (!isValidAudience(audienceOf(it, coll))) badAud.push(`${id}/${coll}`); }
@@ -530,6 +578,7 @@ export function runConformance() {
     'pka-estimates': 'pKa values below −2 (HCl, HBr, HI) and above ≈ 30 (ethene, ethane) are textbook estimates: water levels them, so the figures come from other solvents and extrapolation; the cards say so. The proton-departure frames move the H along its bond and shift formal charges linearly; the conjugate base is not re-optimised',
     'mo-pictures': 'molecular orbitals are ±1/√2 (diatomics) or Hückel combinations of hydrogen-like orbitals with Clementi–Raimondi exponents, overlap neglected; the 2s-based σ of N₂ / O₂ use the 2p exponent and the C–Cl σ / σ* equal weights (shapes and phases only); diatomic ladders are schematic and carry no energies; β is never given a number',
     'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
+    'complex-templates': 'complexes draw their donor atoms on the ideal octahedral / square-planar / tetrahedral template at the covalent-radius-sum M–L length (real lengths vary by ±0.1 Å with spin and oxidation state) and their ligand hydrogens on ideal tetrahedral slots; the d⁹ Jahn–Teller distortion is not drawn; square-planar level gaps are schematic; Δo values follow one compilation (Housecroft & Sharpe Table 20.2) and others differ by a few hundred cm⁻¹; pairing energies are not tabulated, so spin states are read from the magnetism table, never decided by the model; the d-orbital picture uses Z_eff = 6.25 for every metal (size only)',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 
@@ -584,6 +633,7 @@ export function runConformance() {
       for (const id of FUNCTIONAL_GROUP_ORDER) scan(id, makeMolecule(id).frame);
       for (const s of SHAPES) scan(s.id, buildShape(s.id).frame);
       for (const it of MO_ITEMS) scan(`mo:${it.id}`, buildMO(it.id).frame);
+      for (const c of COMPLEXES) scan(`complex:${c.id}`, metalComplexFrame(c.id).frame);
       add('boundary', 'bond-lengths.cited', pf(!bad.length), 'every bond drawn at a length other than the element/order table cites a MEASURED_BONDS row', { expected: 'all cited', actual: bad.length ? bad.join(', ') : `${n} overrides, all cited`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 4. Energies: only tabulated textbook values with a unit and a source are shown; a rotor without a table
@@ -598,6 +648,8 @@ export function runConformance() {
       if (!GROUND_STATE_CONFIGURATIONS.source || !AUFBAU_EXCEPTIONS.source) bad.push('configuration tables lack a source');
       if (!DIATOMIC_MO.unit || !DIATOMIC_MO.source) bad.push('DIATOMIC_MO lacks unit/source');
       if (!HUCKEL_PARAMETERS.source) bad.push('HUCKEL_PARAMETERS lacks a source');
+      if (!DELTA_O.unit || !DELTA_O.source) bad.push('DELTA_O lacks unit/source');
+      for (const [k, t] of [['CRYSTAL_FIELD', CRYSTAL_FIELD], ['SPECTROCHEMICAL_SERIES', SPECTROCHEMICAL_SERIES], ['COMPLEX_MAGNETISM', COMPLEX_MAGNETISM], ['COMPLEX_COLOURS', COMPLEX_COLOURS], ['D_ORBITAL_ZEFF', D_ORBITAL_ZEFF], ['METAL_GROUPS', METAL_GROUPS]]) if (!t.source) bad.push(`${k} lacks a source`);
       if (!PKA_TABLE.unit || !PKA_TABLE.source) bad.push('PKA_TABLE lacks unit/source');
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);

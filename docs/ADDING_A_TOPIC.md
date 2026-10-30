@@ -429,6 +429,19 @@ the card draws a radial-distribution canvas and, for configurations, `LevelDiagr
 without WebGL. Rules carried over: every number is exact for the stated function or a cited table value,
 and the sweep reads angles and nodes off the functions rather than trusting the labels.
 
+### Orbitals over a molecule: Molecular orbitals (`src/topics/molecular-orbitals/`)
+
+The same explorer with both a molecule and an orbital: pass `view` so the explorer sets the frame, and
+draw the chosen MO with one `OrbitalView` created with `{ molecule: view }` so `bounds()` covers both.
+`src/chem/molecularOrbitals.js` holds the pure half: `huckel()` (Jacobi eigen-solver, energies as x in
+E = α + xβ, Hund-free filling two per level), `fillDiatomic()` (the textbook ladder in `DIATOMIC_MO`,
+bond order and unpaired count by counting), authored frames at the measured lengths (`MEASURED_BONDS`
+rows with `ref` on every bond), and ψ builders (`molecularOrbital()` for diatomics, `pOrbitalAlong()` +
+`lcao()` for Hückel coefficients). The card's `LevelDiagram` takes `onHighlight` and a click selects the
+MO to draw (`state.mo`); an invariant's `show: { mo }` does the same while selected. Rules: no energy is
+computed beyond the stated eigenvalues in β units, diatomic ladders are schematic, and every picture
+says which exponents and weights it uses.
+
 ### A custom-panel topic: Conformations (`src/topics/conformations/`)
 
 Not every lesson is a collection. Conformations keeps one continuous control (a dihedral slider) and

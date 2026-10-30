@@ -194,6 +194,42 @@ export const AUFBAU_EXCEPTIONS = {
   },
 };
 
+/**
+ * Effective nuclear charges for the valence orbitals drawn in the Molecular orbitals topic (Clementi &
+ * Raimondi, J. Chem. Phys. 38, 2686 (1963), from SCF orbital exponents): they contract the hydrogen-like
+ * functions to a realistic size next to a measured bond length. Shapes and phases only; no energy is
+ * computed from them.
+ */
+export const SLATER_ZEFF = {
+  source: 'Clementi & Raimondi, J. Chem. Phys. 38, 2686 (1963)',
+  values: { H_1s: 1.0, C_2p: 3.136, N_2p: 3.834, O_2p: 4.453, Cl_3p: 6.116 },
+};
+
+/**
+ * Homonuclear diatomics for the Molecular orbitals topic: valence electrons, the textbook level order
+ * (N₂ and the lighter molecules have σ2p above π2p because of 2s–2p mixing; O₂ and F₂ do not), the
+ * textbook bond order and magnetism, and the bond dissociation energy. H₂ and He₂ use 1s only.
+ */
+export const DIATOMIC_MO = {
+  source: 'ATKINS ch. 9 (molecular orbital theory); Housecroft & Sharpe ch. 2; BDEs: CRC Handbook, "Bond dissociation energies" (D₀, kJ/mol) and ATKINS data section',
+  unit: 'kJ/mol',
+  values: {
+    h2: { formula: 'H₂', electrons: 2, order: ['sigma1s', 'sigma1s*'], bondOrder: 1, unpaired: 0, bde: 436, bondRef: 'H2_HH' },
+    he2: { formula: 'He₂', electrons: 4, order: ['sigma1s', 'sigma1s*'], bondOrder: 0, unpaired: 0, bde: null, bondRef: null, note: 'not a bound molecule: equal filling of σ and σ*' },
+    n2: { formula: 'N₂', electrons: 10, order: ['sigma2s', 'sigma2s*', 'pi2p', 'sigma2p', 'pi2p*', 'sigma2p*'], bondOrder: 3, unpaired: 0, bde: 945, bondRef: 'N2_NN', note: 's–p mixing puts σ2p above π2p' },
+    o2: { formula: 'O₂', electrons: 12, order: ['sigma2s', 'sigma2s*', 'sigma2p', 'pi2p', 'pi2p*', 'sigma2p*'], bondOrder: 2, unpaired: 2, bde: 498, bondRef: 'O2_OO', note: 'two unpaired π* electrons: paramagnetic' },
+  },
+};
+
+/**
+ * Hückel parameters for heteroatoms, in units of β (α_X = α + hβ, β_CX = kβ): the standard teaching set.
+ * Only the carbonyl oxygen is used (formaldehyde π / π*).
+ */
+export const HUCKEL_PARAMETERS = {
+  source: 'Streitwieser, Molecular Orbital Theory for Organic Chemists (1961), Table 5.1; CGW ch. 4 (qualitative)',
+  values: { O_carbonyl: { h: 1.0, k: 1.0 } },
+};
+
 /** Hydrogen-like orbital facts: nodes and symmetry. */
 export const ORBITAL_FACTS = {
   radialNodes: { '1s': 0, '2s': 1, '2pz': 0, '3s': 2, '3pz': 1, '3dz2': 0 },

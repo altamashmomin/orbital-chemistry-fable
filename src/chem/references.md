@@ -86,3 +86,13 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
   pair default for centres with no row is a rounded version of the H₂O / NH₃ deficit and is a teaching
   convention, not a measurement. Idealised references the model knowingly does not reproduce (acetone
   C–C–C 116°, cyclohexane C–C–C 111.28°, both Kuchitsu 1998 via CCCBDB) are in the same file.
+
+## Transition metals (`transitionMetals.js`)
+
+* Crystal-field patterns and the barycentre rule (`CRYSTAL_FIELD`), Δo values (`DELTA_O`, Housecroft &
+  Sharpe 5e Table 20.2, cross-checked against the MIT 5.03 and IIT Delhi lecture tables; compilations
+  differ by a few hundred cm⁻¹), the spectrochemical series, spin states, unpaired counts and colours
+  (`COMPLEX_MAGNETISM`, `COMPLEX_COLOURS`): Housecroft & Sharpe ch. 19–21; Miessler, Fischer & Tarr
+  ch. 9–11. Details and the limits of the model in `src/topics/transition-metals/references.md`.
+* The metal d orbital is drawn at Z_eff = 6.25 (Slater's rules for a 3d electron of Fe) for every metal:
+  size only; no energy is computed from it.

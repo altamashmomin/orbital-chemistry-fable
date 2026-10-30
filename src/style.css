@@ -339,3 +339,8 @@ body.drawer-open { overflow: hidden; }
 
 /* Acids and bases: the pKa ladder */
 .pka-ladder { height: 440px; margin-top: 12px; }
+
+/* Transition metals: the splitting diagram and the spectrochemical series line */
+.cf-canvas { height: 250px; margin-top: 12px; }
+.series { font-size: 12px; line-height: 1.6; color: var(--muted, #727e70); margin: 10px 0 0; }
+.series-item.active { color: var(--accent, #48725c); font-weight: 600; }

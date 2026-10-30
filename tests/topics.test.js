@@ -16,7 +16,7 @@ test('every registered topic satisfies the contract and ids are unique', () => {
 });
 
 test('topics are ordered and legacy hashes resolve', () => {
-  assert.deepEqual(TOPICS.map((t) => t.id), ['functional-groups', 'molecular-shapes', 'conformations', 'acids-bases', 'mechanisms', 'atomic-orbitals', 'molecular-orbitals'], 'learning order: structure, shapes, conformations, acids and bases, reactions, then atomic and molecular orbitals');
+  assert.deepEqual(TOPICS.map((t) => t.id), ['functional-groups', 'molecular-shapes', 'conformations', 'acids-bases', 'mechanisms', 'atomic-orbitals', 'molecular-orbitals', 'transition-metals'], 'learning order: structure, shapes, conformations, acids and bases, reactions, then atomic and molecular orbitals and the transition metals');
   assert.equal(resolveTopicId('#explorer'), 'functional-groups');
   assert.equal(resolveTopicId('#molecular-shapes/water/bent'.split('/')[0]), 'molecular-shapes');
   assert.equal(resolveTopicId('mechanisms'), 'mechanisms');

@@ -467,3 +467,20 @@ The same panel hosts the cyclohexane chair (`src/chem/cyclohexane.js`: `cyclohex
 from the rigid ring templates with the substituent embedded as an R group, `chairEnergy()` a pure
 table lookup into `A_VALUES` / `RING_CONFORMER_ENERGIES`), the worked example of the one energy
 exception the model boundary allows (`docs/REVIEW_PROTOCOL.md` §6).
+
+### A diagram you fill: Transition metals (`src/topics/transition-metals/`)
+
+The explorer with a molecule, an optional orbital and a `LevelDiagram` the user clicks.
+`src/chem/transitionMetals.js` holds the pure half: a monodentate ligand library (`LIGANDS`, each a small
+graph builder), `COMPLEXES` with a stated oxidation state the sweep re-derives from the charges, template
+slots on the crystal-field axes (`SLOTS`: octahedral ±z/±x/±y, square planar in xy, tetrahedral on
+alternate cube corners) with `ISOMERS` naming which slots the minority ligand takes (cis / trans / fac /
+mer), `complexFrame(id, isomer)` (donors pinned on the slots at the element/order length, the rest placed by
+`embed(..., { pinned, lonePairAngles: false })` so ligand angles are ideal templates, then `relaxTorsions`),
+`fillD(n, geometry, spin)` (counting on the barycentre pattern: unpaired electrons, pairs, CFSE text),
+`splittingSpec()` (free ion → field, level ids = orbital names), `dOrbitalPsi()` (the hydrogen-like 3d
+function at the tabulated Z_eff, centred on the metal) and `buildComplex(id, { spin, isomer, orbital })`.
+Rules carried over: the spin state is read from `COMPLEX_MAGNETISM` and the filling is checked against
+its unpaired count (a user-chosen other filling is labelled *what if*); Δo, colours and the series are
+table entries; nothing is derived from the drawn geometry. The panel rotates both `view.group` and the
+`OrbitalView` by one quaternion so the crystal-field z axis is vertical, and resets it in `deactivate()`.

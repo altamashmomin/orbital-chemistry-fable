@@ -17,6 +17,8 @@ import { ROTORS, conformer, torsionEnergy } from './conformations.js';
 import { CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, cyclohexaneFrame, chairEnergy, equatorialFraction, chairSiteRule, KCAL } from './cyclohexane.js';
 import { TORSION_ENERGIES, A_VALUES, RING_CONFORMER_ENERGIES, DIAXIAL_PAIRS, HYDROGEN_ENERGY, GROUND_STATE_CONFIGURATIONS, AUFBAU_EXCEPTIONS } from './references/textbook.js';
 import { ORBITAL_ITEMS, buildItem, hybridChecks, PERIODIC, electronConfiguration, configurationAscii } from './atomicOrbitals.js';
+import { MO_ITEMS, buildMO, huckel, fillDiatomic, moProbe } from './molecularOrbitals.js';
+import { DIATOMIC_MO, HUCKEL_PARAMETERS, SLATER_ZEFF } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -456,6 +458,35 @@ export function runConformance() {
       add('orbitals', 'configurations.1-36', pf(!bad.length), `aufbau order + the tabulated exceptions (${Object.keys(AUFBAU_EXCEPTIONS.values).map((z) => PERIODIC[z - 1].symbol).join(', ')}) reproduce the NIST ground-state configuration of every element 1–36`, { expected: 'all 36 match', actual: bad.length ? bad.join('; ') : '36 / 36', source: GROUND_STATE_CONFIGURATIONS.source });
     }
   }
+  // Molecular orbitals topic: fillings against the textbook bond orders, Hückel against the closed forms, the
+  // drawn functions against their nodal structure, every frame at a cited measured length.
+  {
+    for (const [id, d] of Object.entries(DIATOMIC_MO.values)) {
+      const f = fillDiatomic(id);
+      add('mo', `diatomic.${id}`, pf(f.bondOrder === d.bondOrder && f.unpaired === d.unpaired), `${d.formula}: filling the textbook ladder with ${d.electrons} valence electrons gives bond order ${d.bondOrder} and ${d.unpaired} unpaired`, { expected: `bond order ${d.bondOrder}, ${d.unpaired} unpaired`, actual: `bond order ${f.bondOrder}, ${f.unpaired} unpaired`, source: DIATOMIC_MO.source.split(';')[0] });
+    }
+    add('tables', 'bde.ordering', pf(DIATOMIC_MO.values.n2.bde > DIATOMIC_MO.values.o2.bde && DIATOMIC_MO.values.o2.bde > DIATOMIC_MO.values.h2.bde && DIATOMIC_MO.unit === 'kJ/mol'), 'bond dissociation energies rank N₂ > O₂ > H₂ with the bond orders', { expected: '945 > 498 > 436', actual: `${DIATOMIC_MO.values.n2.bde} > ${DIATOMIC_MO.values.o2.bde} > ${DIATOMIC_MO.values.h2.bde} kJ/mol`, source: DIATOMIC_MO.source });
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    const bd = huckel({ n: 4, bonds: [[0, 1], [1, 2], [2, 3]], electrons: 4 });
+    add('mo', 'huckel.butadiene', pf([PHI, PHI - 1, 1 - PHI, -PHI].every((x, i) => Math.abs(bd.levels[i].x - x) < 1e-9) && Math.abs(bd.piEnergy - 4 - (2 * PHI + 2 * (PHI - 1) - 4)) < 1e-9 && bd.homo.id === 'psi2'), 'butadiene Hückel energies are x = ±(1 ± √5)/2 and the delocalisation energy 0.472 β', { expected: '+1.618, +0.618, −0.618, −1.618; 0.472 β', actual: `${bd.levels.map((l) => fmt(l.x, 3)).join(', ')}; ${fmt(bd.piEnergy - 4, 3)} β`, source: 'CGW ch. 4; ATKINS ch. 9' });
+    const eth = huckel({ n: 2, bonds: [[0, 1]], electrons: 2 });
+    add('mo', 'huckel.ethene', pf(Math.abs(eth.levels[0].x - 1) < 1e-9 && Math.abs(eth.levels[1].x + 1) < 1e-9), 'ethene π / π* at E = α ± β', { expected: '+1, −1', actual: eth.levels.map((l) => fmt(l.x, 3)).join(', '), source: 'CGW ch. 4' });
+    const P = HUCKEL_PARAMETERS.values.O_carbonyl, co = huckel({ n: 2, bonds: [[0, 1, P.k]], h: { 1: P.h }, electrons: 2 });
+    add('mo', 'huckel.carbonyl', pf(Math.abs(co.levels[0].x - PHI) < 1e-9 && Math.abs(co.levels[1].x - (1 - PHI)) < 1e-9 && Math.abs(co.levels[1].coefficients[0]) > Math.abs(co.levels[1].coefficients[1]) && Math.abs(co.levels[0].coefficients[1]) > Math.abs(co.levels[0].coefficients[0])), `carbonyl with h = ${P.h}, k = ${P.k}: x = (1 ± √5)/2, π larger on O, π* (LUMO) larger on C`, { expected: '+1.618 / −0.618; |c_C(π*)| > |c_O(π*)|', actual: `${fmt(co.levels[0].x, 3)} / ${fmt(co.levels[1].x, 3)}; π* ${co.levels[1].coefficients.map((c) => fmt(Math.abs(c), 3)).join(' / ')}`, source: HUCKEL_PARAMETERS.source });
+    {
+      const bad = []; let n = 0;
+      for (const it of MO_ITEMS) { const b = buildMO(it.id); const byId = new Map(b.frame.atoms.map((a) => [a.id, a])); for (const bond of b.frame.bonds) { n++; const m = bond.ref && MEASURED_BONDS[bond.ref]; if (!m || Math.abs(v.dist(byId.get(bond.a).pos, byId.get(bond.b).pos) - m.value) > 1e-6) bad.push(`${it.id} ${bond.a}–${bond.b}`); } }
+      add('mo', 'frames.measured', pf(!bad.length), 'every bond of every MO frame is drawn at a cited measured length', { expected: 'all cited', actual: bad.length ? bad.join(', ') : `${n} bonds`, source: 'NIST CCCBDB' });
+    }
+    {
+      const h2 = moProbe('h2', 'sigma1s'), h2s = moProbe('h2', 'sigma1s*');
+      const pi = buildMO('ethene', { mo: 'psi1' }).selected.psi, piS = buildMO('ethene', { mo: 'psi2' }).selected.psi;
+      const c1 = buildMO('ethene').frame.atoms.find((a) => a.id === 'C1').pos, c2 = buildMO('ethene').frame.atoms.find((a) => a.id === 'C2').pos;
+      const ok = h2.mid > 0.5 && Math.abs(h2s.mid) < 1e-9 && Math.abs(pi.psi(0, 0, 0)) < 1e-9 && pi.psi(c1[0], 0, 0.6) > 0 && pi.psi(c2[0], 0, 0.6) > 0 && piS.psi(c1[0], 0, 0.6) * piS.psi(c2[0], 0, 0.6) < 0;
+      add('mo', 'phases', pf(ok), 'the drawn functions have the textbook nodal structure: σ(1s) > 0 at the midpoint, σ*(1s) = 0 there; ethene π vanishes in the plane and is in phase over both carbons, π* out of phase', { expected: 'σ > 0, σ* = 0, π in phase, π* out of phase', actual: `σ ${fmt(h2.mid, 2)}, σ* ${fmt(h2s.mid, 2)}, π ${fmt(pi.psi(c1[0], 0, 0.6), 2)}/${fmt(pi.psi(c2[0], 0, 0.6), 2)}, π* ${fmt(piS.psi(c1[0], 0, 0.6), 2)}/${fmt(piS.psi(c2[0], 0, 0.6), 2)}`, source: 'ATKINS ch. 9' });
+    }
+    add('tables', 'zeff', pf(SLATER_ZEFF.values.C_2p < SLATER_ZEFF.values.N_2p && SLATER_ZEFF.values.N_2p < SLATER_ZEFF.values.O_2p && SLATER_ZEFF.values.H_1s === 1 && !!SLATER_ZEFF.source), 'effective charges increase across the period (C < N < O) and H is 1', { expected: 'C 3.136 < N 3.834 < O 4.453', actual: `C ${SLATER_ZEFF.values.C_2p} < N ${SLATER_ZEFF.values.N_2p} < O ${SLATER_ZEFF.values.O_2p}`, source: SLATER_ZEFF.source });
+  }
   { const o = orbital('3dz2'); add('orbitals', '3dz2.symmetry', pf(Math.abs(o.psi(0, 0, 3) - o.psi(0, 0, -3)) < 1e-12 && o.psi(3, 0, 0) < 0 && o.psi(0, 0, 3) > 0), 'd_z² positive along z, negative torus in the xy plane', { actual: `z: ${o.psi(0, 0, 3).toExponential(2)}, x: ${o.psi(3, 0, 0).toExponential(2)}` }); }
 
   // ------------------------------------------------------------------ I. content integrity
@@ -477,6 +508,7 @@ export function runConformance() {
     'carbonyl-angles': `carbonyl and nitro centres keep ${IDEAL_ANGLES.trigonal}° (acetone C–C–C measured ${MEASURED_ANGLES.acetone_CCC.value}°, nitromethane O–N–O ${MEASURED_ANGLES.nitromethane_ONO.value}°; the cards state the measured value beside the drawn one)`,
     'lone-pair-fallback': `lone-pair centres without a LONE_PAIR_ANGLES row close every bonded angle by ${LONE_PAIR_COMPRESSION_PER_PAIR}° per lone pair (convention)`,
     'chair-energies': `A-values and ring-form energies are textbook compilation values (Eliel & Wilen 1994 as taught by Klein and CGW; compilations differ by 0.1–0.3 kcal/mol, OH is solvent dependent, tert-butyl is an estimate); the boat figure is cyclohexane's own; the equatorial share follows from K = e^(A/RT) at 298 K; the chair ring is the 110° template against the measured ${MEASURED_ANGLES.cyclohexaneChair_CCC.value}°`,
+    'mo-pictures': 'molecular orbitals are ±1/√2 (diatomics) or Hückel combinations of hydrogen-like orbitals with Clementi–Raimondi exponents, overlap neglected; the 2s-based σ of N₂ / O₂ use the 2p exponent and the C–Cl σ / σ* equal weights (shapes and phases only); diatomic ladders are schematic and carry no energies; β is never given a number',
     'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
@@ -531,6 +563,7 @@ export function runConformance() {
       const scan = (where, frame) => { for (const b of frame.bonds) if (b.length != null) { n++; if (!b.ref || !MEASURED_BONDS[b.ref]) bad.push(`${where} ${b.a}–${b.b}`); } };
       for (const id of FUNCTIONAL_GROUP_ORDER) scan(id, makeMolecule(id).frame);
       for (const s of SHAPES) scan(s.id, buildShape(s.id).frame);
+      for (const it of MO_ITEMS) scan(`mo:${it.id}`, buildMO(it.id).frame);
       add('boundary', 'bond-lengths.cited', pf(!bad.length), 'every bond drawn at a length other than the element/order table cites a MEASURED_BONDS row', { expected: 'all cited', actual: bad.length ? bad.join(', ') : `${n} overrides, all cited`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 4. Energies: only tabulated textbook values with a unit and a source are shown; a rotor without a table
@@ -543,6 +576,8 @@ export function runConformance() {
       if (!DIAXIAL_PAIRS.unit || !DIAXIAL_PAIRS.source) bad.push('DIAXIAL_PAIRS lacks unit/source');
       if (!HYDROGEN_ENERGY.unit || !HYDROGEN_ENERGY.source) bad.push('HYDROGEN_ENERGY lacks unit/source');
       if (!GROUND_STATE_CONFIGURATIONS.source || !AUFBAU_EXCEPTIONS.source) bad.push('configuration tables lack a source');
+      if (!DIATOMIC_MO.unit || !DIATOMIC_MO.source) bad.push('DIATOMIC_MO lacks unit/source');
+      if (!HUCKEL_PARAMETERS.source) bad.push('HUCKEL_PARAMETERS lacks a source');
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
@@ -550,7 +585,7 @@ export function runConformance() {
         if (!r.energy && conformer(r.id, 0).energy !== null) bad.push(`${r.id} reports an energy with no table`);
       }
       for (const id of MECHANISM_ORDER) if (!/illustrative/.test(MECHANISMS[id].energy?.unit || '')) bad.push(`${id} energy profile not labelled illustrative`);
-      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 3} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
+      add('boundary', 'energies.sourced', pf(!bad.length), 'energies are tabulated textbook values (unit + source) or profiles labelled illustrative; none is computed from the drawn geometry', { expected: 'all sourced or labelled', actual: bad.length ? bad.join('; ') : `${Object.keys(TORSION_ENERGIES).length + Object.keys(RING_CONFORMER_ENERGIES).length + 5} tables, ${ROTORS.length} rotors, ${CHAIR_SUBSTITUENTS.length * RING_FORMS.length} chair cards, ${MECHANISM_ORDER.length} profiles`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 5. Card angle labels: a number printed on an angle visual is the drawn angle at default R, to the label's
     //    own precision (± 2° for "≈", ± 0.5° otherwise), or the label says what is drawn ("drawn 120°").

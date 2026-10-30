@@ -15,6 +15,18 @@ export const MEASURED_BONDS = {
   aceticAcid_CO: { value: 1.36, listed: 1.361, molecule: 'CH₃COOH', cas: '64-19-7', atoms: 'C–O(H)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
   methylFormate_CO: { value: 1.33, listed: 1.334, molecule: 'HCOOCH₃', cas: '107-31-3', atoms: 'C(=O)–O (ester)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB; O–CH₃ is 1.437' },
   nitromethane_NO: { value: 1.22, listed: 1.224, molecule: 'CH₃NO₂', cas: '75-52-5', atoms: 'N–O (both)', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
+  // diatomics and the small molecules of the Molecular orbitals topic (read 2026-10-29)
+  H2_HH: { value: 0.741, listed: 0.7414, molecule: 'H₂', cas: '1333-74-0', atoms: 'H–H', type: 'rₑ', source: 'Huber & Herzberg, Constants of Diatomic Molecules (1979), via CCCBDB' },
+  N2_NN: { value: 1.098, listed: 1.0977, molecule: 'N₂', cas: '7727-37-9', atoms: 'N≡N', type: 'rₑ', source: 'Huber & Herzberg (1979), via CCCBDB' },
+  O2_OO: { value: 1.208, listed: 1.2075, molecule: 'O₂', cas: '7782-44-7', atoms: 'O=O', type: 'rₑ', source: 'Huber & Herzberg (1979), via CCCBDB' },
+  ethylene_CC: { value: 1.339, listed: 1.339, molecule: 'C₂H₄', cas: '74-85-1', atoms: 'C=C', source: 'Herzberg (1966), via CCCBDB' },
+  ethylene_CH: { value: 1.086, listed: 1.086, molecule: 'C₂H₄', cas: '74-85-1', atoms: 'C–H', source: 'Herzberg (1966), via CCCBDB' },
+  butadiene_CC: { value: 1.476, listed: 1.476, molecule: 'CH₂=CH–CH=CH₂', cas: '106-99-0', atoms: 'C2–C3 (single)', source: 'Herzberg (1966), via CCCBDB' },
+  butadiene_CdC: { value: 1.337, listed: 1.337, molecule: 'CH₂=CH–CH=CH₂', cas: '106-99-0', atoms: 'C=C', source: 'Herzberg (1966), via CCCBDB; no C–H length is listed, the ethylene value is used' },
+  chloromethane_CCl: { value: 1.785, listed: 1.785, molecule: 'CH₃Cl', cas: '74-87-3', atoms: 'C–Cl', source: 'Duncan, McKean, Mallinson & McCulloch, J. Mol. Spectrosc. 46, 232 (1973), via CCCBDB' },
+  chloromethane_CH: { value: 1.09, listed: 1.090, molecule: 'CH₃Cl', cas: '74-87-3', atoms: 'C–H', source: 'Duncan et al. (1973), via CCCBDB' },
+  formaldehyde_CH: { value: 1.111, listed: 1.111, molecule: 'H₂CO', cas: '50-00-0', atoms: 'C–H', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB' },
+  formaldehyde_CO: { value: 1.205, listed: 1.205, molecule: 'H₂CO', cas: '50-00-0', atoms: 'C=O', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB; the Molecular shapes frame draws the table value 1.21 Å' },
 };
 
 export const MEASURED_ANGLES = {
@@ -51,4 +63,9 @@ export const MEASURED_ANGLES = {
   dimethylamine_CNC: { value: 112.2, listed: 112.2, molecule: '(CH₃)₂NH', cas: '124-40-3', atoms: 'C–N–C', source: 'Wollrab & Laurie, J. Chem. Phys. 48, 5058 (1968), via CCCBDB' },
   trimethylamine_CNC: { value: 110.9, listed: 110.9, molecule: '(CH₃)₃N', cas: '75-50-3', atoms: 'C–N–C', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
   phenol_COH: { value: 109.0, listed: 109, molecule: 'C₆H₅OH', cas: '108-95-2', atoms: 'C–O–H', source: 'Landolt-Börnstein II/7 (1976), via CCCBDB' },
+  // the Molecular orbitals topic's authored frames
+  ethylene_HCH: { value: 117.6, listed: 117.6, molecule: 'C₂H₄', cas: '74-85-1', atoms: 'H–C–H', source: 'Herzberg (1966), via CCCBDB' },
+  ethylene_HCC: { value: 121.2, listed: 121.2, molecule: 'C₂H₄', cas: '74-85-1', atoms: 'H–C=C', source: 'Herzberg (1966), via CCCBDB' },
+  butadiene_CCC: { value: 122.9, listed: 122.9, molecule: 'CH₂=CH–CH=CH₂', cas: '106-99-0', atoms: 'C=C–C', source: 'Herzberg (1966), via CCCBDB' },
+  chloromethane_HCCl: { value: 108.2, listed: 108.16, molecule: 'CH₃Cl', cas: '74-87-3', atoms: 'H–C–Cl', source: 'Duncan et al. (1973), via CCCBDB' },
 };

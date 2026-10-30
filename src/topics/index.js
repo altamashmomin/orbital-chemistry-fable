@@ -7,11 +7,13 @@ import { mechanisms } from './mechanisms/index.js';
 import { molecularShapes } from './molecular-shapes/index.js';
 import { conformations } from './conformations/index.js';
 import { atomicOrbitals } from './atomic-orbitals/index.js';
+import { molecularOrbitals } from './molecular-orbitals/index.js';
 
 registerTopic(functionalGroups);
 registerTopic(mechanisms);
 registerTopic(molecularShapes);
 registerTopic(conformations);
 registerTopic(atomicOrbitals);
+registerTopic(molecularOrbitals);
 
 export * from './registry.js';

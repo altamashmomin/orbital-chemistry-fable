@@ -333,3 +333,6 @@ body.drawer-open { overflow: hidden; }
 /* Atomic orbitals: radial distribution and configuration box canvases */
 .rdf-canvas { height: 150px; margin-top: 12px; }
 .config-canvas { height: 230px; margin-top: 12px; }
+
+/* Molecular orbitals: the MO diagram canvas */
+.mo-canvas { height: 240px; margin-top: 12px; }

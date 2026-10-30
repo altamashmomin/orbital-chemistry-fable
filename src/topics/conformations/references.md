@@ -28,5 +28,15 @@
   register row). The substituent is embedded and torsion-relaxed as any R group; the ring keeps its
   template angles, so a crowded axial group (tert-butyl) is flagged, not relieved. Nothing on the card
   is computed from the drawn geometry except the drawn distance it quotes as such.
+* Disubstituted cyclohexanes (cis/trans 1,2-, 1,3-, 1,4-; which isomer has a diequatorial chair):
+  Clayden, Greeves & Warren ch. 16; Klein ch. 4. The energy of each chair is the textbook additive
+  estimate, the sum of the A-values of its axial groups, with one tabulated exception: two groups
+  axial and 1,3 to each other (the diaxial chair of a cis-1,3 isomer) crowd each other directly, and for
+  CH₃/CH₃ the 1,3-diaxial interaction is taken as 3.7 kcal/mol = 15.5 kJ/mol (`DIAXIAL_PAIRS`) in place
+  of 2 × 7.3. Other pairs keep the additive sum and the card says it is a lower estimate; gauche
+  interactions between adjacent equatorial groups (1,2 isomers) are neglected, as in the textbook
+  treatment. The share of molecules in a chair is K/(1 + K) with K = e^(ΔG/RT) between the two chairs
+  at 298 K. Names follow IUPAC locants with the first-cited prefix at C1; the ring relation (1,2 / 1,3 /
+  1,4) is the same from either end.
 * Why eclipsing costs energy (bonding-pair repulsion vs σ → σ* hyperconjugation): Pophristic & Goodman,
   *Nature* 411, 565 (2001), summarised at teaching level as "textbooks give two reasons".

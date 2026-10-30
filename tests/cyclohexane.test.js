@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CHAIR, CHAIR_SUBSTITUENTS, RING_FORMS, substituentById, formById, cyclohexaneFrame, chairEnergy, equatorialFraction, KCAL } from '../src/chem/cyclohexane.js';
-import { A_VALUES, RING_CONFORMER_ENERGIES, TORSION_ENERGIES } from '../src/chem/references/textbook.js';
+import { CHAIR, CHAIR_SUBSTITUENTS, RING_FORMS, POSITIONS, RELATIONS, substituentById, formById, cyclohexaneFrame, chairEnergy, equatorialFraction, chairSiteRule, cyclohexaneName, normaliseSecond, KCAL } from '../src/chem/cyclohexane.js';
+import { A_VALUES, RING_CONFORMER_ENERGIES, TORSION_ENERGIES, DIAXIAL_PAIRS } from '../src/chem/references/textbook.js';
 import { MEASURED_ANGLES } from '../src/chem/references/measured.js';
 import { ringTemplate, v } from '../src/chem/geometry.js';
 import { bondLength } from '../src/chem/elements.js';
@@ -103,17 +103,74 @@ test('every substituent in every ring form: template geometry kept, X on the rig
   assert.ok(cyclohexaneFrame('methyl', 'axial') === meAx, 'frames are cached');
 });
 
+test('disubstituted rings: sites follow the template rule, energies add A-values, cis-1,3 uses the pair value, names are IUPAC', () => {
+  const me = (p, rel) => ({ sub: 'methyl', position: p, rel });
+  for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) {
+    const r = cyclohexaneFrame('methyl', f, me(p.id, rel));
+    const flip = f === 'equatorial';
+    assert.equal(r.groups.length, 2);
+    assert.equal(r.groups[0].site, chairSiteRule(flip, 1, 'up'));
+    assert.equal(r.groups[1].site, chairSiteRule(flip, p.id, rel === 'cis' ? 'up' : 'down'), `${p.label} ${rel} ${f}: Y site`);
+    for (const g of r.groups) assert.ok(g.site === 'axial' ? g.tilt < 5 : g.tilt > 60 && g.tilt < 80, `${p.label} ${rel} ${f} ${g.role} tilt ${g.tilt.toFixed(1)}`);
+    assert.equal(r.groups[1].carbon, `ring.C${p.id}`);
+    const axial = r.groups.filter((g) => g.site === 'axial').length;
+    const expected = axial === 2 && p.id === 3 ? DIAXIAL_PAIRS.values['methyl/methyl'].kJ : axial * A_VALUES.values.methyl.kJ;
+    assert.ok(Math.abs(r.energy.value - expected) < 1e-9, `${p.label} ${rel} ${f}: ${r.energy.value} vs ${expected}`);
+    assert.equal(r.energy.basis, 'table');
+    assert.equal(r.other.value, chairEnergy('methyl', flip ? 'axial' : 'equatorial', me(p.id, rel)).value);
+    assert.ok(Math.abs(r.fraction - equatorialFraction(r.other.value - r.energy.value)) < 1e-12);
+    const byId = new Map(r.frame.atoms.map((x) => [x.id, x]));
+    for (const bd of r.frame.bonds) { const d = v.dist(byId.get(bd.a).pos, byId.get(bd.b).pos); const L = bd.length ?? bondLength(byId.get(bd.a).el, byId.get(bd.b).el, bd.aromatic ? 1.5 : bd.order); assert.ok(Math.abs(d - L) < 0.011, `${p.label} ${rel} ${f} ${bd.a}–${bd.b}`); }
+    assert.ok(!r.frame.atoms.some((a) => a.id === 'ring._free'), 'the placeholder hydrogen is gone');
+    assert.equal(r.frame.atoms.filter((a) => a.el === 'C').length, 8);
+  }
+  // the textbook rule: trans-1,2, cis-1,3, trans-1,4 have a diequatorial chair and prefer it; the others are one of each
+  for (const [p, rel, dieq] of [[2, 'trans', true], [2, 'cis', false], [3, 'cis', true], [3, 'trans', false], [4, 'trans', true], [4, 'cis', false]]) {
+    const a = cyclohexaneFrame('methyl', 'axial', me(p, rel)), b = cyclohexaneFrame('methyl', 'equatorial', me(p, rel));
+    const sites = [a, b].map((r) => r.groups.map((g) => g.site).join('/'));
+    if (dieq) { assert.ok(sites.includes('equatorial/equatorial') && sites.includes('axial/axial'), `${rel}-1,${p}: ${sites}`); const best = a.energy.value === 0 ? a : b; assert.ok(best.fraction > 0.99, `${rel}-1,${p} diequatorial share ${best.fraction}`); }
+    else { assert.ok(sites.every((s) => s === 'axial/equatorial' || s === 'equatorial/axial'), `${rel}-1,${p}: ${sites}`); assert.equal(a.energy.value, b.energy.value); assert.equal(a.fraction, 0.5); }
+  }
+  const cis13 = cyclohexaneFrame('methyl', 'axial', me(3, 'cis'));
+  assert.ok(cis13.energy.pair && cis13.energy.pair.key === 'methyl/methyl' && cis13.energy.value === 15.5 && cis13.crowding, 'diaxial cis-1,3-dimethyl: pair value and an honest crowding flag');
+  assert.ok(cis13.groups[0].contact && cis13.groups[0].contact.b.startsWith('Y.'), 'the closest contact of X is the other methyl');
+  const cis13et = chairEnergy('methyl', 'axial', { sub: 'ethyl', position: 3, rel: 'cis' });
+  assert.ok(!cis13et.pair && cis13et.value === A_VALUES.values.methyl.kJ + A_VALUES.values.ethyl.kJ && /lower estimate/.test(cis13et.note), 'untabulated pairs stay additive and say so');
+  // names
+  assert.equal(cyclohexaneName('methyl', me(2, 'trans')), 'trans-1,2-dimethylcyclohexane');
+  assert.equal(cyclohexaneName('methyl', { sub: 'Cl', position: 2, rel: 'trans' }), 'trans-1-chloro-2-methylcyclohexane');
+  assert.equal(cyclohexaneName('tBu', { sub: 'methyl', position: 4, rel: 'cis' }), 'cis-1-tert-butyl-4-methylcyclohexane');
+  assert.equal(cyclohexaneName('OH', { sub: 'methyl', position: 2, rel: 'trans' }), 'trans-2-methylcyclohexan-1-ol');
+  assert.equal(cyclohexaneName('OH', { sub: 'OH', position: 2, rel: 'cis' }), 'cis-Cyclohexane-1,2-diol');
+  assert.equal(cyclohexaneName('CF3', { sub: 'CF3', position: 3, rel: 'cis' }), 'cis-1,3-bis(trifluoromethyl)cyclohexane');
+  assert.equal(cyclohexaneName('methyl', null), 'Methylcyclohexane');
+  assert.equal(cyclohexaneName('H', me(3, 'cis')), 'Methylcyclohexane');
+  // validation
+  assert.equal(normaliseSecond({ sub: 'H', position: 2, rel: 'cis' }), null);
+  assert.throws(() => normaliseSecond({ sub: 'methyl', position: 5, rel: 'cis' }), /position/);
+  assert.throws(() => normaliseSecond({ sub: 'methyl', position: 2, rel: 'syn' }), /relation/);
+  assert.throws(() => cyclohexaneFrame('methyl', 'boat', me(2, 'cis')), /one substituent only/);
+  // every pair builds, and overlap is always flagged rather than hidden
+  let built = 0;
+  for (const X of CHAIR_SUBSTITUENTS) for (const Y of CHAIR_SUBSTITUENTS) { if (X.id === 'H' || Y.id === 'H') continue; const r = cyclohexaneFrame(X.id, 'equatorial', { sub: Y.id, position: 4, rel: 'trans' }); built++; assert.ok(r.frame.atoms.every((a) => a.pos.every(Number.isFinite))); assert.equal(r.groups.map((g) => g.site).join('/'), 'equatorial/equatorial'); }
+  assert.equal(built, 144);
+});
+
 test('the chair lesson item, its activities and the panel item list', () => {
   assert.equal(CHAIR.id, 'cyclohexane');
-  assert.ok(CHAIR.facts.length >= 5 && CHAIR.links.length >= 3 && CHAIR.landmarks.length === RING_FORMS.length);
+  assert.ok(CHAIR.facts.length >= 8 && CHAIR.links.length >= 3 && CHAIR.landmarks.length === RING_FORMS.length);
   assert.equal(ITEMS[ITEMS.length - 1], CHAIR);
   const chairActs = ACTIVITIES.filter((a) => a.rotor === 'cyclohexane');
-  assert.ok(chairActs.length >= 3);
+  assert.ok(chairActs.length >= 5);
   for (const act of chairActs) {
     assert.equal(act.options.filter((o) => o.correct).length, 1); assert.ok(correctOption(act));
     assert.ok(act.reveal().length > 80);
     assert.ok(formById(act.show.form) && substituentById(act.show.substituent), `${act.id}: show target`);
+    assert.ok('second' in act.show, `${act.id}: show says whether a second substituent is drawn`);
+    if (act.show.second) assert.ok(normaliseSecond(act.show.second));
   }
+  assert.match(chairActs.find((a) => a.id === 'trans-12').reveal(), /14\.6 kJ\/mol.*99\.7 %/);
+  assert.match(chairActs.find((a) => a.id === 'cis-13').reveal(), /15\.5 kJ\/mol/);
   assert.match(chairActs.find((a) => a.id === 'chair-prefer').reveal(), /7\.3 kJ\/mol.*95 %/);
   assert.match(chairActs.find((a) => a.id === 'diaxial-gauche').reveal(), /3\.8.*7\.6.*7\.3/);
 });

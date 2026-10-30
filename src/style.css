@@ -324,3 +324,8 @@ body.drawer-open { overflow: hidden; }
   .nexus-input { width: 100%; }
   .nexus-results { width: calc(100vw - 10%); }
 }
+
+/* Conformations: second-substituent controls grey out until Y is chosen */
+.row.disabled { opacity: 0.45; }
+.row.disabled .landmarks { pointer-events: none; }
+.landmarks .select.small { margin: 0; }

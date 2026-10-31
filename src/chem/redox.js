@@ -9,7 +9,7 @@ import { formulaFromAtoms } from './elements.js';
 import { ELECTRONEGATIVITY, OXIDATION_STATE_RULES, REDOX_BOND_LENGTHS, DICHROMATE_BRIDGE_ANGLE } from './references/textbook.js';
 
 /** Valence electrons for the Lewis check (main group: group number; metals: group number, i.e. s + d electrons). */
-export const VALENCE_ELECTRONS = { H: 1, C: 4, N: 5, O: 6, F: 7, P: 5, S: 6, Cl: 7, Br: 7, I: 7, Mn: 7, Cr: 6, Fe: 8, Cu: 11, Zn: 12 };
+export const VALENCE_ELECTRONS = { H: 1, C: 4, N: 5, O: 6, F: 7, P: 5, S: 6, Cl: 7, Br: 7, I: 7, Mn: 7, Cr: 6, Fe: 8, Cu: 11, Zn: 12, Li: 1, Mg: 2, Al: 3, Ni: 10, Ag: 11, Pb: 4 };
 const SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', '−': '⁻' };
 const SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' };
 const sup = (s) => String(s).replace(/./g, (c) => SUP[c] || c);
@@ -94,7 +94,25 @@ export const SPECIES = {
   dioxygen: { formula: 'O₂', name: 'dioxygen', charge: 0, build: { graph: { atoms: [{ id: 'O1', el: 'O', hyb: 'sp2', lonePairs: 2 }, { id: 'O2', el: 'O', hyb: 'sp2', lonePairs: 2 }], bonds: [{ a: 'O1', b: 'O2', order: 2 }] } } },
   dihydrogen: { formula: 'H₂', name: 'dihydrogen', charge: 0, build: { graph: { atoms: [{ id: 'H1', el: 'H' }, { id: 'H2', el: 'H' }], bonds: [{ a: 'H1', b: 'H2', order: 1 }] } } },
   proton: { formula: 'H⁺', name: 'hydrogen ion (hydrated in water)', charge: 1, build: { graph: ion('H', 1) } },
-  chlorine: { formula: 'Cl₂', name: 'dichlorine', charge: 0, build: { graph: { atoms: [{ id: 'Cl1', ...lp('Cl', 3) }, { id: 'Cl2', ...lp('Cl', 3) }], bonds: [{ a: 'Cl1', b: 'Cl2', order: 1 }] } } },
+  chlorine: { formula: 'Cl₂', name: 'dichlorine', charge: 0, build: { graph: { atoms: [{ id: 'Cl1', ...lp('Cl', 3) }, { id: 'Cl2', ...lp('Cl', 3) }], bonds: [{ a: 'Cl1', b: 'Cl2', order: 1, ...blen('Cl2_ClCl') }] } } },
+  fluorine: { formula: 'F₂', name: 'difluorine', charge: 0, build: { graph: { atoms: [{ id: 'F1', ...lp('F', 3) }, { id: 'F2', ...lp('F', 3) }], bonds: [{ a: 'F1', b: 'F2', order: 1, ...blen('F2_FF') }] } } },
+  fluoride: { formula: 'F⁻', name: 'fluoride ion', charge: -1, build: { graph: ion('F', -1, 4) } },
+  bromine: { formula: 'Br₂', name: 'dibromine', charge: 0, build: { graph: { atoms: [{ id: 'Br1', ...lp('Br', 3) }, { id: 'Br2', ...lp('Br', 3) }], bonds: [{ a: 'Br1', b: 'Br2', order: 1, ...blen('Br2_BrBr') }] } } },
+  iodine: { formula: 'I₂', name: 'diiodine', charge: 0, build: { graph: { atoms: [{ id: 'I1', ...lp('I', 3) }, { id: 'I2', ...lp('I', 3) }], bonds: [{ a: 'I1', b: 'I2', order: 1, ...blen('I2_II') }] } } },
+  iodide: { formula: 'I⁻', name: 'iodide ion', charge: -1, build: { graph: ion('I', -1, 4) } },
+  lithium: { formula: 'Li', name: 'lithium metal', charge: 0, build: { graph: ion('Li', 0) } },
+  lithium1: { formula: 'Li⁺', name: 'lithium ion (hydrated)', charge: 1, build: { graph: ion('Li', 1) } },
+  magnesium: { formula: 'Mg', name: 'magnesium metal', charge: 0, build: { graph: ion('Mg', 0) } },
+  magnesium2: { formula: 'Mg²⁺', name: 'magnesium ion (hydrated)', charge: 2, build: { graph: ion('Mg', 2) } },
+  aluminium: { formula: 'Al', name: 'aluminium metal', charge: 0, build: { graph: ion('Al', 0) } },
+  aluminium3: { formula: 'Al³⁺', name: 'aluminium ion (hydrated)', charge: 3, build: { graph: ion('Al', 3) } },
+  iron0: { formula: 'Fe', name: 'iron metal', charge: 0, build: { graph: ion('Fe', 0) } },
+  nickel: { formula: 'Ni', name: 'nickel metal', charge: 0, build: { graph: ion('Ni', 0) } },
+  nickel2: { formula: 'Ni²⁺', name: 'nickel(II) ion (hydrated)', charge: 2, build: { graph: ion('Ni', 2) } },
+  lead: { formula: 'Pb', name: 'lead metal', charge: 0, build: { graph: ion('Pb', 0) } },
+  lead2: { formula: 'Pb²⁺', name: 'lead(II) ion (hydrated)', charge: 2, build: { graph: ion('Pb', 2) } },
+  silver: { formula: 'Ag', name: 'silver metal', charge: 0, build: { graph: ion('Ag', 0) } },
+  silver1: { formula: 'Ag⁺', name: 'silver ion (hydrated)', charge: 1, build: { graph: ion('Ag', 1) } },
   chloride: { formula: 'Cl⁻', name: 'chloride ion', charge: -1, build: { graph: ion('Cl', -1, 4) } },
   permanganate: { formula: 'MnO₄⁻', name: 'permanganate ion', charge: -1, build: { graph: { atoms: [{ id: 'Mn', el: 'Mn' }, { id: 'O1', el: 'O', hyb: 'sp2', lonePairs: 2 }, { id: 'O2', el: 'O', hyb: 'sp2', lonePairs: 2 }, { id: 'O3', el: 'O', hyb: 'sp2', lonePairs: 2 }, { id: 'O4', el: 'O', lonePairs: 3, charge: -1 }], bonds: [{ a: 'Mn', b: 'O1', order: 2, ...blen('permanganate_MnO') }, { a: 'Mn', b: 'O2', order: 2, ...blen('permanganate_MnO') }, { a: 'Mn', b: 'O3', order: 2, ...blen('permanganate_MnO') }, { a: 'Mn', b: 'O4', order: 1, ...blen('permanganate_MnO') }] }, root: 'Mn' }, highlight: ['Mn'] },
   manganese2: { formula: 'Mn²⁺', name: 'manganese(II) ion (hydrated)', charge: 2, build: { graph: ion('Mn', 2) } },
@@ -200,6 +218,17 @@ export const COUPLES = [
   { id: 'peroxideReduced', name: 'Hydrogen peroxide to water', from: [S('hydrogenPeroxide')], to: [S('water', 2)], key: ['O'], family: 'inorganic', partner: 'peroxideOxidised' },
   { id: 'peroxideOxidised', name: 'Hydrogen peroxide to oxygen', from: [S('hydrogenPeroxide')], to: [S('dioxygen')], key: ['O'], family: 'inorganic', partner: 'peroxideReduced' },
   { id: 'chlorine', name: 'Chlorine to chloride', from: [S('chlorine')], to: [S('chloride', 2)], key: ['Cl'], family: 'inorganic' },
+  // the rest of the electrochemical series (Electrochemistry topic); all written as reductions
+  { id: 'fluorine', name: 'Fluorine to fluoride', from: [S('fluorine')], to: [S('fluoride', 2)], key: ['F'], family: 'inorganic' },
+  { id: 'bromine', name: 'Bromine to bromide', from: [S('bromine')], to: [S('bromide', 2)], key: ['Br'], family: 'inorganic' },
+  { id: 'iodine', name: 'Iodine to iodide', from: [S('iodine')], to: [S('iodide', 2)], key: ['I'], family: 'inorganic' },
+  { id: 'silver', name: 'Ag(I) to silver metal', from: [S('silver1')], to: [S('silver')], key: ['Ag'], family: 'inorganic' },
+  { id: 'lead', name: 'Pb(II) to lead metal', from: [S('lead2')], to: [S('lead')], key: ['Pb'], family: 'inorganic' },
+  { id: 'nickel', name: 'Ni(II) to nickel metal', from: [S('nickel2')], to: [S('nickel')], key: ['Ni'], family: 'inorganic', links: [{ label: '[Ni(H₂O)₆]²⁺', href: '#transition-metals/niAqua' }] },
+  { id: 'ironMetal', name: 'Fe(II) to iron metal', from: [S('iron2')], to: [S('iron0')], key: ['Fe'], family: 'inorganic' },
+  { id: 'aluminium', name: 'Al(III) to aluminium metal', from: [S('aluminium3')], to: [S('aluminium')], key: ['Al'], family: 'inorganic' },
+  { id: 'magnesium', name: 'Mg(II) to magnesium metal', from: [S('magnesium2')], to: [S('magnesium')], key: ['Mg'], family: 'inorganic' },
+  { id: 'lithium', name: 'Li(I) to lithium metal', from: [S('lithium1')], to: [S('lithium')], key: ['Li'], family: 'inorganic' },
 ];
 export const coupleById = (id) => COUPLES.find((c) => c.id === id) || null;
 
@@ -279,7 +308,22 @@ export function overall(coupleId, partnerId) {
   const a = balance(A), b0 = balance(B);
   if (!a.electrons || !b0.electrons) return null;
   const flip = Math.sign(a.electrons) === Math.sign(b0.electrons);
-  const b = flip ? { ...b0, left: b0.right, right: b0.left, electrons: -b0.electrons } : b0;
+  return combine(a, flip ? reversed(b0) : b0, coupleId, partnerId, false, flip);
+}
+const reversed = (eq) => ({ ...eq, left: eq.right, right: eq.left, electrons: -eq.electrons });
+/**
+ * The overall equation with the directions stated: `oxId` runs as an oxidation and `redId` as a reduction, whichever
+ * way each couple is written (a cell: anode first, cathode second). Returns null when either is not a redox couple.
+ */
+export function orientedOverall(oxId, redId) {
+  const A = coupleById(oxId), B = coupleById(redId);
+  if (!A || !B) throw new Error(`orientedOverall(): unknown couple ${!A ? oxId : redId}`);
+  const a0 = balance(A), b0 = balance(B);
+  if (!a0.electrons || !b0.electrons) return null;
+  const a = a0.electrons > 0 ? a0 : reversed(a0), b = b0.electrons < 0 ? b0 : reversed(b0);
+  return combine(a, b, oxId, redId, a !== a0, b !== b0);
+}
+function combine(a, b, coupleId, partnerId, aReversed, flip) {
   const na = Math.abs(a.electrons), nb = Math.abs(b.electrons), l = (na * nb) / gcd(na, nb), ka = l / na, kb = l / nb;
   const left = [], right = [];
   const pour = (side, eq, k) => { for (const t of eq) { const x = side.find((y) => y.id === t.id); if (x) x.n += k * t.n; else side.push({ ...t, n: k * t.n }); } };
@@ -287,7 +331,7 @@ export function overall(coupleId, partnerId) {
   for (const id of new Set(left.map((t) => t.id))) cancel(left, right, id);
   const L = sortSide(tidy(left)), R = sortSide(tidy(right));
   const eq = { left: L, right: R };
-  return { ...eq, electrons: l, multipliers: { [coupleId]: ka, [partnerId]: kb }, partnerReversed: flip, oxidation: a.electrons > 0 ? coupleId : partnerId, reduction: a.electrons > 0 ? partnerId : coupleId, text: `${sideText(L)} → ${sideText(R)}`, balanced: isBalanced(eq) };
+  return { ...eq, electrons: l, multipliers: { [coupleId]: ka, [partnerId]: kb }, partnerReversed: flip, firstReversed: aReversed, oxidation: a.electrons > 0 ? coupleId : partnerId, reduction: a.electrons > 0 ? partnerId : coupleId, text: `${sideText(L)} → ${sideText(R)}`, balanced: isBalanced(eq) };
 }
 
 /** Per-atom bookkeeping for the organic rule: bonds to H, bonds to more electronegative atoms, bonds to the same element. */

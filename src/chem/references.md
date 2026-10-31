@@ -96,6 +96,15 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
   geometries of H₂O₂ (CCCBDB), KMnO₄ and K₂Cr₂O₇ (crystal structures) in `references/measured.js`. Details
   and the limits of the model in `src/topics/redox/references.md`.
 
+## Electrochemistry (`electrochemistry.js`)
+
+* Standard potentials (`STANDARD_POTENTIALS`): Atkins, *Physical Chemistry*, resource section, cross-checked
+  against the CRC "Electrochemical series" (three entries differ by ≤ 0.03 V, stated on the cards); the cell
+  rule and the identities ΔG° = −nFE°, ln K = nFE°/RT, Nernst: Atkins ch. 6, Housecroft & Sharpe 5e ch. 8;
+  constants CODATA 2018 (`ELECTROCHEMICAL_CONSTANTS`); worked cells (`TEXTBOOK_CELLS`): Atkins, Housecroft &
+  Sharpe, Zumdahl. Halogen bond lengths (F₂, Cl₂, Br₂, I₂) from CCCBDB in `references/measured.js`. Details
+  and the limits of the model in `src/topics/electrochemistry/references.md`.
+
 ## Transition metals (`transitionMetals.js`)
 
 * Crystal-field patterns and the barycentre rule (`CRYSTAL_FIELD`), Δo values (`DELTA_O`, Housecroft &

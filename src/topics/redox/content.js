@@ -77,6 +77,36 @@ export const INVARIANTS = {
   peroxideOxidised: [
     { id: 'dispro', title: 'The same molecule can lose electrons instead', detail: 'H₂O₂ → O₂ + 2 H⁺ + 2 e⁻ takes oxygen from −1 to 0. Pair this couple with its own reduction and the overall equation is 2 H₂O₂ → 2 H₂O + O₂: disproportionation, which is why peroxide bottles slowly go flat.', show: { partner: 'peroxideReduced' }, links: [{ label: 'Disproportionation', href: '#glossary/disproportionation' }] },
   ],
+  fluorine: [
+    { id: 'two', title: 'The most electronegative element takes two electrons', detail: 'F₂ + 2 e⁻ → 2 F⁻: fluorine at 0 to −1. Fluorine is never positive in any compound, because nothing is more electronegative; its only redox chemistry is this reduction.' },
+  ],
+  bromine: [
+    { id: 'two', title: 'Br₂ to bromide: the same count as chlorine', detail: 'Br₂ + 2 e⁻ → 2 Br⁻. The halogens all take one electron per atom; what differs down the group is how strongly, which is E°, not the count (Electrochemistry tab).' , links: [{ label: 'Bromide from the SN2 reaction', href: '#redox/substitution' }] },
+  ],
+  iodine: [
+    { id: 'two', title: 'I₂ to iodide: two electrons, no acid or base needed', detail: 'I₂ + 2 e⁻ → 2 I⁻. Iodine–iodide is the couple of iodometric titrations: the starch–iodine colour marks where the last I₂ has been reduced.' },
+  ],
+  silver: [
+    { id: 'one', title: 'One electron plates one silver atom', detail: 'Ag⁺ + e⁻ → Ag. Compared with Cu²⁺ + 2 e⁻ → Cu, twice as many silver ions are needed per copper atom in the overall equation: 2 Ag⁺ + Cu → 2 Ag + Cu²⁺.' , show: { partner: 'copper' } },
+  ],
+  lead: [
+    { id: 'two', title: 'Pb(II) to the metal: two electrons', detail: 'Pb²⁺ + 2 e⁻ → Pb. Lead sits just below hydrogen in the series; the lead–acid battery uses this couple on one plate and Pb(IV) on the other (not listed here).' },
+  ],
+  nickel: [
+    { id: 'two', title: 'Ni(II) to nickel: d⁸ gains two', detail: 'Ni²⁺ + 2 e⁻ → Ni. The ion in water is the green [Ni(H₂O)₆]²⁺ of the Transition metals tab; the metal is at 0 by definition.' },
+  ],
+  ironMetal: [
+    { id: 'two', title: 'Fe(II) to iron: the second iron couple', detail: 'Fe²⁺ + 2 e⁻ → Fe. Iron has two couples on the ladder, Fe³⁺/Fe²⁺ (one electron) and Fe²⁺/Fe (two); rusting runs the second one backwards with O₂ as the partner.' , links: [{ label: 'Fe(III) to Fe(II)', href: '#redox/iron' }], show: { partner: 'oxygen' } },
+  ],
+  aluminium: [
+    { id: 'three', title: 'Al(III) to aluminium: three electrons per atom', detail: 'Al³⁺ + 3 e⁻ → Al. Three electrons per atom is why aluminium smelting costs so much electricity: the Hall–Héroult cell pays 3 F per mole of metal.' },
+  ],
+  magnesium: [
+    { id: 'two', title: 'Mg(II) to magnesium', detail: 'Mg²⁺ + 2 e⁻ → Mg. Run backwards, Mg → Mg²⁺ + 2 e⁻ is why magnesium ribbon burns and why it is sacrificed to protect steel hulls (Electrochemistry tab).' },
+  ],
+  lithium: [
+    { id: 'one', title: 'Li(I) to lithium: one electron, the bottom of the ladder', detail: 'Li⁺ + e⁻ → Li. One electron per atom and the lightest metal: the reason lithium stores the most charge per gram of any anode.' },
+  ],
   chlorine: [
     { id: 'two', title: 'Cl₂ to chloride: two electrons, nothing else to balance', detail: 'Cl₂ + 2 e⁻ → 2 Cl⁻. A halogen molecule is at 0; the halide is −1. No oxygen or hydrogen is involved, so acid and base read the same.' },
   ],

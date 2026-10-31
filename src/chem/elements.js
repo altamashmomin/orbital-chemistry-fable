@@ -31,6 +31,12 @@ export const ELEMENTS = {
   Zn: { name: 'Zinc',       color: '#7d80b0', radius: 0.43, covalent: 1.22, en: 1.65, valence: 2 },
   Pd: { name: 'Palladium',  color: '#4b8a9b', radius: 0.46, covalent: 1.39, en: 2.20, valence: 2 },
   Pt: { name: 'Platinum',   color: '#b8bcd0', radius: 0.47, covalent: 1.36, en: 2.28, valence: 2 },
+  // Metals of the electrochemical series (Redox / Electrochemistry topics), same sources.
+  Li: { name: 'Lithium',    color: '#cc80ff', radius: 0.46, covalent: 1.28, en: 0.98, valence: 1 },
+  Mg: { name: 'Magnesium',  color: '#8aff00', radius: 0.45, covalent: 1.41, en: 1.31, valence: 2 },
+  Al: { name: 'Aluminium',  color: '#bfa6a6', radius: 0.44, covalent: 1.21, en: 1.61, valence: 3 },
+  Ag: { name: 'Silver',     color: '#c0c0c0', radius: 0.46, covalent: 1.45, en: 1.93, valence: 1 },
+  Pb: { name: 'Lead',       color: '#575961', radius: 0.48, covalent: 1.46, en: 2.33, valence: 2 },
 };
 
 // Typical bond lengths in Å. Key: "A-B" single, "A=B" double, "A#B" triple, "A:B" aromatic.

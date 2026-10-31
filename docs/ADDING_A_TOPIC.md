@@ -468,6 +468,22 @@ from the rigid ring templates with the substituent embedded as an R group, `chai
 table lookup into `A_VALUES` / `RING_CONFORMER_ENERGIES`), the worked example of the one energy
 exception the model boundary allows (`docs/REVIEW_PROTOCOL.md` §6).
 
+### Counting on a graph: Redox (`src/topics/redox/`)
+
+An explorer whose items are reactions (couples) rather than molecules. `src/chem/redox.js` holds the pure
+half: `oxidationStates(graph)` applies one rule to any `{ atoms, bonds }` graph (formal charge + Σ bond
+order × ±1 by electronegativity) and also returns the electron-count form and a Lewis check, so a wrongly
+drawn charge or lone pair fails a test instead of printing a wrong number; `SPECIES` are built by the
+Functional groups builder (`fg`, `choice`), as explicit graphs, or as bare ions, with `REDOX_BOND_LENGTHS`
+citing measured rows and the dichromate bridge pinned (`embed(..., { pinned, root, lonePairAngles: false })`);
+`COUPLES` list `from` / `to` species with counts and a `key` element whose Σ oxidation state must change by
+exactly the electron count the balancer finds; `balance(couple, medium)` adds H₂O, H⁺ and e⁻ (OH⁻ to both
+sides in base), `overall(a, b)` scales two half-reactions to a common electron count, and `buildCouple(id,
+{ side, index, medium, partner })` packages the card. Rules carried over: the textbook forms
+(`HALF_REACTIONS`) and the carbon ladder (`OXIDATION_LEVELS`) are oracles the module must reproduce; couple
+ids must not repeat a mechanism id (the search ranks exact keyword matches first); no potential is tabulated,
+so the card never says which way a reaction runs.
+
 ### A diagram you fill: Transition metals (`src/topics/transition-metals/`)
 
 The explorer with a molecule, an optional orbital and a `LevelDiagram` the user clicks.

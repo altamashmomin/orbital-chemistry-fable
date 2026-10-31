@@ -50,6 +50,7 @@ export const IDEAL_ANGLES = { tetrahedral: 109.47, trigonal: 120, linear: 180, o
 export const LONE_PAIR_ANGLES = {
   'O/2/2/H,H': { angle: 104.5, ref: 'water_HOH', exemplar: 'H₂O' },
   'O/2/2/C,H': { angle: 108.9, ref: 'methanol_COH', exemplar: 'CH₃OH', appliesTo: 'alcohols' },
+  'O/2/2/H,O': { angle: 94.8, ref: 'hydrogenPeroxide_HOO', exemplar: 'H₂O₂', appliesTo: 'hydrogen peroxide (Redox topic)' },
   'O/2/2/C,C': { angle: 111.2, ref: 'dimethylEther_COC', exemplar: '(CH₃)₂O', appliesTo: 'ethers' },
   'O/2/2': { angle: 108.9, ref: 'methanol_COH', exemplar: 'CH₃OH', appliesTo: 'other bent sp³ oxygen', classDefault: true },
   'O/2/2:sp2/C,H': { angle: 106.3, ref: 'formicAcid_COH', exemplar: 'HCOOH', appliesTo: 'carboxylic acids (acetic acid 107°)' },
@@ -71,7 +72,7 @@ export const LONE_PAIR_ANGLES = {
 export const LONE_PAIR_COMPRESSION_PER_PAIR = 2.5;
 
 /** Pauling electronegativities. */
-export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19 }; // CRC
+export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19, Mn: 1.55, Cr: 1.66, Fe: 1.83, Cu: 1.90, Zn: 1.65 }; // CRC (Pauling scale)
 
 /**
  * Torsional energies for the Conformations topic, kJ/mol above the lowest conformer. Textbook teaching
@@ -328,3 +329,76 @@ export const METAL_GROUPS = { source: 'IUPAC periodic table (groups 3–12)', va
 
 /** Spin-only magnetic moment μ = √(n(n+2)) μ_B for n unpaired electrons: the formula applied to a count. */
 export const SPIN_ONLY_MOMENT = { formula: 'μ = √(n(n+2)) μ_B', source: 'Housecroft & Sharpe 5e ch. 20 (eq. 20.10); ATKINS ch. 8' };
+
+// ---------------------------------------------------------------------------------------------------
+// Redox topic (src/chem/redox.js): rules, the carbon oxidation-level ladder and the textbook half-reactions
+// the balancer is checked against. The oxidation-state assigner is the IUPAC ionic approximation (each bond's
+// electrons to the more electronegative atom, Pauling values above); the balancer is arithmetic on atom and
+// charge counts. Neither reads a potential: E° values and cells are the deferred phase B of the topic.
+// ---------------------------------------------------------------------------------------------------
+
+/** The rule the assigner implements, and where it is taught. */
+export const OXIDATION_STATE_RULES = {
+  rule: 'oxidation state = formal charge + Σ over bonds of (bond order × +1 if the partner is more electronegative, −1 if less, 0 if the same element or the same electronegativity)',
+  source: 'IUPAC Recommendations 2016, Karen, McArdle & Takats, Pure Appl. Chem. 88, 831 ("Comprehensive definition of oxidation state"; the ionic approximation of each bond, Allen electronegativities); Pauling values here (CRC); CGW ch. 24 (oxidation levels of carbon); KLEIN ch. 12 (oxidation state of carbon by counting C–H and C–O bonds)',
+  caveat: 'Pauling and Allen electronegativities rank every bond partner here the same way except C–I (Allen puts carbon above iodine); no iodine species is used',
+};
+
+/** Carbon oxidation states the textbooks print for the ladder; the assigner is checked against every row. */
+export const OXIDATION_LEVELS = {
+  source: 'CGW ch. 24 (oxidation levels: alkane < alcohol < aldehyde / ketone < carboxylic acid < CO₂); KLEIN ch. 12 (Table of oxidation states of carbon); the IUPAC 2016 worked examples',
+  values: {
+    methane: { species: 'methane', atom: 'C', os: -4 },
+    methanol: { species: 'methanol', atom: 'R1.C', os: -2 },
+    formaldehyde: { species: 'formaldehyde', atom: 'C', os: 0 },
+    formicAcid: { species: 'formicAcid', atom: 'C', os: 2 },
+    carbonDioxide: { species: 'carbonDioxide', atom: 'C', os: 4 },
+    ethanolC1: { species: 'ethanol', atom: 'R1.C1', os: -1 },
+    ethanolC2: { species: 'ethanol', atom: 'R1.C2', os: -3 },
+    acetaldehyde: { species: 'acetaldehyde', atom: 'C', os: 1 },
+    aceticAcid: { species: 'aceticAcid', atom: 'C', os: 3 },
+    propan2ol: { species: 'propan2ol', atom: 'R1.C1', os: 0 },
+    acetone: { species: 'acetone', atom: 'C', os: 2 },
+    ethene: { species: 'ethene', atom: 'C1', os: -2 },
+    ethane: { species: 'ethane', atom: 'C1', os: -3 },
+    nitrobenzeneN: { species: 'nitrobenzene', atom: 'N', os: 3 },
+    anilineN: { species: 'aniline', atom: 'N', os: -3 },
+    permanganateMn: { species: 'permanganate', atom: 'Mn', os: 7 },
+    dichromateCr: { species: 'dichromate', atom: 'Cr1', os: 6 },
+    peroxideO: { species: 'hydrogenPeroxide', atom: 'O1', os: -1 },
+  },
+};
+
+/** Half-reactions as the textbooks write them (acid medium unless said), with the electron count: the balancer must reproduce each one. */
+export const HALF_REACTIONS = {
+  source: 'ATKINS, resource section (standard potentials); Housecroft & Sharpe 5e Appendix 11 and ch. 8 (balancing in acid and base); CGW ch. 23 (nitro reduction); KLEIN ch. 12 (alcohol oxidation)',
+  values: {
+    permanganate: { couple: 'permanganate', text: 'MnO₄⁻ + 8 H⁺ + 5 e⁻ → Mn²⁺ + 4 H₂O', n: 5 },
+    dichromate: { couple: 'dichromate', text: 'Cr₂O₇²⁻ + 14 H⁺ + 6 e⁻ → 2 Cr³⁺ + 7 H₂O', n: 6 },
+    oxygen: { couple: 'oxygen', text: 'O₂ + 4 H⁺ + 4 e⁻ → 2 H₂O', n: 4 },
+    oxygenBase: { couple: 'oxygen', medium: 'base', text: 'O₂ + 2 H₂O + 4 e⁻ → 4 OH⁻', n: 4 },
+    peroxideReduced: { couple: 'peroxideReduced', text: 'H₂O₂ + 2 H⁺ + 2 e⁻ → 2 H₂O', n: 2 },
+    peroxideOxidised: { couple: 'peroxideOxidised', text: 'O₂ + 2 H⁺ + 2 e⁻ → H₂O₂', n: 2 },
+    chlorine: { couple: 'chlorine', text: 'Cl₂ + 2 e⁻ → 2 Cl⁻', n: 2 },
+    hydrogen: { couple: 'hydrogen', text: '2 H⁺ + 2 e⁻ → H₂', n: 2 },
+    hydrogenBase: { couple: 'hydrogen', medium: 'base', text: '2 H₂O + 2 e⁻ → H₂ + 2 OH⁻', n: 2 },
+    iron: { couple: 'iron', text: 'Fe³⁺ + e⁻ → Fe²⁺', n: 1 },
+    copper: { couple: 'copper', text: 'Cu²⁺ + 2 e⁻ → Cu', n: 2 },
+    zinc: { couple: 'zinc', text: 'Zn²⁺ + 2 e⁻ → Zn', n: 2 },
+    nitrobenzene: { couple: 'nitrobenzene', text: 'C₆H₅NO₂ + 6 H⁺ + 6 e⁻ → C₆H₅NH₂ + 2 H₂O', n: 6 },
+    ethanol: { couple: 'ethanol', text: 'CH₃CHO + 2 H⁺ + 2 e⁻ → CH₃CH₂OH', n: 2 },
+    acetaldehyde: { couple: 'acetaldehyde', text: 'CH₃COOH + 2 H⁺ + 2 e⁻ → CH₃CHO + H₂O', n: 2 },
+    thiol: { couple: 'thiol', text: 'C₂H₅SSC₂H₅ + 2 H⁺ + 2 e⁻ → 2 C₂H₅SH', n: 2 },
+  },
+};
+
+/** Measured bond lengths the Redox species draw instead of the element/order table (oracle rows in measured.js). */
+export const REDOX_BOND_LENGTHS = {
+  permanganate_MnO: { length: 1.63, ref: 'permanganate_MnO' },
+  dichromate_CrO_terminal: { length: 1.63, ref: 'dichromate_CrO_terminal' },
+  dichromate_CrO_bridge: { length: 1.79, ref: 'dichromate_CrO_bridge' },
+  hydrogenPeroxide_OO: { length: 1.475, ref: 'hydrogenPeroxide_OO' },
+  hydrogenPeroxide_OH: { length: 0.95, ref: 'hydrogenPeroxide_OH' },
+};
+/** Bridge angle the dichromate frame is pinned at (oracle row dichromate_CrOCr). */
+export const DICHROMATE_BRIDGE_ANGLE = { angle: 126, ref: 'dichromate_CrOCr' };

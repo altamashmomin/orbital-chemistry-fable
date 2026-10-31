@@ -344,3 +344,8 @@ body.drawer-open { overflow: hidden; }
 .cf-canvas { height: 250px; margin-top: 12px; }
 .series { font-size: 12px; line-height: 1.6; color: var(--muted, #727e70); margin: 10px 0 0; }
 .series-item.active { color: var(--accent, #48725c); font-weight: 600; }
+.redox-eq { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin: 8px 0 0; overflow-x: auto; white-space: nowrap; }
+.redox-eq.active { border-color: var(--accent, #48725c); }
+.os-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.os-chip { font-size: 11px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); }
+.os-chip.key { border-color: var(--accent, #48725c); font-weight: 600; }

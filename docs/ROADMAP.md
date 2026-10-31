@@ -48,7 +48,7 @@ dependency, which is a different question.
 4. **Reaction lab: substitution and elimination** — now explained by 2 and 3 (inversion through the
    tetrahedron, the planar cation, anti-periplanar E2). 👁
 5. Addition and carbonyl chemistry, then stereochemistry and acids / bases (Phase 1 below).
-6. Orbitals, molecular orbitals and transition metals (Phase 2) 👁; redox and the canvas topics (Phase 3) next.
+6. Orbitals, molecular orbitals, redox (oxidation states and half-reactions) and transition metals (Phase 2) 👁; cells and E° (redox phase B) and the canvas topics (Phase 3) next.
 
 Reassess after 3 using the teaching gaps the first three topics expose; do not start later milestones
 automatically.
@@ -95,7 +95,7 @@ orbitals before MOs, oxidation states before transition metals.
 | 6 | 👁 `topic/molecular-shapes` — VSEPR gallery (2–6 domains with lone pairs), measured vs ideal angles with their status, predict-observe-explain activities (PR #9); the sp³/sp²/sp hybrid lobes via `OrbitalView` / `lcao()` are left for the orbitals topic | embedder (+0c, +0e), `CollectionExplorer`, angle/plane highlights, wedge-dash overlay | `src/chem/shapes.js` | low |
 | 7 | 👁 `topic/atomic-orbitals` — 1s–3d isosurfaces with the radial distribution, nodes and hydrogen energies; sp / sp² / sp³ hybrids as stated combinations; electron configurations 1–36 (aufbau, Hund, Pauli, the Cr / Cu exceptions) with box diagrams, checked against the NIST table. Periodic trends (radii, ionisation energies) deferred: they need a tabulated data set of their own | `orbitals.js`, `OrbitalView`, `LevelDiagram`, `CollectionExplorer` | `src/chem/atomicOrbitals.js` (pure: RDF, hybrids, configuration generator) | done |
 | 8 | 👁 `topic/molecular-orbitals` — H₂ / He₂, N₂ / O₂ (paramagnetism), ethene π / π*, butadiene, the carbonyl π* and the C–Cl σ* as the LUMOs behind the mechanisms; frames at measured lengths, a Jacobi Hückel solver, MO diagrams you click to draw the orbital | `lcao()` / `molecularOrbital()`, `OrbitalView` over `MoleculeView`, `LevelDiagram`, `CollectionExplorer`, links to the Reaction lab | `src/chem/molecularOrbitals.js` (pure: Hückel, diatomic filling, frames, ψ builders) | done |
-| 9 | `topic/redox` — **phase A**: oxidation states from any molecular graph, redox vs non-redox classification of the reactions already in the app, half-reactions and balancing in acid/base; **phase B** (canvas): galvanic cells, E° ladder on `LevelDiagram`, Nernst | FG data, `LevelDiagram`, canvas workspace | oxidation-state assigner and half-reaction balancer (algorithmic, unit-tested) | medium (balancer edge cases) |
+| 9 | 👁 `topic/redox` **phase A** (between Molecular orbitals and Transition metals) — oxidation states from any molecular graph (`oxidationStates()`: the IUPAC ionic approximation on the Pauling table, with an electron-count form and a Lewis check that must agree), the carbon ladder on the Functional groups molecules, the Reaction lab SN2 / E2 and the hydration of ethene shown to move no electrons, 23 couples balanced in acid and base by counting (`balance()`, checked against `HALF_REACTIONS`), overall equations from any two couples (`overall()`), MnO₄⁻ / Cr₂O₇²⁻ / H₂O₂ frames at cited lengths; **phase B** (canvas): galvanic cells, E° ladder on `LevelDiagram`, Nernst, direction of reaction | FG builder, `embed` with pins, `CollectionExplorer`, links to the Reaction lab and Transition metals | `src/chem/redox.js` (pure: assigner, species, couples, balancer); `OXIDATION_STATE_RULES`, `OXIDATION_LEVELS`, `HALF_REACTIONS`, `REDOX_BOND_LENGTHS` | A done; B open |
 | 10 | 👁 `topic/transition-metals` — 21 first-row complexes (hexaaqua d¹–d¹⁰, same-ion ligand swaps, four-coordinate Ni and Pt, cis / trans and fac / mer isomers), d count from the oxidation state, crystal-field filling for octahedral / tetrahedral / square planar with high / low spin as a labelled what-if, tabulated Δo, spin states and colours, the spectrochemical series, a metal d orbital drawn over the complex. Bidentate ligands (en, acac), oxidation states from a graph (row 9A) and pairing energies deferred | `complexFrame` slots, `embed` with pinned donors, `OrbitalView` over `MoleculeView`, `LevelDiagram` (click a level), `CollectionExplorer` | `src/chem/transitionMetals.js` (pure: ligands, complexes, fillings, frames, diagram spec); `CRYSTAL_FIELD`, `DELTA_O`, `SPECTROCHEMICAL_SERIES`, `COMPLEX_MAGNETISM`, `COMPLEX_COLOURS` | done |
 
 ## Phase 3 — finesse: canvas-workspace and physics-flavoured topics
@@ -131,7 +131,7 @@ destabilise the 3D topics. Develop them from the `_template` topic; do not bend
     ├─ 6 shapes (needs 0c) ─ 7 atomic orbitals ─ 8 MOs ┘
     └─ 10 transition metals (needs 7, 9A)
 0c ─── 4 conformations (needs 0d)
-9A redox (oxidation states) ─ 9B cells ─ 10
+9A redox (oxidation states, done) ─ 9B cells ─ 10
 12 uncertainty, 13 spectroscopy, 14 trends: independent, any time after the shell (done)
 ```
 

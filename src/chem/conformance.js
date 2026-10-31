@@ -23,6 +23,8 @@ import { PKA, PKA_TABLE, RT_LN10_KJ } from './references/textbook.js';
 import { DIATOMIC_MO, HUCKEL_PARAMETERS, SLATER_ZEFF } from './references/textbook.js';
 import { COMPLEXES, buildComplex, complexFrame as metalComplexFrame, levelPattern, seriesComparisons, SLOTS as METAL_SLOTS, KJ_PER_WAVENUMBER } from './transitionMetals.js';
 import { CRYSTAL_FIELD, DELTA_O, SPECTROCHEMICAL_SERIES, COMPLEX_MAGNETISM, COMPLEX_COLOURS, D_ORBITAL_ZEFF, METAL_GROUPS } from './references/textbook.js';
+import { SPECIES, SPECIES_IDS, COUPLES, LADDERS, oxidationStates, lewisProblems, totalCharge, speciesGraph, speciesFrame, balance, isBalanced, keyChange, overall, coupleById, ladderLevels, osText } from './redox.js';
+import { OXIDATION_STATE_RULES, OXIDATION_LEVELS, HALF_REACTIONS, REDOX_BOND_LENGTHS, DICHROMATE_BRIDGE_ANGLE } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -562,6 +564,50 @@ export function runConformance() {
   for (const id of MECHANISM_ORDER) { const m = MECHANISMS[id]; for (const k of m.keyIdeas) if (!isValidAudience(audienceOf(k, 'keyIdeas'))) badAud.push(`${id}/keyIdeas`); for (const s of m.steps) for (const k of s.keyPoints) if (!isValidAudience(audienceOf(k, 'keyPoints'))) badAud.push(`${id}/${s.id}`); }
   add('content', 'audience-tags', pf(!badAud.length), 'every data item has a valid audience', { actual: badAud.length ? badAud.join(', ') : 'all valid' });
 
+  // Redox topic: every species a consistent Lewis structure on which the two forms of the oxidation-state rule agree,
+  // the textbook carbon ladder reproduced, every half-reaction balanced in acid and base with the electron count equal
+  // to the change in Σ oxidation states of the key element, the textbook forms reproduced, every overall equation
+  // balanced, the Reaction lab reactions at zero electrons, and the oxoanion / peroxide frames at their cited geometry.
+  {
+    for (const id of SPECIES_IDS) {
+      const g = speciesGraph(id), os = oxidationStates(g), lew = lewisProblems(g);
+      const agree = [...os.values()].every((r) => r.osByCount == null || r.osByCount === r.os);
+      const sum = [...os.values()].reduce((a, r) => a + r.os, 0);
+      add('redox', `lewis.${id}`, pf(!lew.length && agree && sum === SPECIES[id].charge && totalCharge(g) === SPECIES[id].charge), `${SPECIES[id].formula}: drawn charges, lone pairs and bond orders make a consistent Lewis structure; q + Σ±order and V − 2LP − won agree on every atom; Σ oxidation states = charge`, { expected: `Σ = ${SPECIES[id].charge}`, actual: `${[...os].filter(([, r]) => r.el !== 'H').map(([a, r]) => `${a} ${osText(r.os)}`).join(', ') || 'H only'}${lew.length ? `; Lewis mismatch at ${lew.join(', ')}` : ''}`, source: OXIDATION_STATE_RULES.source.split(';')[0] });
+    }
+    for (const [k, row] of Object.entries(OXIDATION_LEVELS.values)) {
+      const got = oxidationStates(speciesGraph(row.species)).get(row.atom)?.os;
+      add('redox', `level.${k}`, pf(got === row.os), `${SPECIES[row.species].formula} ${row.atom}: the assigner gives the textbook oxidation state`, { expected: osText(row.os), actual: got == null ? 'missing atom' : osText(got), source: OXIDATION_LEVELS.source.split(';')[0] });
+    }
+    for (const l of LADDERS) { const lv = ladderLevels(l.id); const steps = lv.slice(1).map((r, i) => r.os - lv[i].os); add('redox', `ladder.${l.id}`, pf(steps.every((d) => d === 2)), `${l.label}: ${lv.map((r) => `${r.formula} ${osText(r.os)}`).join(' < ')}; two electrons a rung`, { expected: 'steps of +2', actual: steps.join(', '), source: OXIDATION_LEVELS.source.split(';')[0] }); }
+    for (const c of COUPLES) {
+      const a = balance(c, 'acid'), b = balance(c, 'base'), k = keyChange(c);
+      add('redox', `half.${c.id}`, pf(isBalanced(a) && isBalanced(b) && a.electrons === b.electrons && a.electrons === k.lost), `${c.name}: balanced in acid and base; e⁻ = change in Σ oxidation state of ${c.key.join('/')} (${osText(k.before)} → ${osText(k.after)})`, { expected: `${k.lost} e⁻ (signed, + = lost)`, actual: `${a.electrons}: ${a.text} | base: ${b.text}`, source: HALF_REACTIONS.source.split(';')[0] });
+    }
+    for (const [k, row] of Object.entries(HALF_REACTIONS.values)) {
+      const c = coupleById(row.couple); const eq = c && balance(c, row.medium || 'acid'); const got = eq ? (eq.electrons > 0 ? eq.reverseText : eq.text) : 'no such couple';
+      add('redox', `textbook.${k}`, pf(got === row.text && eq && Math.abs(eq.electrons) === row.n), `the balancer reproduces the textbook half-reaction${row.medium === 'base' ? ' in base' : ''}`, { expected: row.text, actual: got, source: HALF_REACTIONS.source.split(';')[0] });
+    }
+    {
+      const none = COUPLES.filter((c) => balance(c).electrons === 0).map((c) => c.id);
+      add('redox', 'not-redox', pf(none.join(',') === 'substitution,elimination,hydration'), 'the Reaction lab substitutions and eliminations and the hydration of ethene move no electrons: Σ carbon oxidation states unchanged', { expected: 'substitution, elimination, hydration at 0 e⁻', actual: none.join(', '), source: 'CGW ch. 24' });
+      let n = 0; const bad = [];
+      for (const c of COUPLES) for (const p of COUPLES) if (c !== p && balance(c).electrons && balance(p).electrons) { n++; const o = overall(c.id, p.id); if (!o.balanced) bad.push(`${c.id}+${p.id}`); }
+      add('redox', 'overall', pf(!bad.length), `every pair of redox couples adds to an element- and charge-balanced overall equation (${n} pairs); e.g. ${overall('ethanol', 'dichromate').text}`, { expected: 'all balanced', actual: bad.length ? bad.join(', ') : `${n} balanced`, source: 'Housecroft & Sharpe 5e ch. 8' });
+    }
+    for (const [k, row] of Object.entries(REDOX_BOND_LENGTHS)) { const m = MEASURED_BONDS[row.ref]; add('tables', `redox-bond.${k}`, pf(!!m && Math.abs(m.value - row.length) < 0.0005), `REDOX_BOND_LENGTHS row equals the cited measurement${m ? ` (${m.molecule} ${m.atoms})` : ` (unknown ref ${row.ref})`}`, { expected: m && `${m.value} Å (listed ${m.listed})`, actual: `${row.length} Å`, source: m?.source }); }
+    {
+      const bad = []; let n = 0;
+      for (const id of SPECIES_IDS) { const f = speciesFrame(id); if (f.atoms.some((a) => a.pos.some((x) => !Number.isFinite(x)))) bad.push(`${id} NaN`); for (const b of f.bonds) if (b.length != null) { n++; const A = f.atoms.find((x) => x.id === b.a).pos, B = f.atoms.find((x) => x.id === b.b).pos; if (Math.abs(v.dist(A, B) - b.length) > 1e-6 || !MEASURED_BONDS[b.ref]) bad.push(`${id} ${b.a}–${b.b}`); } }
+      const d = speciesFrame('dichromate'), P = (id) => d.atoms.find((x) => x.id === id).pos;
+      const bridge = angleDeg(P('Cr1'), P('Ob'), P('Cr2'));
+      const p = speciesFrame('hydrogenPeroxide'), Q = (id) => p.atoms.find((x) => x.id === id).pos;
+      const hoo = angleDeg(Q('H1'), Q('O1'), Q('O2'));
+      const m = MEASURED_ANGLES[DICHROMATE_BRIDGE_ANGLE.ref];
+      add('redox', 'frames', pf(!bad.length && Math.abs(bridge - DICHROMATE_BRIDGE_ANGLE.angle) < 1e-6 && !!m && m.value === DICHROMATE_BRIDGE_ANGLE.angle && Math.abs(hoo - 94.8) < 0.05), `oxoanion and peroxide frames: ${n} bonds at cited measured lengths; Cr–O–Cr pinned at the measured mean; H–O–O at the measured angle; every frame finite`, { expected: `Cr–O–Cr ${DICHROMATE_BRIDGE_ANGLE.angle}°, H–O–O 94.8°`, actual: bad.length ? bad.join('; ') : `Cr–O–Cr ${fmt(bridge, 1)}°, H–O–O ${fmt(hoo, 1)}°`, source: `${m?.source.split(';')[0]}; ${MEASURED_ANGLES.hydrogenPeroxide_HOO.source.split(',')[0]}` });
+    }
+  }
+
   // ------------------------------------------------------------------ J. register (static notes)
   for (const [k, detail] of Object.entries({
     'energies-illustrative': 'energy profiles are illustrative kcal/mol shapes, not measured activation energies',
@@ -579,6 +625,7 @@ export function runConformance() {
     'mo-pictures': 'molecular orbitals are ±1/√2 (diatomics) or Hückel combinations of hydrogen-like orbitals with Clementi–Raimondi exponents, overlap neglected; the 2s-based σ of N₂ / O₂ use the 2p exponent and the C–Cl σ / σ* equal weights (shapes and phases only); diatomic ladders are schematic and carry no energies; β is never given a number',
     'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
     'complex-templates': 'complexes draw their donor atoms on the ideal octahedral / square-planar / tetrahedral template at the covalent-radius-sum M–L length (real lengths vary by ±0.1 Å with spin and oxidation state) and their ligand hydrogens on ideal tetrahedral slots; the d⁹ Jahn–Teller distortion is not drawn; square-planar level gaps are schematic; Δo values follow one compilation (Housecroft & Sharpe Table 20.2) and others differ by a few hundred cm⁻¹; pairing energies are not tabulated, so spin states are read from the magnetism table, never decided by the model; the d-orbital picture uses Z_eff = 6.25 for every metal (size only)',
+    'redox-counting': 'oxidation states follow the ionic approximation on the Pauling scale (IUPAC 2016 uses Allen electronegativities; the two differ only for C–I, which no species here uses); bare ions are drawn as single atoms although hydrated; the H₂O₂ dihedral is the relaxer\'s staggered placement (measured 119.8°); MnO₄⁻ and Cr₂O₇²⁻ keep ideal 109.5° O–M–O angles with cited lengths; no standard potential, direction or rate is given (phase B)',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 
@@ -634,6 +681,7 @@ export function runConformance() {
       for (const s of SHAPES) scan(s.id, buildShape(s.id).frame);
       for (const it of MO_ITEMS) scan(`mo:${it.id}`, buildMO(it.id).frame);
       for (const c of COMPLEXES) scan(`complex:${c.id}`, metalComplexFrame(c.id).frame);
+      for (const id of SPECIES_IDS) scan(`redox:${id}`, speciesFrame(id));
       add('boundary', 'bond-lengths.cited', pf(!bad.length), 'every bond drawn at a length other than the element/order table cites a MEASURED_BONDS row', { expected: 'all cited', actual: bad.length ? bad.join(', ') : `${n} overrides, all cited`, source: 'REVIEW_PROTOCOL §6' });
     }
     // 4. Energies: only tabulated textbook values with a unit and a source are shown; a rotor without a table
@@ -651,6 +699,7 @@ export function runConformance() {
       if (!DELTA_O.unit || !DELTA_O.source) bad.push('DELTA_O lacks unit/source');
       for (const [k, t] of [['CRYSTAL_FIELD', CRYSTAL_FIELD], ['SPECTROCHEMICAL_SERIES', SPECTROCHEMICAL_SERIES], ['COMPLEX_MAGNETISM', COMPLEX_MAGNETISM], ['COMPLEX_COLOURS', COMPLEX_COLOURS], ['D_ORBITAL_ZEFF', D_ORBITAL_ZEFF], ['METAL_GROUPS', METAL_GROUPS]]) if (!t.source) bad.push(`${k} lacks a source`);
       if (!PKA_TABLE.unit || !PKA_TABLE.source) bad.push('PKA_TABLE lacks unit/source');
+      for (const [k, t] of [['OXIDATION_STATE_RULES', OXIDATION_STATE_RULES], ['OXIDATION_LEVELS', OXIDATION_LEVELS], ['HALF_REACTIONS', HALF_REACTIONS]]) if (!t.source) bad.push(`${k} lacks a source`);
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {

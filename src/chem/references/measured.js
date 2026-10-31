@@ -27,6 +27,12 @@ export const MEASURED_BONDS = {
   chloromethane_CH: { value: 1.09, listed: 1.090, molecule: 'CH₃Cl', cas: '74-87-3', atoms: 'C–H', source: 'Duncan et al. (1973), via CCCBDB' },
   formaldehyde_CH: { value: 1.111, listed: 1.111, molecule: 'H₂CO', cas: '50-00-0', atoms: 'C–H', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB' },
   formaldehyde_CO: { value: 1.205, listed: 1.205, molecule: 'H₂CO', cas: '50-00-0', atoms: 'C=O', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB; the Molecular shapes frame draws the table value 1.21 Å' },
+  // oxoanions and hydrogen peroxide of the Redox topic (read 2026-10-30)
+  hydrogenPeroxide_OO: { value: 1.475, listed: 1.475, molecule: 'H₂O₂', cas: '7722-84-1', atoms: 'O–O', source: 'Redington, Olson & Cross, J. Chem. Phys. 36, 1311 (1962), via CCCBDB' },
+  hydrogenPeroxide_OH: { value: 0.95, listed: 0.950, molecule: 'H₂O₂', cas: '7722-84-1', atoms: 'O–H', source: 'Redington, Olson & Cross (1962), via CCCBDB; H–O–O–H dihedral 119.8°' },
+  permanganate_MnO: { value: 1.63, listed: 1.629, molecule: 'KMnO₄ (crystal)', cas: '7722-64-7', atoms: 'Mn–O (all four)', type: 'X-ray', source: 'Palenik, Inorg. Chem. 6, 503 (1967), as quoted in the Wikipedia KMnO₄ entry (the paper itself was not read); CRC Handbook gives 1.63 Å for MnO₄⁻' },
+  dichromate_CrO_terminal: { value: 1.63, listed: 1.63, molecule: 'K₂Cr₂O₇ (crystal)', cas: '7778-50-9', atoms: 'Cr–O (terminal)', type: 'X-ray', source: 'Brandon & Brown, Can. J. Chem. 46, 933 (1968), abstract' },
+  dichromate_CrO_bridge: { value: 1.79, listed: 1.79, molecule: 'K₂Cr₂O₇ (crystal)', cas: '7778-50-9', atoms: 'Cr–O (bridging)', type: 'X-ray', source: 'Brandon & Brown, Can. J. Chem. 46, 933 (1968), abstract' },
 };
 
 export const MEASURED_ANGLES = {
@@ -36,6 +42,8 @@ export const MEASURED_ANGLES = {
   phosphine_HPH: { value: 93.3, listed: 93.3, molecule: 'PH₃', cas: '7803-51-2', atoms: 'H–P–H', source: 'Herzberg (1966), via CCCBDB' },
   hydrogenSulfide_HSH: { value: 92.1, listed: 92.11, molecule: 'H₂S', cas: '7783-06-4', atoms: 'H–S–H', source: 'Cook, De Lucia & Helminger, J. Mol. Struct. 28, 237 (1975), via CCCBDB' },
   hydrogenSelenide_HSeH: { value: 90.9, listed: 90.9, molecule: 'H₂Se', cas: '7783-07-5', atoms: 'H–Se–H', source: 'Kuchitsu (ed.), Structure of Free Polyatomic Molecules (1998), via CCCBDB' },
+  hydrogenPeroxide_HOO: { value: 94.8, listed: 94.8, molecule: 'H₂O₂', cas: '7722-84-1', atoms: 'H–O–O', source: 'Redington, Olson & Cross, J. Chem. Phys. 36, 1311 (1962), via CCCBDB' },
+  dichromate_CrOCr: { value: 126, listed: '124 and 128 (the two ions of the cell)', molecule: 'K₂Cr₂O₇ (crystal)', cas: '7778-50-9', atoms: 'Cr–O–Cr', type: 'X-ray', source: 'Brandon & Brown, Can. J. Chem. 46, 933 (1968), abstract; the model draws the mean' },
   methanol_COH: { value: 108.9, listed: 108.87, molecule: 'CH₃OH', cas: '67-56-1', atoms: 'C–O–H', source: 'Venkateswarlu & Gordy, J. Chem. Phys. 23, 1200 (1955), via CCCBDB' },
   dimethylEther_COC: { value: 111.2, listed: 111.2, molecule: '(CH₃)₂O', cas: '115-10-6', atoms: 'C–O–C', type: 'rₛ', source: 'Niide & Hayashi, J. Mol. Spectrosc. 220, 65 (2003), via CCCBDB; Landolt-Börnstein II/7 and the CRC gas-phase table give 111.7° (microwave, 1963)' },
   methanethiol_CSH: { value: 96.5, listed: 96.5, molecule: 'CH₃SH', cas: '74-93-1', atoms: 'C–S–H', source: 'Kojima, J. Phys. Soc. Jpn. 15, 1284 (1960), microwave, as tabulated in Landolt-Börnstein II/7 and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3° — discrepancy recorded in the register' },

@@ -9,6 +9,7 @@ import { conformations } from './conformations/index.js';
 import { atomicOrbitals } from './atomic-orbitals/index.js';
 import { molecularOrbitals } from './molecular-orbitals/index.js';
 import { acidsBases } from './acids-bases/index.js';
+import { redox } from './redox/index.js';
 import { transitionMetals } from './transition-metals/index.js';
 
 registerTopic(functionalGroups);
@@ -18,6 +19,7 @@ registerTopic(conformations);
 registerTopic(atomicOrbitals);
 registerTopic(molecularOrbitals);
 registerTopic(acidsBases);
+registerTopic(redox);
 registerTopic(transitionMetals);
 
 export * from './registry.js';

@@ -87,6 +87,15 @@ Where a number or a shape in `src/chem/` comes from. Topic folders keep their ow
   convention, not a measurement. Idealised references the model knowingly does not reproduce (acetone
   C–C–C 116°, cyclohexane C–C–C 111.28°, both Kuchitsu 1998 via CCCBDB) are in the same file.
 
+## Redox (`redox.js`)
+
+* Oxidation states: IUPAC Recommendations 2016 (Karen, McArdle & Takats, *Pure Appl. Chem.* 88, 831), the
+  ionic approximation applied with the Pauling `ELECTRONEGATIVITY` table (CRC); carbon oxidation levels
+  (`OXIDATION_LEVELS`): Clayden, Greeves & Warren ch. 24, Klein ch. 12; textbook half-reactions
+  (`HALF_REACTIONS`): Atkins resource section, Housecroft & Sharpe 5e ch. 8 and Appendix 11. Measured
+  geometries of H₂O₂ (CCCBDB), KMnO₄ and K₂Cr₂O₇ (crystal structures) in `references/measured.js`. Details
+  and the limits of the model in `src/topics/redox/references.md`.
+
 ## Transition metals (`transitionMetals.js`)
 
 * Crystal-field patterns and the barycentre rule (`CRYSTAL_FIELD`), Δo values (`DELTA_O`, Housecroft &

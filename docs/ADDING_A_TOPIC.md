@@ -484,6 +484,20 @@ sides in base), `overall(a, b)` scales two half-reactions to a common electron c
 ids must not repeat a mechanism id (the search ranks exact keyword matches first); no potential is tabulated,
 so the card never says which way a reaction runs.
 
+### A canvas workspace: Electrochemistry (`src/topics/electrochemistry/`)
+
+The first production topic with `workspace: { kind: 'canvas' }`: the explorer runs without a `view`, the panel
+implements `mountWorkspace(container)` / `unmountWorkspace(container)` (a `<canvas class="workspace-canvas">`
+plus a `ResizeObserver`), redraws in `afterUpdate` and sets `#workspace-name` itself (the explorer only does
+that for 3D topics). `src/chem/electrochemistry.js` holds the pure half: `POTENTIAL_COUPLES` (the Redox
+couples that have a `STANDARD_POTENTIALS` entry, sorted), `halfCell()` (oxidised / reduced forms whichever way
+the couple is written, the electrode, solutes, gas, the reduction text), `halfNotation()` / `cellNotation()`,
+`cell(a, b, { conc, pH })` (cathode = higher E°, `orientedOverall()` from redox.js for the equation, the three
+identities and Q from the equation's terms) and `buildCell()`. `cellCanvas.js` draws the cell from that object
+and nothing else, so a node test can run it against a stub 2D context. Rules carried over: `TEXTBOOK_CELLS`
+is an oracle the module must reproduce (E°, n, notation); the sliders change Q only; no kinetics, colours or
+non-standard temperatures are implied.
+
 ### A diagram you fill: Transition metals (`src/topics/transition-metals/`)
 
 The explorer with a molecule, an optional orbital and a `LevelDiagram` the user clicks.

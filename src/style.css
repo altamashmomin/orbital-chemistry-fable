@@ -349,3 +349,5 @@ body.drawer-open { overflow: hidden; }
 .os-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
 .os-chip { font-size: 11px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); }
 .os-chip.key { border-color: var(--accent, #48725c); font-weight: 600; }
+.eo-ladder { height: 460px; margin-top: 12px; }
+.cell-canvas { background: var(--panel, #fdfef9); }

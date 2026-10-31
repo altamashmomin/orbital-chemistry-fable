@@ -25,6 +25,9 @@ test('conformance sweep: the model matches the textbook reference values', () =>
   const redox = checks.filter((c) => c.category === 'redox');
   assert.ok(redox.length >= 80 && redox.every((c) => c.status === 'pass'), `redox checks all pass (${redox.length})`);
   for (const id of ['lewis.permanganate', 'level.aceticAcid', 'ladder.c1', 'half.dichromate', 'textbook.permanganate', 'textbook.oxygenBase', 'not-redox', 'overall', 'frames']) assert.ok(redox.some((c) => c.id === id), `${id} is a redox check`);
+  const cells = checks.filter((c) => c.category === 'cells');
+  assert.ok(cells.length >= 28 && cells.every((c) => c.status === 'pass'), `electrochemistry checks all pass (${cells.length})`);
+  for (const id of ['potential.copper', 'ladder-order', 'textbook.daniell', 'textbook.fuelCell', 'pairs', 'identities']) assert.ok(cells.some((c) => c.id === id), `${id} is a cells check`);
   assert.ok(checks.filter((c) => c.id.startsWith('redox-bond.')).every((c) => c.status === 'pass') && checks.some((c) => c.id === 'lp-table.O/2/2/H,O' && c.status === 'pass'), 'redox measured rows agree with the oracle');
   for (const id of ['shapes.angle-basis', 'bond-lengths.cited', 'energies.sourced', 'card-angles.stated', 'alcohol.lone-pair-basis', 'amine.lone-pair-basis', 'ester.lone-pair-basis']) assert.ok(boundary.some((c) => c.id === id), `${id} is a boundary check`);
 });

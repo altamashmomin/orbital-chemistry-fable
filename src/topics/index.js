@@ -10,6 +10,7 @@ import { atomicOrbitals } from './atomic-orbitals/index.js';
 import { molecularOrbitals } from './molecular-orbitals/index.js';
 import { acidsBases } from './acids-bases/index.js';
 import { redox } from './redox/index.js';
+import { electrochemistry } from './electrochemistry/index.js';
 import { transitionMetals } from './transition-metals/index.js';
 
 registerTopic(functionalGroups);
@@ -20,6 +21,7 @@ registerTopic(atomicOrbitals);
 registerTopic(molecularOrbitals);
 registerTopic(acidsBases);
 registerTopic(redox);
+registerTopic(electrochemistry);
 registerTopic(transitionMetals);
 
 export * from './registry.js';

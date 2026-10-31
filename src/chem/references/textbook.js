@@ -72,7 +72,7 @@ export const LONE_PAIR_ANGLES = {
 export const LONE_PAIR_COMPRESSION_PER_PAIR = 2.5;
 
 /** Pauling electronegativities. */
-export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19, Mn: 1.55, Cr: 1.66, Fe: 1.83, Cu: 1.90, Zn: 1.65 }; // CRC (Pauling scale)
+export const ELECTRONEGATIVITY = { H: 2.20, C: 2.55, N: 3.04, O: 3.44, F: 3.98, S: 2.58, Cl: 3.16, Br: 2.96, I: 2.66, P: 2.19, Mn: 1.55, Cr: 1.66, Fe: 1.83, Cu: 1.90, Zn: 1.65, Li: 0.98, Mg: 1.31, Al: 1.61, Ni: 1.91, Ag: 1.93, Pb: 2.33 }; // CRC (Pauling scale)
 
 /**
  * Torsional energies for the Conformations topic, kJ/mol above the lowest conformer. Textbook teaching
@@ -389,6 +389,16 @@ export const HALF_REACTIONS = {
     ethanol: { couple: 'ethanol', text: 'CH₃CHO + 2 H⁺ + 2 e⁻ → CH₃CH₂OH', n: 2 },
     acetaldehyde: { couple: 'acetaldehyde', text: 'CH₃COOH + 2 H⁺ + 2 e⁻ → CH₃CHO + H₂O', n: 2 },
     thiol: { couple: 'thiol', text: 'C₂H₅SSC₂H₅ + 2 H⁺ + 2 e⁻ → 2 C₂H₅SH', n: 2 },
+    lithium: { couple: 'lithium', text: 'Li⁺ + e⁻ → Li', n: 1 },
+    magnesium: { couple: 'magnesium', text: 'Mg²⁺ + 2 e⁻ → Mg', n: 2 },
+    aluminium: { couple: 'aluminium', text: 'Al³⁺ + 3 e⁻ → Al', n: 3 },
+    ironMetal: { couple: 'ironMetal', text: 'Fe²⁺ + 2 e⁻ → Fe', n: 2 },
+    nickel: { couple: 'nickel', text: 'Ni²⁺ + 2 e⁻ → Ni', n: 2 },
+    lead: { couple: 'lead', text: 'Pb²⁺ + 2 e⁻ → Pb', n: 2 },
+    silver: { couple: 'silver', text: 'Ag⁺ + e⁻ → Ag', n: 1 },
+    bromine: { couple: 'bromine', text: 'Br₂ + 2 e⁻ → 2 Br⁻', n: 2 },
+    iodine: { couple: 'iodine', text: 'I₂ + 2 e⁻ → 2 I⁻', n: 2 },
+    fluorine: { couple: 'fluorine', text: 'F₂ + 2 e⁻ → 2 F⁻', n: 2 },
   },
 };
 
@@ -399,6 +409,43 @@ export const REDOX_BOND_LENGTHS = {
   dichromate_CrO_bridge: { length: 1.79, ref: 'dichromate_CrO_bridge' },
   hydrogenPeroxide_OO: { length: 1.475, ref: 'hydrogenPeroxide_OO' },
   hydrogenPeroxide_OH: { length: 0.95, ref: 'hydrogenPeroxide_OH' },
+  F2_FF: { length: 1.412, ref: 'F2_FF' },
+  Cl2_ClCl: { length: 1.988, ref: 'Cl2_ClCl' },
+  Br2_BrBr: { length: 2.281, ref: 'Br2_BrBr' },
+  I2_II: { length: 2.665, ref: 'I2_II' },
 };
 /** Bridge angle the dichromate frame is pinned at (oracle row dichromate_CrOCr). */
 export const DICHROMATE_BRIDGE_ANGLE = { angle: 126, ref: 'dichromate_CrOCr' };
+
+// ---------------------------------------------------------------------------------------------------
+// Electrochemistry topic (src/chem/electrochemistry.js, redox phase B): standard potentials from one
+// compilation, the cells the textbooks compute, and the constants of the thermodynamic identities
+// (ΔG° = −nFE°, ln K = nFE°/RT, the Nernst equation). Nothing is fitted or derived from structure.
+// ---------------------------------------------------------------------------------------------------
+
+/** Standard reduction potentials at 298 K, V vs SHE, keyed by Redox couple id (each couple written in HALF_REACTIONS). */
+export const STANDARD_POTENTIALS = {
+  unit: 'V vs SHE, 298 K, all species at unit activity',
+  source: 'ATKINS, Physical Chemistry, resource section (standard potentials at 298 K); cross-checked against the CRC Handbook "Electrochemical series" as compiled on the Wikipedia data page (read 2026-10-31): CRC gives Mg −2.37, Ni −0.26 and Br₂ +1.07, the others agree to 0.01 V',
+  values: {
+    lithium: -3.04, magnesium: -2.36, aluminium: -1.66, zinc: -0.76, ironMetal: -0.44, nickel: -0.23, lead: -0.13, hydrogen: 0.00,
+    copper: 0.34, iodine: 0.54, peroxideOxidised: 0.70, iron: 0.77, silver: 0.80, bromine: 1.09, oxygen: 1.23, dichromate: 1.33,
+    chlorine: 1.36, permanganate: 1.51, peroxideReduced: 1.78, fluorine: 2.87,
+  },
+};
+
+/** Cells the textbooks work through, with the E°cell they print: the module must reproduce each from the table. */
+export const TEXTBOOK_CELLS = {
+  source: 'ATKINS ch. 6 (the Daniell cell, E° and K); Housecroft & Sharpe 5e ch. 8 (worked examples); Zumdahl, Chemistry, ch. 18 (Cu/Ag, Zn/H₂, the hydrogen–oxygen fuel cell)',
+  values: {
+    daniell: { anode: 'zinc', cathode: 'copper', E: 1.10, n: 2, notation: 'Zn(s) | Zn²⁺(aq) || Cu²⁺(aq) | Cu(s)' },
+    copperSilver: { anode: 'copper', cathode: 'silver', E: 0.46, n: 2, notation: 'Cu(s) | Cu²⁺(aq) || Ag⁺(aq) | Ag(s)' },
+    zincHydrogen: { anode: 'zinc', cathode: 'hydrogen', E: 0.76, n: 2, notation: 'Zn(s) | Zn²⁺(aq) || H⁺(aq) | H₂(g) | Pt(s)' },
+    fuelCell: { anode: 'hydrogen', cathode: 'oxygen', E: 1.23, n: 4, notation: 'Pt(s) | H₂(g) | H⁺(aq) || H⁺(aq) | O₂(g) | Pt(s)' },
+    peroxide: { anode: 'peroxideOxidised', cathode: 'peroxideReduced', E: 1.08, n: 2, notation: 'Pt(s) | O₂(g) | H₂O₂(aq), H⁺(aq) || H₂O₂(aq), H⁺(aq) | Pt(s)' },
+    ironPermanganate: { anode: 'iron', cathode: 'permanganate', E: 0.74, n: 5, notation: 'Pt(s) | Fe²⁺(aq), Fe³⁺(aq) || MnO₄⁻(aq), Mn²⁺(aq), H⁺(aq) | Pt(s)' },
+  },
+};
+
+/** The constants of the identities ΔG° = −nFE°, ln K = nFE°/RT and E = E° − (RT/nF) ln Q (CODATA 2018), at 298.15 K. */
+export const ELECTROCHEMICAL_CONSTANTS = { F: 96485.33212, R: 8.314462618, T: 298.15, unit: 'C/mol, J/(K·mol), K', source: 'CODATA 2018 recommended values; ATKINS ch. 6 (the identities)' };

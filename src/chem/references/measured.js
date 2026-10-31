@@ -32,6 +32,10 @@ export const MEASURED_BONDS = {
   hydrogenPeroxide_OH: { value: 0.95, listed: 0.950, molecule: 'H₂O₂', cas: '7722-84-1', atoms: 'O–H', source: 'Redington, Olson & Cross (1962), via CCCBDB; H–O–O–H dihedral 119.8°' },
   permanganate_MnO: { value: 1.63, listed: 1.629, molecule: 'KMnO₄ (crystal)', cas: '7722-64-7', atoms: 'Mn–O (all four)', type: 'X-ray', source: 'Palenik, Inorg. Chem. 6, 503 (1967), as quoted in the Wikipedia KMnO₄ entry (the paper itself was not read); CRC Handbook gives 1.63 Å for MnO₄⁻' },
   dichromate_CrO_terminal: { value: 1.63, listed: 1.63, molecule: 'K₂Cr₂O₇ (crystal)', cas: '7778-50-9', atoms: 'Cr–O (terminal)', type: 'X-ray', source: 'Brandon & Brown, Can. J. Chem. 46, 933 (1968), abstract' },
+  F2_FF: { value: 1.412, listed: 1.412, molecule: 'F₂', cas: '7782-41-4', atoms: 'F–F', type: 'rₑ', source: 'Huber & Herzberg (1979), via CCCBDB' },
+  Cl2_ClCl: { value: 1.988, listed: 1.988, molecule: 'Cl₂', cas: '7782-50-5', atoms: 'Cl–Cl', type: 'rₑ', source: 'Huber & Herzberg (1979), via CCCBDB' },
+  Br2_BrBr: { value: 2.281, listed: 2.281, molecule: 'Br₂', cas: '7726-95-6', atoms: 'Br–Br', type: 'rₑ', source: 'NIST Chemistry WebBook, via CCCBDB' },
+  I2_II: { value: 2.665, listed: 2.665, molecule: 'I₂', cas: '7553-56-2', atoms: 'I–I', type: 'rₑ', source: 'Gurvich, Veyts & Alcock (1989), via CCCBDB' },
   dichromate_CrO_bridge: { value: 1.79, listed: 1.79, molecule: 'K₂Cr₂O₇ (crystal)', cas: '7778-50-9', atoms: 'Cr–O (bridging)', type: 'X-ray', source: 'Brandon & Brown, Can. J. Chem. 46, 933 (1968), abstract' },
 };
 

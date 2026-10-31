@@ -25,6 +25,8 @@ import { COMPLEXES, buildComplex, complexFrame as metalComplexFrame, levelPatter
 import { CRYSTAL_FIELD, DELTA_O, SPECTROCHEMICAL_SERIES, COMPLEX_MAGNETISM, COMPLEX_COLOURS, D_ORBITAL_ZEFF, METAL_GROUPS } from './references/textbook.js';
 import { SPECIES, SPECIES_IDS, COUPLES, LADDERS, oxidationStates, lewisProblems, totalCharge, speciesGraph, speciesFrame, balance, isBalanced, keyChange, overall, coupleById, ladderLevels, osText } from './redox.js';
 import { OXIDATION_STATE_RULES, OXIDATION_LEVELS, HALF_REACTIONS, REDOX_BOND_LENGTHS, DICHROMATE_BRIDGE_ANGLE } from './references/textbook.js';
+import { POTENTIAL_IDS, potentialOf, cell, textbookCells, halfCell, RT_OVER_F, F as FARADAY, R as GAS_R, T as T_STD } from './electrochemistry.js';
+import { STANDARD_POTENTIALS, TEXTBOOK_CELLS, ELECTROCHEMICAL_CONSTANTS } from './references/textbook.js';
 
 const ORDER_SYM = { 1: '-', 2: '=', 3: '#', 1.5: ':' };
 const angleDeg = (a, c, b) => Math.acos(Math.max(-1, Math.min(1, v.dot(v.norm(v.sub(a, c)), v.norm(v.sub(b, c)))))) / DEG;
@@ -608,6 +610,33 @@ export function runConformance() {
     }
   }
 
+  // Electrochemistry topic: every potential a table entry on a couple the balancer handles, the ladder in the textbook
+  // order, the textbook cells reproduced (E°, n, notation), every pair of couples a balanced cell with the higher E° as
+  // the cathode, the identities and the Nernst equation checked numerically.
+  {
+    for (const id of POTENTIAL_IDS) {
+      const hc = halfCell(id), tb = Object.values(HALF_REACTIONS.values).find((r) => r.couple === id && !r.medium);
+      add('cells', `potential.${id}`, pf(!!tb && hc.text === tb.text && hc.n === tb.n), `${hc.formula}: E° = ${hc.E0 >= 0 ? '+' : '−'}${Math.abs(hc.E0).toFixed(2)} V on the textbook half-reaction; ${hc.electrode.kind === 'metal' ? `${hc.electrode.formula} electrode` : 'inert electrode'}`, { expected: tb?.text, actual: hc.text, source: STANDARD_POTENTIALS.source.split(';')[0] });
+    }
+    {
+      const E = potentialOf; const bad = [];
+      for (const [a, b] of [['lithium', 'magnesium'], ['magnesium', 'aluminium'], ['aluminium', 'zinc'], ['zinc', 'ironMetal'], ['ironMetal', 'nickel'], ['nickel', 'lead'], ['lead', 'hydrogen'], ['hydrogen', 'copper'], ['copper', 'silver'], ['iodine', 'bromine'], ['bromine', 'chlorine'], ['chlorine', 'fluorine'], ['peroxideOxidised', 'oxygen'], ['iron', 'oxygen'], ['dichromate', 'permanganate'], ['permanganate', 'peroxideReduced']]) if (!(E(a) < E(b))) bad.push(`${a} ≥ ${b}`);
+      if (E('hydrogen') !== 0) bad.push('SHE not 0');
+      add('cells', 'ladder-order', pf(!bad.length), 'the activity series (Li < Mg < Al < Zn < Fe < Ni < Pb < H < Cu < Ag), the halogens (I < Br < Cl < F) and the oxidants (O₂/H₂O₂ < Fe³⁺ < O₂ < Cr₂O₇²⁻ < MnO₄⁻ < H₂O₂) are in the textbook order; the SHE is 0', { expected: 'all ordered', actual: bad.length ? bad.join('; ') : `${POTENTIAL_IDS.length} couples ordered`, source: STANDARD_POTENTIALS.source.split(';')[0] });
+    }
+    for (const t of textbookCells()) add('cells', `textbook.${t.key}`, pf(t.ok && t.anodeOk), `${t.row.notation}: E°cell, n and the notation as the textbook prints them`, { expected: `${t.row.E.toFixed(2)} V, n = ${t.row.n}`, actual: `${t.cell.E0.toFixed(2)} V, n = ${t.cell.n}, ${t.cell.notation}`, source: TEXTBOOK_CELLS.source.split(';')[0] });
+    {
+      let n = 0; const bad = [];
+      for (const a of POTENTIAL_IDS) for (const b of POTENTIAL_IDS) if (a < b) { n++; const c = cell(a, b); if (!(c.E0 >= 0 && c.cathode === (potentialOf(a) >= potentialOf(b) ? a : b) && c.eq.balanced && c.eq.reduction === c.cathode && Math.abs(c.dG0 + c.n * FARADAY * c.E0 / 1000) < 1e-9 && Math.abs(c.lnK - c.n * FARADAY * c.E0 / (GAS_R * T_STD)) < 1e-9 && Math.abs(c.E - c.E0) < 1e-12)) bad.push(`${a}/${b}`); }
+      add('cells', 'pairs', pf(!bad.length), `every pair of couples makes a balanced cell with the higher E° as the cathode, E°cell ≥ 0, ΔG° = −nFE°, ln K = nFE°/RT and E = E° at the standard state (${n} pairs)`, { expected: 'all consistent', actual: bad.length ? bad.join(', ') : `${n} cells`, source: 'ATKINS ch. 6' });
+    }
+    {
+      const d = cell('zinc', 'copper'), dil = cell('zinc', 'copper', { conc: { copper2: 0.01 } }), ph = cell('hydrogen', 'copper', { pH: 4 }), mn0 = cell('iron', 'permanganate'), mn1 = cell('iron', 'permanganate', { pH: 1 });
+      const ok = Math.abs(d.dG0 + 212.3) < 0.2 && Math.abs(d.log10K - 37.2) < 0.1 && Math.abs(dil.E - 1.041) < 0.001 && Math.abs((ph.E - 0.34) - 4 * RT_OVER_F * Math.LN10) < 1e-6 && Math.abs((mn0.E - mn1.E) - 8 * RT_OVER_F * Math.LN10 / 5) < 1e-6 && Math.abs(RT_OVER_F * Math.LN10 - 0.05916) < 1e-5;
+      add('cells', 'identities', pf(ok), 'Daniell: ΔG° = −212 kJ/mol and K = 1.5 × 10³⁷ (Atkins); [Cu²⁺] = 0.010 M gives E = 1.041 V; the Pt | H₂ | H⁺ || Cu²⁺ | Cu cell gains 59.16 mV per pH unit (H⁺ is its product); the permanganate couple 8 × 59.16 / 5 mV per unit', { expected: '−212.3 kJ/mol, log K 37.2, 1.041 V, 59.16 mV', actual: `${d.dG0.toFixed(1)} kJ/mol, log K ${d.log10K.toFixed(2)}, ${dil.E.toFixed(4)} V, ${(RT_OVER_F * Math.LN10 * 1000).toFixed(2)} mV`, source: `${TEXTBOOK_CELLS.source.split(';')[0]}; ${ELECTROCHEMICAL_CONSTANTS.source.split(';')[0]}` });
+    }
+  }
+
   // ------------------------------------------------------------------ J. register (static notes)
   for (const [k, detail] of Object.entries({
     'energies-illustrative': 'energy profiles are illustrative kcal/mol shapes, not measured activation energies',
@@ -626,6 +655,7 @@ export function runConformance() {
     'orbital-pictures': 'orbital pictures are hydrogen-like functions (Z = 1) drawn as the |ψ| surface enclosing a stated share of the probability; hybrids use hydrogen-like 2s/2p, so they show the shape, not a carbon\'s size; the configuration ladder is schematic and carries no energies',
     'complex-templates': 'complexes draw their donor atoms on the ideal octahedral / square-planar / tetrahedral template at the covalent-radius-sum M–L length (real lengths vary by ±0.1 Å with spin and oxidation state) and their ligand hydrogens on ideal tetrahedral slots; the d⁹ Jahn–Teller distortion is not drawn; square-planar level gaps are schematic; Δo values follow one compilation (Housecroft & Sharpe Table 20.2) and others differ by a few hundred cm⁻¹; pairing energies are not tabulated, so spin states are read from the magnetism table, never decided by the model; the d-orbital picture uses Z_eff = 6.25 for every metal (size only)',
     'redox-counting': 'oxidation states follow the ionic approximation on the Pauling scale (IUPAC 2016 uses Allen electronegativities; the two differ only for C–I, which no species here uses); bare ions are drawn as single atoms although hydrated; the H₂O₂ dihedral is the relaxer\'s staggered placement (measured 119.8°); MnO₄⁻ and Cr₂O₇²⁻ keep ideal 109.5° O–M–O angles with cited lengths; no standard potential, direction or rate is given (phase B)',
+    'cells-ideal': 'cells take activities as concentrations (10^−pH for H⁺), gases at 1 bar and 298.15 K; no activity coefficients, liquid-junction potentials, overpotentials or kinetics; E° from one compilation (Atkins), where the CRC differs by up to 0.03 V (Mg, Ni, Br₂); the cell drawing is a schematic without solution colours',
     'methanethiol-source': `C–S–H ${LONE_PAIR_ANGLES['S/2/2/C,H'].angle}° follows the microwave structure tabulated by Landolt-Börnstein and the CRC gas-phase table; the CCCBDB listing quotes the older Herzberg (1966) compilation value 100.3°`,
   })) add('simplifications', k, 'note', detail);
 
@@ -699,7 +729,9 @@ export function runConformance() {
       if (!DELTA_O.unit || !DELTA_O.source) bad.push('DELTA_O lacks unit/source');
       for (const [k, t] of [['CRYSTAL_FIELD', CRYSTAL_FIELD], ['SPECTROCHEMICAL_SERIES', SPECTROCHEMICAL_SERIES], ['COMPLEX_MAGNETISM', COMPLEX_MAGNETISM], ['COMPLEX_COLOURS', COMPLEX_COLOURS], ['D_ORBITAL_ZEFF', D_ORBITAL_ZEFF], ['METAL_GROUPS', METAL_GROUPS]]) if (!t.source) bad.push(`${k} lacks a source`);
       if (!PKA_TABLE.unit || !PKA_TABLE.source) bad.push('PKA_TABLE lacks unit/source');
-      for (const [k, t] of [['OXIDATION_STATE_RULES', OXIDATION_STATE_RULES], ['OXIDATION_LEVELS', OXIDATION_LEVELS], ['HALF_REACTIONS', HALF_REACTIONS]]) if (!t.source) bad.push(`${k} lacks a source`);
+      for (const [k, t] of [['OXIDATION_STATE_RULES', OXIDATION_STATE_RULES], ['OXIDATION_LEVELS', OXIDATION_LEVELS], ['HALF_REACTIONS', HALF_REACTIONS], ['TEXTBOOK_CELLS', TEXTBOOK_CELLS]]) if (!t.source) bad.push(`${k} lacks a source`);
+      if (!STANDARD_POTENTIALS.unit || !STANDARD_POTENTIALS.source) bad.push('STANDARD_POTENTIALS lacks unit/source');
+      if (!ELECTROCHEMICAL_CONSTANTS.unit || !ELECTROCHEMICAL_CONSTANTS.source) bad.push('ELECTROCHEMICAL_CONSTANTS lacks unit/source');
       for (const p of POSITIONS) for (const rel of RELATIONS) for (const f of ['axial', 'equatorial']) if (chairEnergy('methyl', f, { sub: 'methyl', position: p.id, rel }).basis !== 'table') bad.push(`dimethyl ${rel}-1,${p.id} ${f} energy not from a table`);
       for (const s of CHAIR_SUBSTITUENTS) for (const f of RING_FORMS) if (chairEnergy(s.id, f.id).basis !== 'table') bad.push(`chair ${s.id}/${f.id} energy not from a table`);
       for (const r of ROTORS) {
